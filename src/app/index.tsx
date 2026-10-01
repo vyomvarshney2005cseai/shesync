@@ -210,17 +210,6 @@ export default function WelcomeScreen() {
                 <UserCheck size={16} color={Theme.colors.textPrimary} style={{ marginRight: 6 }} />
                 <Text style={styles.logInText}>Log In</Text>
               </TouchableOpacity>
-
-              {/* Quick Demo Bypass */}
-              <TouchableOpacity
-                style={styles.guestLink}
-                activeOpacity={0.7}
-                onPress={() => router.replace('/(tabs)')}
-              >
-                <Text style={styles.guestText}>
-                  Explore SheSync Demo Mode &rarr;
-                </Text>
-              </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
@@ -445,16 +434,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     flexShrink: 1,
     textAlign: 'center',
-  },
-  guestLink: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 6,
-  },
-  guestText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6B7280',
-    textDecorationLine: 'underline',
   },
 });

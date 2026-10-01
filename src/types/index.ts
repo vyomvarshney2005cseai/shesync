@@ -250,7 +250,7 @@ export interface AppState {
   // Actions
   login: (email?: string, name?: string) => void;
   signup: (name: string, email: string) => void;
-  logout: () => void;
+  logout: () => Promise<void> | void;
   updateUserPhoto: (uri: string) => void;
   completeAssessment: (answers: Record<string, string>) => void;
   savePastCycles: (count: number, cycles: PastCycleRecord[]) => void;

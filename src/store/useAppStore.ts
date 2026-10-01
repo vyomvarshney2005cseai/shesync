@@ -733,10 +733,18 @@ export const useAppStore = create<AppState>((set, get) => ({
       userEmail: email,
     }),
 
-  logout: () => {
-    signOutSupabase().catch(() => {});
+  logout: async () => {
+    try {
+      await signOutSupabase();
+    } catch (e) {
+      console.warn('Logout signOutSupabase error', e);
+    }
     set({
       isAuthenticated: false,
+      userName: '',
+      userEmail: '',
+      userPhoto: undefined,
+      isAssessmentCompleted: false,
     });
   },
 

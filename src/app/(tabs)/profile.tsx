@@ -8,9 +8,10 @@ import {
   Switch,
   Image,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import { Theme } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import {
@@ -33,6 +34,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
 
 export default function ProfileScreen() {
+  const navigation = useNavigation();
   const userName = useAppStore((s) => s.userName);
   const userEmail = useAppStore((s) => s.userEmail);
   const userPhoto = useAppStore((s) => s.userPhoto);
@@ -65,9 +67,31 @@ export default function ProfileScreen() {
     router.push('/assessment' as any);
   };
 
-  const handleLogout = () => {
-    logout();
-    router.replace('/');
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (err) {
+      console.warn('Logout error', err);
+    }
+
+    if (Platform.OS === 'web') {
+      try {
+        router.replace('/');
+      } catch (_) {}
+      if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+        window.location.href = '/';
+      }
+    } else {
+      const parent = navigation.getParent();
+      if (parent) {
+        parent.reset({
+          index: 0,
+          routes: [{ name: 'index' }],
+        });
+      } else {
+        router.replace('/');
+      }
+    }
   };
 
   const handleExportPDF = () => {

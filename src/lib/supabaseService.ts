@@ -84,8 +84,14 @@ export async function signInWithSupabase(email: string, password: string) {
 }
 
 export async function signOutSupabase() {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.warn('[Supabase] signOut error:', error.message);
+    }
+  } catch (err: any) {
+    console.warn('[Supabase] signOut exception:', err?.message || err);
+  }
 }
 
 export async function getCurrentSupabaseUser() {
