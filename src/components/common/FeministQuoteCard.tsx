@@ -8,12 +8,14 @@ interface FeministQuoteCardProps {
   initialQuoteId?: string;
   category?: Quote['category'];
   variant?: 'light' | 'rose' | 'glass';
+  showNewQuoteButton?: boolean;
 }
 
 export function FeministQuoteCard({
   initialQuoteId,
   category,
   variant = 'rose',
+  showNewQuoteButton = true,
 }: FeministQuoteCardProps) {
   const [currentQuote, setCurrentQuote] = useState<Quote>(() => {
     if (initialQuoteId) {
@@ -43,15 +45,17 @@ export function FeministQuoteCard({
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.shuffleButton}
-          onPress={handleNextQuote}
-          activeOpacity={0.7}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <RefreshCw size={14} color={Theme.colors.primaryDark} />
-          <Text style={styles.shuffleText}>New Quote</Text>
-        </TouchableOpacity>
+        {showNewQuoteButton && (
+          <TouchableOpacity
+            style={styles.shuffleButton}
+            onPress={handleNextQuote}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <RefreshCw size={14} color={Theme.colors.primaryDark} />
+            <Text style={styles.shuffleText}>New Quote</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Quote Body */}

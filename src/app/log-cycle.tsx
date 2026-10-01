@@ -491,7 +491,11 @@ export default function LogCycleScreen() {
             <Text style={styles.predictionDateLabel}>Predicted Next Period Start</Text>
             <Text style={styles.predictionDateValue}>{prediction.nextPeriodDate}</Text>
             <Text style={styles.predictionCountdown}>
-              Starts in approximately ~{prediction.daysUntilNextPeriod} days
+              {prediction.daysUntilNextPeriod === 0
+                ? 'Cycle complete • Due today'
+                : prediction.daysUntilNextPeriod < 0
+                ? `Cycle delayed • ~${Math.abs(prediction.daysUntilNextPeriod)} days past estimated onset`
+                : `Starts in approximately ~${prediction.daysUntilNextPeriod} days`}
             </Text>
 
             {/* Timeline Breakdown */}

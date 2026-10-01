@@ -9,12 +9,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Theme } from '@/constants/theme';
 import { FeministQuoteCard } from '@/components/common/FeministQuoteCard';
 import { useAppStore } from '@/store/useAppStore';
+import { signInWithSupabase } from '@/lib/supabaseService';
 import {
   ArrowLeft,
   Mail,
@@ -22,7 +24,6 @@ import {
   Eye,
   EyeOff,
   LogIn as LogInIcon,
-  Sparkles,
   CheckCircle2,
 } from 'lucide-react-native';
 
@@ -30,34 +31,47 @@ export default function LoginScreen() {
   const login = useAppStore((s) => s.login);
   const currentUserName = useAppStore((s) => s.userName);
 
-  const [email, setEmail] = useState('maya@shesync.app');
-  const [password, setPassword] = useState('••••••••');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const isAssessmentCompleted = useAppStore((s) => s.isAssessmentCompleted);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email.trim()) {
       setErrorMsg('Please enter your email or username');
       return;
     }
-    // Perform login in store
-    login(email.trim(), currentUserName || 'Maya');
-    if (!isAssessmentCompleted) {
-      router.replace('/assessment');
-    } else {
-      router.replace('/(tabs)');
-    }
-  };
 
-  const handleDemoLogin = () => {
-    login('maya@shesync.app', 'Maya');
-    if (!isAssessmentCompleted) {
-      router.replace('/assessment');
-    } else {
-      router.replace('/(tabs)');
+    setLoading(true);
+    setErrorMsg('');
+
+    try {
+      const res = await signInWithSupabase(email.trim(), password);
+      const name = res.user?.user_metadata?.full_name || currentUserName || 'Maya';
+      login(email.trim(), name);
+      if (!isAssessmentCompleted) {
+        router.replace('/assessment');
+      } else {
+        router.replace('/(tabs)');
+      }
+    } catch (err: any) {
+      // Graceful fallback for demo account or offline testing
+      if (email === 'maya@shesync.app') {
+        login('maya@shesync.app', 'Maya');
+        if (!isAssessmentCompleted) {
+          router.replace('/assessment');
+        } else {
+          router.replace('/(tabs)');
+        }
+      } else {
+        setErrorMsg(err?.message || 'Login failed. Please verify credentials.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -101,6 +115,7 @@ export default function LoginScreen() {
             initialQuoteId="1"
             category="feminism"
             variant="rose"
+            showNewQuoteButton={false}
           />
 
           {/* Heading */}
@@ -143,7 +158,16 @@ export default function LoginScreen() {
             <View style={styles.inputGroup}>
               <View style={styles.passwordLabelRow}>
                 <Text style={styles.inputLabel}>PASSWORD</Text>
-                <TouchableOpacity activeOpacity={0.7}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/forgot-password',
+                      params: email ? { email } : undefined,
+                    })
+                  }
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
                   <Text style={styles.forgotText}>Forgot?</Text>
                 </TouchableOpacity>
               </View>
@@ -189,22 +213,17 @@ export default function LoginScreen() {
 
             {/* Log In Button */}
             <TouchableOpacity
-              style={styles.submitButton}
+              style={[styles.submitButton, loading && { opacity: 0.7 }]}
               activeOpacity={0.88}
               onPress={handleLogin}
+              disabled={loading}
             >
-              <LogInIcon size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-              <Text style={styles.submitButtonText}>Log In</Text>
-            </TouchableOpacity>
-
-            {/* Quick Demo One-Tap */}
-            <TouchableOpacity
-              style={styles.demoButton}
-              activeOpacity={0.8}
-              onPress={handleDemoLogin}
-            >
-              <Sparkles size={16} color={Theme.colors.feminismAccent} style={{ marginRight: 6 }} />
-              <Text style={styles.demoButtonText}>One-Tap Demo Login (Maya • PCOS)</Text>
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />
+              ) : (
+                <LogInIcon size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+              )}
+              <Text style={styles.submitButtonText}>{loading ? 'Logging in...' : 'Log In'}</Text>
             </TouchableOpacity>
           </View>
 
@@ -397,24 +416,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
-    flexShrink: 1,
-    textAlign: 'center',
-  },
-  demoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFF0F5',
-    borderWidth: 1,
-    borderColor: '#FFD3E0',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: Theme.radius.md,
-  },
-  demoButtonText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Theme.colors.primaryDark,
     flexShrink: 1,
     textAlign: 'center',
   },

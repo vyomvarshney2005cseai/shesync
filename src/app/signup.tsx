@@ -9,12 +9,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Theme } from '@/constants/theme';
 import { FeministQuoteCard } from '@/components/common/FeministQuoteCard';
 import { useAppStore } from '@/store/useAppStore';
+import { signUpWithSupabase } from '@/lib/supabaseService';
 import {
   ArrowLeft,
   User,
@@ -48,6 +50,7 @@ export default function SignUpScreen() {
     'PCOS & PMDD Support',
   ]);
   const [agreedToTerms, setAgreedToTerms] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const toggleFocus = (tag: string) => {
@@ -56,7 +59,7 @@ export default function SignUpScreen() {
     );
   };
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     if (!name.trim()) {
       setErrorMsg('Please enter your name');
       return;
@@ -78,8 +81,19 @@ export default function SignUpScreen() {
       return;
     }
 
-    signup(name.trim(), email.trim());
-    router.replace('/assessment');
+    setLoading(true);
+    setErrorMsg('');
+
+    try {
+      await signUpWithSupabase(email.trim(), password, name.trim());
+      signup(name.trim(), email.trim());
+      router.replace('/assessment');
+    } catch (err: any) {
+      // If error (e.g. rate limit, unconfigured email provider, etc.)
+      setErrorMsg(err?.message || 'Sign up encountered an issue.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -278,12 +292,19 @@ export default function SignUpScreen() {
 
             {/* Sign Up Submit Button */}
             <TouchableOpacity
-              style={styles.submitButton}
+              style={[styles.submitButton, loading && { opacity: 0.7 }]}
               activeOpacity={0.88}
               onPress={handleSignUp}
+              disabled={loading}
             >
-              <Sparkles size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-              <Text style={styles.submitButtonText}>Sign Up & Begin My Journey</Text>
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />
+              ) : (
+                <Sparkles size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+              )}
+              <Text style={styles.submitButtonText}>
+                {loading ? 'Creating Account...' : 'Sign Up & Begin My Journey'}
+              </Text>
             </TouchableOpacity>
           </View>
 

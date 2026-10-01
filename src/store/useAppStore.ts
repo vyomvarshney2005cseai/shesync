@@ -12,30 +12,35 @@ import type {
 } from '@/types';
 import { calculateArchetype } from '@/constants/assessment';
 import { calculateCyclePredictionAndPrecautions } from '@/constants/cyclePrediction';
+import {
+  saveDailyLogToSupabase,
+  saveCycleToSupabase,
+  signOutSupabase,
+} from '@/lib/supabaseService';
 
 const initialPastCycles: PastCycleRecord[] = [
   {
     id: 'cycle-1',
     cycleNumber: 1,
-    startDate: new Date(Date.now() - 28 * 86400000).toISOString().split('T')[0],
-    daysAgo: 28,
+    startDate: new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0],
+    daysAgo: 14,
     lengthDays: 28,
     periodDurationDays: 5,
   },
   {
     id: 'cycle-2',
     cycleNumber: 2,
-    startDate: new Date(Date.now() - 56 * 86400000).toISOString().split('T')[0],
-    daysAgo: 56,
-    lengthDays: 29,
+    startDate: new Date(Date.now() - 42 * 86400000).toISOString().split('T')[0],
+    daysAgo: 42,
+    lengthDays: 28,
     periodDurationDays: 5,
   },
   {
     id: 'cycle-3',
     cycleNumber: 3,
-    startDate: new Date(Date.now() - 86 * 86400000).toISOString().split('T')[0],
-    daysAgo: 86,
-    lengthDays: 30,
+    startDate: new Date(Date.now() - 71 * 86400000).toISOString().split('T')[0],
+    daysAgo: 71,
+    lengthDays: 29,
     periodDurationDays: 6,
   },
 ];
@@ -285,18 +290,18 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // ─── Cycle & Prediction ─────────────────────────
   cycle: {
-    currentDay: 45,
+    currentDay: 14,
     expectedLength: 28,
-    phase: 'irregular',
-    isIrregular: true,
-    lastPeriodDate: '2026-08-09',
-    label: 'Day 45 (Irregular Phase)',
-    progesteroneStatus: 'dropping',
-    conditions: ['PCOS', 'PMDD'],
+    phase: 'ovulatory',
+    isIrregular: false,
+    lastPeriodDate: new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0],
+    label: 'Day 14 (Ovulatory Phase • Peak Estrogen)',
+    progesteroneStatus: 'rising',
+    conditions: ['Cycle Sync'],
   },
   rememberedCyclesCount: 3,
   pastCycles: initialPastCycles,
-  cyclePrediction: calculateCyclePredictionAndPrecautions(3, initialPastCycles, {}, 6, 'spotting'),
+  cyclePrediction: calculateCyclePredictionAndPrecautions(3, initialPastCycles, {}, 4, 'none'),
 
   // ─── Initial Baseline Symptom Logs ───────────────
   symptomLogs: [
@@ -509,33 +514,87 @@ export const useAppStore = create<AppState>((set, get) => ({
       sleepDeficit ? `${sleepSeverity === 'severe' ? 'Severe ' : ''}Deficit` : 'Restorative'
     })`;
 
-    // 5. Fine-Tuned Cycle Phase & Conditions
+    // 5. Dynamic Cycle Prediction & Precaution Engine
+    const activeCycles =
+      state.pastCycles && state.pastCycles.length > 0 ? state.pastCycles : initialPastCycles;
+    const effectiveCount = state.rememberedCyclesCount || 3;
+    const newPrediction = calculateCyclePredictionAndPrecautions(
+      effectiveCount,
+      activeCycles,
+      answers,
+      painVal,
+      flowVal
+    );
+
+    const isIrregular = newPrediction.regularityStatus === 'irregular_pcos';
+
+    // 6. Dynamic Cycle Day, Phase, and Label Calculation
+    const mostRecentCycle = activeCycles[0];
+    const today = new Date();
+    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    let daysSinceStart = 14;
+    let periodStartDateStr = mostRecentCycle?.startDate;
+    if (periodStartDateStr) {
+      const parts = periodStartDateStr.split('-').map(Number);
+      if (parts.length === 3 && !isNaN(parts[0])) {
+        const startMidnight = new Date(parts[0], parts[1] - 1, parts[2]);
+        daysSinceStart = Math.max(
+          0,
+          Math.round((todayMidnight.getTime() - startMidnight.getTime()) / 86400000)
+        );
+      }
+    } else if (typeof mostRecentCycle?.daysAgo === 'number') {
+      daysSinceStart = Math.max(0, mostRecentCycle.daysAgo);
+      periodStartDateStr = new Date(todayMidnight.getTime() - daysSinceStart * 86400000)
+        .toISOString()
+        .split('T')[0];
+    }
+
+    const calculatedCycleDay = Math.max(1, daysSinceStart + 1);
+    const predictedLen = newPrediction.predictedCycleLength || 28;
+    const periodDuration = mostRecentCycle?.periodDurationDays || 5;
+
+    let cyclePhase: CycleData['phase'] = 'follicular';
+    let cycleLabel = `Day ${calculatedCycleDay}`;
+
+    if (
+      flowVal === 'moderate' ||
+      flowVal === 'heavy' ||
+      flowVal === 'severe' ||
+      calculatedCycleDay <= periodDuration
+    ) {
+      cyclePhase = 'menstrual';
+      cycleLabel = `Day ${calculatedCycleDay} (Active ${
+        flowVal !== 'none' ? flowVal.toUpperCase() + ' ' : ''
+      }Menstrual Flow)`;
+    } else if (calculatedCycleDay < Math.max(8, predictedLen - 16)) {
+      cyclePhase = 'follicular';
+      cycleLabel = `Day ${calculatedCycleDay} (Follicular Phase • Rising Energy)`;
+    } else if (calculatedCycleDay <= Math.max(12, predictedLen - 12)) {
+      cyclePhase = 'ovulatory';
+      cycleLabel = `Day ${calculatedCycleDay} (Ovulatory Phase • Peak Estrogen)`;
+    } else if (calculatedCycleDay <= predictedLen) {
+      cyclePhase = 'luteal';
+      cycleLabel = `Day ${calculatedCycleDay} (Luteal Phase${
+        flowVal === 'spotting' ? ' • Spotting' : ''
+      })`;
+    } else {
+      cyclePhase = isIrregular ? 'irregular' : 'luteal';
+      cycleLabel = isIrregular
+        ? `Day ${calculatedCycleDay} (Extended / Irregular Gap)`
+        : `Day ${calculatedCycleDay} (Delayed / Overdue • Cycle Completion Expected)`;
+    }
+
+    // 7. Dynamic Trend Data & Clinical Anomalies
     const conditions = [...state.cycle.conditions];
     if (painVal >= 6 && !conditions.includes('Dysmenorrhea')) conditions.push('Dysmenorrhea');
     if ((flowVal === 'heavy' || flowVal === 'severe') && !conditions.includes('Menorrhagia'))
       conditions.push('Menorrhagia');
     if (moodVal <= 2 && !conditions.includes('PMDD')) conditions.push('PMDD');
+    if (isIrregular && !conditions.includes('PCOS')) conditions.push('PCOS');
 
-    let cyclePhase: CycleData['phase'] = state.cycle.phase;
-    let cycleDay = state.cycle.currentDay;
-    let cycleLabel = state.cycle.label;
-
-    if (flowVal === 'moderate' || flowVal === 'heavy' || flowVal === 'severe') {
-      cyclePhase = 'menstrual';
-      cycleDay = 2;
-      cycleLabel = `Day 2 (Active ${flowVal === 'heavy' ? 'Heavy ' : ''}Menstrual Flow)`;
-    } else if (flowVal === 'spotting') {
-      cyclePhase = 'luteal';
-      cycleDay = 26;
-      cycleLabel = 'Day 26 (Premenstrual Spotting)';
-    } else if (state.cycle.isIrregular) {
-      cyclePhase = 'irregular';
-      cycleDay = 45;
-      cycleLabel = 'Day 45 (Irregular Luteal Gap)';
-    }
-
-    // 6. Fine-Tuned Trend Data & Anomalies
-    const newTrendData = generateDynamicTrendData(painVal, state.cycle.isIrregular);
+    const newTrendData = generateDynamicTrendData(painVal, isIrregular);
     const newAnomalies = generateDynamicAnomalies(
       painVal,
       flowVal,
@@ -543,15 +602,6 @@ export const useAppStore = create<AppState>((set, get) => ({
       finalStrain,
       hrvDelta,
       conditions
-    );
-
-    // 7. Dynamic Cycle Prediction & Precaution Engine
-    const newPrediction = calculateCyclePredictionAndPrecautions(
-      state.rememberedCyclesCount || 3,
-      state.pastCycles || initialPastCycles,
-      answers,
-      painVal,
-      flowVal
     );
 
     set({
@@ -582,8 +632,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       },
       cycle: {
         ...state.cycle,
+        expectedLength: predictedLen,
+        lastPeriodDate: periodStartDateStr || state.cycle.lastPeriodDate,
+        isIrregular,
         phase: cyclePhase,
-        currentDay: cycleDay,
+        currentDay: calculatedCycleDay,
         label: cycleLabel,
         conditions: conditions.slice(0, 3),
       },
@@ -628,6 +681,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
 
     get().fineTuneAllAnalytics();
+
+    // Async sync to Supabase (cycles table)
+    cycles.forEach((c) => {
+      saveCycleToSupabase({
+        start_date: c.startDate,
+        cycle_length: c.lengthDays,
+      }).catch(() => {
+        // Silent catch for offline or guest mode
+      });
+    });
   },
 
   // ─── Actions ─────────────────────────────────────
@@ -670,10 +733,12 @@ export const useAppStore = create<AppState>((set, get) => ({
       userEmail: email,
     }),
 
-  logout: () =>
+  logout: () => {
+    signOutSupabase().catch(() => {});
     set({
       isAuthenticated: false,
-    }),
+    });
+  },
 
   updateUserPhoto: (uri: string) =>
     set({
@@ -770,5 +835,16 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     // Immediately fine-tune all analytics across the entire application
     get().fineTuneAllAnalytics();
+
+    // Async sync to Supabase (daily_logs table)
+    saveDailyLogToSupabase({
+      log_date: newLog.date,
+      pain_level: newLog.pain ?? null,
+      mood: newLog.mood ? String(newLog.mood) : null,
+      symptoms: newLog.painLocation || [],
+      notes: newLog.notes || null,
+    }).catch(() => {
+      // Guest / offline mode fallback
+    });
   },
 }));

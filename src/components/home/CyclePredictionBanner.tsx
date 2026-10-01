@@ -40,7 +40,11 @@ export const CyclePredictionBanner: React.FC = () => {
             <Text style={styles.dateValue}>{cyclePrediction.nextPeriodDate}</Text>
             <View style={styles.countdownPill}>
               <Text style={styles.countdownText}>
-                ~{cyclePrediction.daysUntilNextPeriod}d left
+                {cyclePrediction.daysUntilNextPeriod === 0
+                  ? 'Due Today'
+                  : cyclePrediction.daysUntilNextPeriod < 0
+                  ? `${Math.abs(cyclePrediction.daysUntilNextPeriod)}d overdue`
+                  : `~${cyclePrediction.daysUntilNextPeriod}d left`}
               </Text>
             </View>
           </View>

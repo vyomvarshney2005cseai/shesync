@@ -216,7 +216,11 @@ export default function AssessmentScreen() {
 
                 <Text style={styles.predDateTitle}>{cyclePrediction.nextPeriodDate}</Text>
                 <Text style={styles.predSubtitle}>
-                  Starts in ~{cyclePrediction.daysUntilNextPeriod} days ({cyclePrediction.predictedCycleLength}d rhythm)
+                  {cyclePrediction.daysUntilNextPeriod === 0
+                    ? `Due today (${cyclePrediction.predictedCycleLength}d rhythm)`
+                    : cyclePrediction.daysUntilNextPeriod < 0
+                    ? `~${Math.abs(cyclePrediction.daysUntilNextPeriod)}d overdue (${cyclePrediction.predictedCycleLength}d rhythm)`
+                    : `Starts in ~${cyclePrediction.daysUntilNextPeriod} days (${cyclePrediction.predictedCycleLength}d rhythm)`}
                 </Text>
 
                 <View style={styles.predInfoRow}>

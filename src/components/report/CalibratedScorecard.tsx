@@ -155,7 +155,11 @@ export const CalibratedScorecard: React.FC = () => {
               <Text style={styles.predictionDataLabel}>Predicted Next Period Start</Text>
               <Text style={styles.predictionDataVal}>{cyclePrediction.nextPeriodDate}</Text>
               <Text style={styles.predictionCountdownText}>
-                ~{cyclePrediction.daysUntilNextPeriod} days remaining ({cyclePrediction.predictedCycleLength}d cycle length)
+                {cyclePrediction.daysUntilNextPeriod === 0
+                  ? `Due Today (${cyclePrediction.predictedCycleLength}d cycle length)`
+                  : cyclePrediction.daysUntilNextPeriod < 0
+                  ? `~${Math.abs(cyclePrediction.daysUntilNextPeriod)}d overdue (${cyclePrediction.predictedCycleLength}d cycle length)`
+                  : `~${cyclePrediction.daysUntilNextPeriod} days remaining (${cyclePrediction.predictedCycleLength}d cycle length)`}
               </Text>
             </View>
           </View>
@@ -202,7 +206,11 @@ export const CalibratedScorecard: React.FC = () => {
           <Text style={styles.talkingPointText}>
             <Text style={styles.boldText}>Next Cycle Rhythm:</Text> Next menses predicted on{' '}
             <Text style={styles.boldText}>{cyclePrediction?.nextPeriodDate || 'upcoming cycle'}</Text>{' '}
-            (~{cyclePrediction?.daysUntilNextPeriod || 14} days). Model indicates{' '}
+            ({cyclePrediction?.daysUntilNextPeriod === 0
+              ? 'due today'
+              : cyclePrediction?.daysUntilNextPeriod && cyclePrediction.daysUntilNextPeriod < 0
+              ? `~${Math.abs(cyclePrediction.daysUntilNextPeriod)} days overdue`
+              : `~${cyclePrediction?.daysUntilNextPeriod ?? 14} days`}). Model indicates{' '}
             {cyclePrediction?.regularityStatus === 'regular' ? 'stable 28-30 day rhythm' : 'irregular / high variance profile'}.
           </Text>
         </View>
