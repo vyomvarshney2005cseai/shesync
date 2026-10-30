@@ -146,9 +146,55 @@ export const CalibratedScorecard: React.FC = () => {
               <Text style={styles.predictionBadgeText}>CYCLE PREDICTION & PRECAUTIONS</Text>
             </View>
             <Text style={styles.confidenceScoreText}>
-              {cyclePrediction.confidencePercentage}% Confidence
+              {cyclePrediction.confidencePercentage}% Precision
             </Text>
           </View>
+
+          {/* Phase Breakdown Card */}
+          {cyclePrediction.cyclePhaseBreakdown && (
+            <View style={styles.phaseOverviewCard}>
+              <View style={styles.phaseOverviewTop}>
+                <Text style={styles.phaseOverviewTitle}>
+                  {cyclePrediction.cyclePhaseBreakdown.phaseName}
+                </Text>
+                <Text style={styles.phaseOverviewBadge}>
+                  ~{cyclePrediction.cyclePhaseBreakdown.daysRemainingInPhase}d left in phase
+                </Text>
+              </View>
+              <Text style={styles.phaseOverviewDesc}>
+                {cyclePrediction.cyclePhaseBreakdown.phaseDescription}
+              </Text>
+              <Text style={styles.phaseOverviewHormone}>
+                🧬 {cyclePrediction.cyclePhaseBreakdown.hormoneOverview}
+              </Text>
+            </View>
+          )}
+
+          {/* Health Scores Triad */}
+          {cyclePrediction.healthScores && (
+            <View style={styles.scoreTriadRow}>
+              <View style={styles.scoreTriadItem}>
+                <Text style={styles.scoreTriadVal}>
+                  {cyclePrediction.healthScores.hormonalHarmony}%
+                </Text>
+                <Text style={styles.scoreTriadLabel}>Hormonal Harmony</Text>
+              </View>
+              <View style={styles.scoreTriadDivider} />
+              <View style={styles.scoreTriadItem}>
+                <Text style={styles.scoreTriadVal}>
+                  {cyclePrediction.healthScores.autonomicRecovery}%
+                </Text>
+                <Text style={styles.scoreTriadLabel}>Autonomic Recovery</Text>
+              </View>
+              <View style={styles.scoreTriadDivider} />
+              <View style={styles.scoreTriadItem}>
+                <Text style={styles.scoreTriadVal}>
+                  {cyclePrediction.healthScores.cycleStability}%
+                </Text>
+                <Text style={styles.scoreTriadLabel}>Cycle Stability</Text>
+              </View>
+            </View>
+          )}
 
           <View style={styles.predictionDataRow}>
             <View style={{ flex: 1 }}>
@@ -510,5 +556,72 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: 'rgba(255, 255, 255, 0.7)',
     lineHeight: 14,
+  },
+  phaseOverviewCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  phaseOverviewTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  phaseOverviewTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FBCFE8',
+  },
+  phaseOverviewBadge: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#F472B6',
+    backgroundColor: 'rgba(236, 72, 153, 0.25)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  phaseOverviewDesc: {
+    fontSize: 11,
+    color: '#E2E8F0',
+    lineHeight: 15,
+    marginBottom: 4,
+  },
+  phaseOverviewHormone: {
+    fontSize: 10,
+    color: '#93C5FD',
+    fontWeight: '600',
+  },
+  scoreTriadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    marginBottom: 10,
+  },
+  scoreTriadItem: {
+    alignItems: 'center',
+  },
+  scoreTriadVal: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  scoreTriadLabel: {
+    fontSize: 8,
+    color: '#94A3B8',
+    marginTop: 1,
+    fontWeight: '600',
+  },
+  scoreTriadDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
 });

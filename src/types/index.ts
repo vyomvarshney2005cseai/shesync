@@ -61,6 +61,7 @@ export interface PastCycleRecord {
   id: string;
   cycleNumber: number;      // 1 = most recent, 2 = previous, etc.
   startDate: string;        // ISO date string e.g. '2026-09-02'
+  endDate?: string;         // ISO date string e.g. '2026-09-07'
   daysAgo: number;          // relative days ago
   lengthDays: number;       // e.g. 28 days
   periodDurationDays: number;// e.g. 5 days
@@ -76,6 +77,29 @@ export interface PrecautionMeasure {
   daysUntilActive: number;
 }
 
+export interface CyclePhaseBreakdown {
+  phase: CyclePhase;
+  phaseName: string;
+  phaseDescription: string;
+  hormoneOverview: string;
+  daysRemainingInPhase: number;
+}
+
+export interface UserFriendlyInsight {
+  id: string;
+  category: 'hormone' | 'nutrition' | 'movement' | 'recovery';
+  headline: string;
+  explanation: string;
+  actionTip: string;
+  icon: string;
+}
+
+export interface HealthScores {
+  hormonalHarmony: number;      // 0-100
+  autonomicRecovery: number;    // 0-100
+  cycleStability: number;       // 0-100
+}
+
 export interface CyclePrediction {
   nextPeriodDate: string;
   daysUntilNextPeriod: number;
@@ -85,6 +109,12 @@ export interface CyclePrediction {
   regularityStatus: 'regular' | 'moderate_variance' | 'irregular_pcos';
   confidencePercentage: number;
   precautionMeasures: PrecautionMeasure[];
+  cycleVarianceDays?: number;
+  fertileWindow?: string;
+  ovulationDate?: string;
+  cyclePhaseBreakdown?: CyclePhaseBreakdown;
+  userFriendlyInsights?: UserFriendlyInsight[];
+  healthScores?: HealthScores;
 }
 
 // ─── Mood & Symptom Logging ─────────────────────────────────
@@ -261,7 +291,7 @@ export interface AppState {
   triggerSOS: () => void;
   dismissSOS: () => void;
   toggleBiologicalReasoning: () => void;
-  generateClinicalPDF: () => void;
+  generateClinicalPDF: () => Promise<void> | void;
   logSymptom: (log: Partial<SymptomLog>) => void;
   setStrainScore: (score: number) => void;
   fineTuneAllAnalytics: () => void;

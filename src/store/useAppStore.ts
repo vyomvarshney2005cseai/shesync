@@ -52,23 +52,31 @@ const initialPastCycles: PastCycleRecord[] = [
 // ============================================================
 function generateDynamicTrendData(
   painSeverity: number = 4,
-  isIrregular: boolean = true
+  isIrregular: boolean = true,
+  pastCycles: PastCycleRecord[] = []
 ): DailyDataPoint[] {
   const data: DailyDataPoint[] = [];
   const basePain = Math.max(1, Math.min(10, painSeverity));
 
-  // Cycle 1: Days 1-28
+  // Cycle 1: Days 1-28 (Most recent cycle)
+  const c1Length = pastCycles[0]?.lengthDays || 28;
+  const c1Duration = pastCycles[0]?.periodDurationDays || 5;
+
   for (let d = 1; d <= 28; d++) {
-    const isMenstrual = d <= 5;
-    const isLateLuteal = d >= 22;
+    const isMenstrual = d <= c1Duration;
+    const isLateLuteal = d >= Math.max(20, c1Length - 6);
     let dayPain: number;
 
     if (isMenstrual) {
-      dayPain = Math.max(1, basePain * 0.95 + (Math.sin(d) * 0.6));
+      // Menstrual prostaglandin peak on day 1-2, declining by day 5
+      const peakFactor = d <= 2 ? 1.05 : 0.8;
+      dayPain = Math.max(1, basePain * peakFactor + Math.sin(d * 1.2) * 0.4);
     } else if (isLateLuteal) {
-      dayPain = Math.max(1, basePain * 0.75 + (Math.cos(d) * 0.5));
+      // Pre-menstrual inflammatory tone
+      dayPain = Math.max(1, basePain * 0.7 + Math.cos(d * 0.8) * 0.5);
     } else {
-      dayPain = Math.max(0.5, basePain * 0.25 + (Math.sin(d * 2) * 0.4));
+      // Follicular / Ovulatory baseline
+      dayPain = Math.max(0.5, basePain * 0.25 + Math.sin(d * 2) * 0.3);
     }
 
     data.push({
@@ -80,18 +88,18 @@ function generateDynamicTrendData(
     });
   }
 
-  // Cycle 2: Days 29-73 (if irregular, simulated 45-day anovulatory gap)
+  // Cycle 2: Days 29-73 (Simulated anovulatory or previous cycle)
   for (let d = 29; d <= 73; d++) {
     const dayInGap = d - 28;
     const isLateLuteal = isIrregular ? dayInGap >= 32 : (dayInGap % 28) >= 22;
-    const isMensesInCycle2 = !isIrregular && (dayInGap % 28) <= 5;
+    const isMensesInCycle2 = !isIrregular && (dayInGap % 28) <= c1Duration;
 
     let dayPain: number;
     if (isIrregular) {
       if (isLateLuteal) {
-        dayPain = Math.max(1.5, basePain * 0.9 + (Math.sin(d) * 0.8));
+        dayPain = Math.max(1.5, basePain * 0.88 + Math.sin(d * 0.7) * 0.6);
       } else {
-        dayPain = Math.max(0.8, basePain * 0.35 + (Math.cos(d * 1.5) * 0.5));
+        dayPain = Math.max(0.8, basePain * 0.35 + Math.cos(d * 1.5) * 0.4);
       }
     } else {
       dayPain = isMensesInCycle2
@@ -113,10 +121,10 @@ function generateDynamicTrendData(
   // Cycle 3: Days 74-90 (New cycle restart)
   for (let d = 74; d <= 90; d++) {
     const newCycleDay = d - 73;
-    const isMenstrual = newCycleDay <= 5;
+    const isMenstrual = newCycleDay <= c1Duration;
     const dayPain = isMenstrual
-      ? Math.max(1, basePain * 0.9 + (Math.sin(d) * 0.5))
-      : Math.max(0.8, basePain * 0.3);
+      ? Math.max(1, basePain * 0.9 + Math.sin(d) * 0.4)
+      : Math.max(0.8, basePain * 0.28);
 
     data.push({
       day: d,
@@ -132,7 +140,7 @@ function generateDynamicTrendData(
 
 // ============================================================
 // Dynamic Clinical Anomalies Generator
-// Generates anomalies matching the user's specific biomarkers
+// Generates accurate, user-friendly anomalies matching specific biomarkers
 // ============================================================
 function generateDynamicAnomalies(
   pain: number,
@@ -140,18 +148,19 @@ function generateDynamicAnomalies(
   mood: number,
   strainScore: number,
   hrvDelta: number,
-  conditions: string[]
+  conditions: string[],
+  sleepDeficit: boolean = false
 ): ClinicalAnomaly[] {
   const anomalies: ClinicalAnomaly[] = [];
 
-  // Anomaly 1: Pain Pattern
+  // Anomaly 1: Pelvic Pain / Prostaglandin Profile
   if (pain >= 7) {
     anomalies.push({
       id: 'anomaly-pain-severe',
       type: 'pain_cluster',
       severity: 'critical',
       title: `Severe Pelvic Dysmenorrhea Peak (${pain}/10)`,
-      description: `Acute pain score of ${pain}/10 logged with pelvic cramping. Prostaglandin-driven uterine contraction markers are elevated, warranting clinical pain management protocol.`,
+      description: `Acute pain score of ${pain}/10 logged with uterine spasms. Prostaglandin-driven myometrial contractions are elevated. Deploy heat therapy and restorative pelvic floor decompression.`,
       icon: '⚡',
     });
   } else if (pain >= 4) {
@@ -160,7 +169,7 @@ function generateDynamicAnomalies(
       type: 'pain_cluster',
       severity: 'moderate',
       title: `Moderate Cyclical Cramping (${pain}/10)`,
-      description: `Discomfort score of ${pain}/10 logged. Responsive to restorative pelvic floor somatic flows and heat therapy.`,
+      description: `Discomfort score of ${pain}/10 logged. Responsive to restorative somatic flows, magnesium glycinate, and warm compresses.`,
       icon: '🌸',
     });
   } else {
@@ -169,7 +178,7 @@ function generateDynamicAnomalies(
       type: 'pain_cluster',
       severity: 'moderate',
       title: `Optimal Pelvic Comfort (${pain}/10)`,
-      description: `Baseline discomfort remains low. Uterine smooth muscle exhibits balanced inflammatory tone.`,
+      description: `Baseline pelvic comfort remains steady. Uterine smooth muscle shows balanced inflammatory signaling and low spasm activity.`,
       icon: '✨',
     });
   }
@@ -181,7 +190,7 @@ function generateDynamicAnomalies(
       type: 'anovulatory_gap',
       severity: 'critical',
       title: 'Heavy Menstrual Bleeding (HMB) Saturation',
-      description: `Rapid protection saturation logged with clots. Recommend clinical serum ferritin/iron evaluation and gynecological consultation.`,
+      description: `Rapid protection saturation logged with clot formation. Recommend monitoring serum ferritin, staying hydrated with electrolytes, and clinical consultation if saturation persists >2 hours.`,
       icon: '🩸',
     });
   } else if (conditions.includes('PCOS') || flow === 'spotting') {
@@ -189,8 +198,8 @@ function generateDynamicAnomalies(
       id: 'anomaly-pcos-gap',
       type: 'anovulatory_gap',
       severity: 'severe',
-      title: '45-Day Extended Follicular / Anovulatory Gap',
-      description: `Extended interval without ovulatory progesterone markers recorded. Pattern matches insulin-mediated PCOS follicular arrest.`,
+      title: 'Extended Follicular / Anovulatory Gap',
+      description: `Extended interval without ovulatory progesterone markers recorded. Pattern correlates with metabolic or stress-induced follicular arrest.`,
       icon: '⚠️',
     });
   } else {
@@ -211,16 +220,16 @@ function generateDynamicAnomalies(
       type: 'hrv_drop',
       severity: 'severe',
       title: 'Late Luteal PMDD Neuro-Dysphoria Drop',
-      description: `Acute mood dip (Level ${mood}/5) logged. Reflects GABA-A receptor sensitivity to shifting allopregnanolone levels prior to menstruation.`,
+      description: `Acute mood dip (Level ${mood}/5) logged. Reflects GABA-A receptor sensitivity to shifting allopregnanolone levels prior to menstruation. Somatic vagal grounding recommended.`,
       icon: '🥺',
     });
-  } else if (strainScore >= 65) {
+  } else if (strainScore >= 65 || hrvDelta <= -20) {
     anomalies.push({
       id: 'anomaly-hrv-suppression',
       type: 'hrv_drop',
       severity: 'moderate',
-      title: 'Persistent HRV Autonomic Suppression',
-      description: `Heart rate variability is ${Math.abs(hrvDelta)}% below baseline, indicating heightened sympathetic strain. Somatic vagus reset exercises recommended.`,
+      title: 'Persistent Autonomic HRV Suppression',
+      description: `Heart rate variability is ${Math.abs(hrvDelta)}% below baseline, indicating heightened sympathetic strain. Downshift workout intensity and engage slow diaphragmatic breathing.`,
       icon: '📉',
     });
   } else {
@@ -231,6 +240,18 @@ function generateDynamicAnomalies(
       title: 'Resilient Parasympathetic Vagal Tone',
       description: `Autonomic nervous system shows healthy vagal flexibility and stable neuro-endocrine regulation.`,
       icon: '🌿',
+    });
+  }
+
+  // Anomaly 4: Sleep Architecture Disruption
+  if (sleepDeficit) {
+    anomalies.push({
+      id: 'anomaly-sleep-deficit',
+      type: 'sleep_deficit',
+      severity: 'moderate',
+      title: 'Restorative Sleep Debt Detected',
+      description: `Sleep duration fell short of the restorative baseline. Lack of deep slow-wave sleep impairs cortisol clearance and elevates luteal pain sensitivity.`,
+      icon: '🌙',
     });
   }
 
@@ -413,6 +434,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const state = get();
     const logs = state.symptomLogs;
     const answers = state.assessmentAnswers;
+    const sensitivity = state.fineTuningSettings?.strainSensitivity || 'gentle';
 
     // Find most recent logged metrics
     const latestPainLog = logs.find((l) => l.pain !== undefined);
@@ -424,41 +446,65 @@ export const useAppStore = create<AppState>((set, get) => ({
     const moodVal = latestMoodLog?.mood ?? 3;
     const energyVal = latestMoodLog?.energy ?? 'moderate';
 
-    // 1. Calculate Fine-Tuned Strain Score (0 - 100)
-    let computedStrain = 20; // baseline
+    // 1. Calculate Multi-Domain Allostatic Strain Score (0 - 100)
+    // Domain A: Neuro-Endocrine & Stress (Assessment + Mood)
+    let neuroStrain = 6;
+    if (answers['q6'] === 'q6_opt4') neuroStrain += 10;
+    else if (answers['q6'] === 'q6_opt3') neuroStrain += 6;
 
-    // Assessment question modifiers
-    if (answers['q1'] === 'q1_opt4' || answers['q1'] === 'q1_opt5') computedStrain += 8;
-    if (answers['q5'] === 'q5_opt3' || answers['q5'] === 'q5_opt4') computedStrain += 10;
-    if (answers['q6'] === 'q6_opt3' || answers['q6'] === 'q6_opt4') computedStrain += 8;
-    if (answers['q7'] === 'q7_opt4') computedStrain += 10;
+    if (answers['q7'] === 'q7_opt4') neuroStrain += 10;
+    else if (answers['q7'] === 'q7_opt3') neuroStrain += 6;
 
-    // Pain contribution (0 - 10 scale => up to 40 pts)
-    computedStrain += Math.round(painVal * 3.8);
+    if (moodVal === 1) neuroStrain += 14;
+    else if (moodVal === 2) neuroStrain += 9;
+    else if (moodVal === 4) neuroStrain -= 5;
+    else if (moodVal === 5) neuroStrain -= 9;
 
-    // Flow contribution
-    if (flowVal === 'heavy') computedStrain += 14;
-    else if (flowVal === 'severe') computedStrain += 22;
-    else if (flowVal === 'moderate') computedStrain += 8;
-    else if (flowVal === 'spotting') computedStrain += 4;
+    // Domain B: Physical & Pelvic Inflammatory Strain (Pain + Location)
+    let pelvicStrain = Math.round(painVal * 3.3);
+    if (answers['q2'] === 'q2_opt4') pelvicStrain += 8;
+    else if (answers['q2'] === 'q2_opt3') pelvicStrain += 5;
 
-    // Mood contribution
-    if (moodVal === 1) computedStrain += 18;
-    else if (moodVal === 2) computedStrain += 12;
-    else if (moodVal === 4) computedStrain -= 8;
-    else if (moodVal === 5) computedStrain -= 16;
+    // Domain C: Flow & Blood Loss Demand
+    let flowStrain = 4;
+    if (flowVal === 'severe') flowStrain += 18;
+    else if (flowVal === 'heavy') flowStrain += 12;
+    else if (flowVal === 'moderate') flowStrain += 6;
+    else if (flowVal === 'spotting') flowStrain += 2;
 
-    // Energy contribution
-    if (energyVal === 'low') computedStrain += 8;
-    else if (energyVal === 'high') computedStrain -= 8;
+    // Domain D: Sleep & Recovery Deficit
+    let recoveryStrain = 4;
+    if (answers['q5'] === 'q5_opt4') recoveryStrain += 10;
+    else if (answers['q5'] === 'q5_opt3') recoveryStrain += 6;
 
-    const finalStrain = Math.min(96, Math.max(12, computedStrain));
+    if (answers['q3'] === 'q3_opt4') recoveryStrain += 8;
+    else if (answers['q3'] === 'q3_opt3') recoveryStrain += 5;
+
+    if (energyVal === 'low') recoveryStrain += 7;
+    else if (energyVal === 'high') recoveryStrain -= 6;
+
+    // Domain E: Metabolic & Irregularity Strain
+    if (answers['q1'] === 'q1_opt4' || answers['q1'] === 'q1_opt5') recoveryStrain += 6;
+    if (answers['q8'] === 'q8_opt3' || answers['q8'] === 'q8_opt4') recoveryStrain += 5;
+
+    // Base allostatic total
+    let totalStrain = neuroStrain + pelvicStrain + flowStrain + recoveryStrain;
+
+    // Sensitivity Calibration
+    if (sensitivity === 'gentle') {
+      totalStrain = Math.round(totalStrain * 1.08); // Higher vigilance for sensitive nervous systems
+    } else if (sensitivity === 'dynamic') {
+      totalStrain = Math.round(totalStrain * 0.92); // Athletic resilience dampening
+    }
+
+    const finalStrain = Math.min(96, Math.max(10, totalStrain));
     const strainLevel: 'low' | 'moderate' | 'high' | 'severe' =
-      finalStrain >= 82 ? 'severe' : finalStrain >= 62 ? 'high' : finalStrain >= 38 ? 'moderate' : 'low';
+      finalStrain >= 80 ? 'severe' : finalStrain >= 60 ? 'high' : finalStrain >= 36 ? 'moderate' : 'low';
 
-    // 2. Fine-Tuned HRV
+    // 2. Fine-Tuned HRV (Personal Baseline Calibrated)
     const baseHrv = 58;
-    const currentHrv = Math.round(76 - (finalStrain / 100) * 50);
+    // Logarithmic suppression model
+    const currentHrv = Math.max(18, Math.round(74 - (finalStrain / 100) * 46));
     const hrvDelta = Math.round(((currentHrv - baseHrv) / baseHrv) * 1000) / 10;
     const hrvStatus: 'below' | 'at' | 'above' =
       hrvDelta < -10 ? 'below' : hrvDelta > 10 ? 'above' : 'at';
@@ -470,35 +516,35 @@ export const useAppStore = create<AppState>((set, get) => ({
         : 'Near Baseline'
     })`;
 
-    // 3. Fine-Tuned Cortisol
+    // 3. Fine-Tuned Biological Cortisol
     let cortisolLevel: 'low' | 'normal' | 'elevated' | 'high' = 'normal';
     let cortisolValue = 13.5;
     let isOverride = false;
 
     if (finalStrain >= 65 || painVal >= 7 || moodVal <= 2) {
       cortisolLevel = 'high';
-      cortisolValue = Math.round((24.0 + (finalStrain / 100) * 5.8) * 10) / 10;
+      cortisolValue = Math.round((24.0 + (finalStrain / 100) * 5.4) * 10) / 10;
       isOverride = true;
-    } else if (finalStrain >= 40) {
+    } else if (finalStrain >= 40 || painVal >= 5) {
       cortisolLevel = 'elevated';
-      cortisolValue = Math.round((18.0 + (finalStrain / 100) * 3.5) * 10) / 10;
+      cortisolValue = Math.round((17.5 + (finalStrain / 100) * 3.8) * 10) / 10;
       isOverride = true;
     } else {
       cortisolLevel = 'normal';
-      cortisolValue = Math.round((11.0 + (finalStrain / 100) * 4) * 10) / 10;
+      cortisolValue = Math.round((11.2 + (finalStrain / 100) * 3.2) * 10) / 10;
       isOverride = false;
     }
 
-    // 4. Fine-Tuned Sleep
+    // 4. Fine-Tuned Sleep Quality & Deficit
     let hoursSlept = 7;
     let minutesSlept = 30;
     let sleepDeficit = false;
     let sleepSeverity: 'mild' | 'moderate' | 'severe' = 'mild';
-    let sleepQuality = 80;
+    let sleepQuality = 82;
 
     if (answers['q5'] === 'q5_opt4' || energyVal === 'low' || finalStrain >= 75) {
       hoursSlept = 4;
-      minutesSlept = 40;
+      minutesSlept = 45;
       sleepDeficit = true;
       sleepSeverity = 'severe';
       sleepQuality = 34;
@@ -507,7 +553,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       minutesSlept = 15;
       sleepDeficit = true;
       sleepSeverity = 'moderate';
-      sleepQuality = 56;
+      sleepQuality = 58;
     }
 
     const sleepLabel = `${hoursSlept}h ${minutesSlept}m (${
@@ -594,14 +640,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (moodVal <= 2 && !conditions.includes('PMDD')) conditions.push('PMDD');
     if (isIrregular && !conditions.includes('PCOS')) conditions.push('PCOS');
 
-    const newTrendData = generateDynamicTrendData(painVal, isIrregular);
+    const newTrendData = generateDynamicTrendData(painVal, isIrregular, activeCycles);
     const newAnomalies = generateDynamicAnomalies(
       painVal,
       flowVal,
       moodVal,
       finalStrain,
       hrvDelta,
-      conditions
+      conditions,
+      sleepDeficit
     );
 
     set({
@@ -801,11 +848,14 @@ export const useAppStore = create<AppState>((set, get) => ({
       showBiologicalReasoning: !state.showBiologicalReasoning,
     })),
 
-  generateClinicalPDF: () => {
+  generateClinicalPDF: async () => {
     set((state) => ({
       clinicalReport: { ...state.clinicalReport, isGenerating: true },
     }));
-    setTimeout(() => {
+
+    try {
+      const { generateAndDownloadClinicalPDF } = await import('@/lib/pdfReportService');
+      await generateAndDownloadClinicalPDF(get());
       set((state) => ({
         clinicalReport: {
           ...state.clinicalReport,
@@ -813,7 +863,15 @@ export const useAppStore = create<AppState>((set, get) => ({
           generatedAt: new Date().toISOString(),
         },
       }));
-    }, 2500);
+    } catch (err) {
+      console.error('[Report] Failed to generate/share PDF:', err);
+      set((state) => ({
+        clinicalReport: {
+          ...state.clinicalReport,
+          isGenerating: false,
+        },
+      }));
+    }
   },
 
   setStrainScore: (score: number) => {

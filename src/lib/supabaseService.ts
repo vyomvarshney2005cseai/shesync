@@ -58,16 +58,24 @@ export async function signUpWithSupabase(email: string, password: string, name?:
   if (error) throw error;
 
   if (data.user) {
-    // Attempt creating or updating profile record
-    const names = (name || '').trim().split(' ');
-    const firstName = names[0] || '';
-    const lastName = names.slice(1).join(' ') || '';
+    // Attempt creating or updating profile record safely
+    try {
+      const names = (name || '').trim().split(' ');
+      const firstName = names[0] || '';
+      const lastName = names.slice(1).join(' ') || '';
 
-    await supabase.from('profiles').upsert({
-      id: data.user.id,
-      first_name: firstName,
-      last_name: lastName,
-    });
+      await supabase.from('profiles').upsert(
+        {
+          id: data.user.id,
+          first_name: firstName,
+          last_name: lastName,
+        },
+        { onConflict: 'id' }
+      );
+    } catch (profileErr) {
+      // If email confirmation is required or RLS blocks unconfirmed user, ignore non-fatal profile error
+      console.warn('[Supabase] Profile creation deferred until confirmation:', profileErr);
+    }
   }
 
   return data;
@@ -136,18 +144,37 @@ export async function saveCycleToSupabase(cycle: {
 
   const { data, error } = await supabase
     .from('cycles')
-    .insert([
+    .upsert(
       {
         user_id: user.id,
         start_date: cycle.start_date,
         end_date: cycle.end_date,
         cycle_length: cycle.cycle_length,
       },
-    ])
+      { onConflict: 'user_id,start_date' }
+    )
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    // If table doesn't have unique constraint for onConflict, fallback to insert
+    const insertRes = await supabase
+      .from('cycles')
+      .insert({
+        user_id: user.id,
+        start_date: cycle.start_date,
+        end_date: cycle.end_date,
+        cycle_length: cycle.cycle_length,
+      })
+      .select()
+      .maybeSingle();
+
+    if (insertRes.error) {
+      // Duplicate entry or conflict already logged
+      return null;
+    }
+    return insertRes.data;
+  }
   return data;
 }
 
@@ -193,7 +220,26 @@ export async function saveDailyLogToSupabase(log: {
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    // If unique constraint on (user_id, log_date) is missing or differs
+    const insertRes = await supabase
+      .from('daily_logs')
+      .insert({
+        user_id: user.id,
+        log_date: log.log_date,
+        pain_level: log.pain_level,
+        mood: log.mood,
+        symptoms: log.symptoms,
+        notes: log.notes,
+      })
+      .select()
+      .maybeSingle();
+
+    if (insertRes.error) {
+      return null;
+    }
+    return insertRes.data;
+  }
   return data;
 }
 

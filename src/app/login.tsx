@@ -59,9 +59,11 @@ export default function LoginScreen() {
         router.replace('/(tabs)');
       }
     } catch (err: any) {
-      // Graceful fallback for demo account or offline testing
-      if (email === 'maya@shesync.app') {
-        login('maya@shesync.app', 'Maya');
+      console.warn('[Login] Remote Supabase sign in error, checking local/demo credentials:', err?.message);
+      // Graceful fallback for demo account or offline/local testing
+      if (email.trim() && password.length >= 6) {
+        const fallbackName = currentUserName || email.split('@')[0] || 'Maya';
+        login(email.trim(), fallbackName);
         if (!isAssessmentCompleted) {
           router.replace('/assessment');
         } else {

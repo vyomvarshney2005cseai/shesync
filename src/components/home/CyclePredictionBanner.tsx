@@ -22,9 +22,19 @@ export const CyclePredictionBanner: React.FC = () => {
       >
         {/* Top Header */}
         <View style={styles.topRow}>
-          <View style={styles.calendarBadge}>
-            <Calendar size={12} color="#FFFFFF" />
-            <Text style={styles.calendarBadgeText}>CYCLE PREDICTION</Text>
+          <View style={styles.badgeRow}>
+            <View style={styles.calendarBadge}>
+              <Calendar size={12} color="#FFFFFF" />
+              <Text style={styles.calendarBadgeText}>CYCLE PREDICTION</Text>
+            </View>
+            {cyclePrediction.cyclePhaseBreakdown && (
+              <View style={styles.phaseBadge}>
+                <Sparkles size={11} color="#F472B6" />
+                <Text style={styles.phaseBadgeText} numberOfLines={1}>
+                  {cyclePrediction.cyclePhaseBreakdown.phaseName}
+                </Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.chevronWrap}>
@@ -135,6 +145,21 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 0.4,
+  },
+  phaseBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(236, 72, 153, 0.22)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    maxWidth: 160,
+  },
+  phaseBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#F472B6',
   },
   memoryPill: {
     flexDirection: 'row',

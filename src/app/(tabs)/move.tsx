@@ -1,14 +1,13 @@
-import React from 'react';
-import { ScrollView, View, Text, StyleSheet, Modal, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { X } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
-import { Header } from '@/components/common/Header';
-import { InterventionBanner } from '@/components/move/InterventionBanner';
-import { AdaptiveWorkoutCard } from '@/components/move/AdaptiveWorkoutCard';
-import { AdaptationHistory } from '@/components/move/AdaptationHistory';
-import { useAppStore } from '@/store/useAppStore';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
+import { Header } from '@/components/common/Header';
+import { AdaptationHistory } from '@/components/move/AdaptationHistory';
+import { AdaptiveWorkoutCard } from '@/components/move/AdaptiveWorkoutCard';
+import { InterventionBanner } from '@/components/move/InterventionBanner';
+import { Theme } from '@/constants/theme';
+import { useAppStore } from '@/store/useAppStore';
+import { X } from 'lucide-react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function MoveScreen() {
   const todayWorkout = useAppStore((s) => s.todayWorkout);
@@ -39,41 +38,41 @@ export default function MoveScreen() {
           </View>
         </ScrollView>
 
-      {/* Biological Reasoning Modal */}
-      <Modal
-        visible={showBiologicalReasoning}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={toggleBiologicalReasoning}
-      >
-        <SafeAreaView style={styles.modalSafe}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Biological Reasoning</Text>
-            <Pressable onPress={toggleBiologicalReasoning} style={styles.closeBtn}>
-              <X size={20} color={Theme.colors.textPrimary} />
-            </Pressable>
-          </View>
-          <ScrollView contentContainerStyle={styles.modalContent}>
-            <View style={styles.reasonSection}>
-              <Text style={styles.reasonLabel}>WHY YOUR WORKOUT WAS OVERRIDDEN</Text>
-              <Text style={styles.reasonText}>{todayWorkout.reason}</Text>
+        {/* Biological Reasoning Modal */}
+        <Modal
+          visible={showBiologicalReasoning}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={toggleBiologicalReasoning}
+        >
+          <SafeAreaView style={styles.modalSafe}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Biological Reasoning</Text>
+              <Pressable onPress={toggleBiologicalReasoning} style={styles.closeBtn}>
+                <X size={20} color={Theme.colors.textPrimary} />
+              </Pressable>
             </View>
-            <View style={styles.reasonDivider} />
-            <View style={styles.reasonSection}>
-              <Text style={styles.reasonLabel}>ORIGINAL PLAN</Text>
-              <Text style={styles.reasonOriginal}>{todayWorkout.overriddenFrom}</Text>
-            </View>
-            <View style={styles.reasonDivider} />
-            <View style={styles.reasonSection}>
-              <Text style={styles.reasonLabel}>ADAPTED PLAN</Text>
-              <Text style={styles.reasonAdapted}>{todayWorkout.title}</Text>
-              <Text style={styles.reasonDesc}>{todayWorkout.description}</Text>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
-    </SafeAreaView>
-  </AdaptiveBackground>
+            <ScrollView contentContainerStyle={styles.modalContent}>
+              <View style={styles.reasonSection}>
+                <Text style={styles.reasonLabel}>WHY YOUR WORKOUT WAS OVERRIDDEN</Text>
+                <Text style={styles.reasonText}>{todayWorkout.reason}</Text>
+              </View>
+              <View style={styles.reasonDivider} />
+              <View style={styles.reasonSection}>
+                <Text style={styles.reasonLabel}>ORIGINAL PLAN</Text>
+                <Text style={styles.reasonOriginal}>{todayWorkout.overriddenFrom}</Text>
+              </View>
+              <View style={styles.reasonDivider} />
+              <View style={styles.reasonSection}>
+                <Text style={styles.reasonLabel}>ADAPTED PLAN</Text>
+                <Text style={styles.reasonAdapted}>{todayWorkout.title}</Text>
+                <Text style={styles.reasonDesc}>{todayWorkout.description}</Text>
+              </View>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+      </SafeAreaView>
+    </AdaptiveBackground>
   );
 }
 
