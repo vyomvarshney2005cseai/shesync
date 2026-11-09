@@ -8,9 +8,15 @@ import { useAppStore } from '@/store/useAppStore';
 import { X } from 'lucide-react-native';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { useTodayPlan } from '@/hooks/useTodayPlan';
+import { WellnessHub } from '@/components/common/WellnessHub';
 
 export default function MoveScreen() {
-  const todayWorkout = useAppStore((s) => s.todayWorkout);
+  const plan = useTodayPlan();
+  const todayWorkout = plan.card;
+  const strainScore = useAppStore((s) => s.biometrics.strainScore);
+  const cycleLabel = useAppStore((s) => s.cycle.label);
   const workoutHistory = useAppStore((s) => s.workoutHistory);
   const showBiologicalReasoning = useAppStore((s) => s.showBiologicalReasoning);
   const toggleBiologicalReasoning = useAppStore((s) => s.toggleBiologicalReasoning);
@@ -26,14 +32,23 @@ export default function MoveScreen() {
           <View style={styles.centeredWrapper}>
             <Header
               title="Adaptive Movement"
-              subtitle="Hormone & Cortisol-Responsive Workouts"
+              subtitle="Workouts that adapt to your cycle and strain"
               badge="Movement Engine"
             />
-            <InterventionBanner />
+            <InterventionBanner
+              isOverride={plan.isOverride}
+              strainScore={strainScore}
+              phaseLabel={cycleLabel}
+              note={plan.phaseNote}
+            />
             <AdaptiveWorkoutCard
               workout={todayWorkout}
+              onStartFlow={() => router.push(`/fitness/workout/${plan.workout.id}`)}
               onViewReasoning={toggleBiologicalReasoning}
             />
+            <View style={styles.hubWrap}>
+              <WellnessHub only={['fitness']} title="Full fitness & weight dashboard" />
+            </View>
             <AdaptationHistory history={workoutHistory} />
           </View>
         </ScrollView>
@@ -54,20 +69,31 @@ export default function MoveScreen() {
             </View>
             <ScrollView contentContainerStyle={styles.modalContent}>
               <View style={styles.reasonSection}>
-                <Text style={styles.reasonLabel}>WHY YOUR WORKOUT WAS OVERRIDDEN</Text>
+                <Text style={styles.reasonLabel}>
+                  {plan.isOverride ? 'WHY YOUR WORKOUT WAS CHANGED' : 'WHY THIS SESSION TODAY'}
+                </Text>
                 <Text style={styles.reasonText}>{todayWorkout.reason}</Text>
               </View>
               <View style={styles.reasonDivider} />
+              {plan.isOverride ? (
+                <>
+                  <View style={styles.reasonSection}>
+                    <Text style={styles.reasonLabel}>ORIGINAL PLAN</Text>
+                    <Text style={styles.reasonOriginal}>{todayWorkout.overriddenFrom}</Text>
+                  </View>
+                  <View style={styles.reasonDivider} />
+                </>
+              ) : null}
               <View style={styles.reasonSection}>
-                <Text style={styles.reasonLabel}>ORIGINAL PLAN</Text>
-                <Text style={styles.reasonOriginal}>{todayWorkout.overriddenFrom}</Text>
-              </View>
-              <View style={styles.reasonDivider} />
-              <View style={styles.reasonSection}>
-                <Text style={styles.reasonLabel}>ADAPTED PLAN</Text>
+                <Text style={styles.reasonLabel}>{plan.isOverride ? 'ADAPTED PLAN' : 'TODAY’S SESSION'}</Text>
                 <Text style={styles.reasonAdapted}>{todayWorkout.title}</Text>
                 <Text style={styles.reasonDesc}>{todayWorkout.description}</Text>
               </View>
+              <View style={styles.reasonDivider} />
+              <Text style={styles.reasonDesc}>
+                Research on matching training to cycle phase is still limited — how you feel today matters more
+                than the calendar. Skip or swap any session that does not feel right.
+              </Text>
             </ScrollView>
           </SafeAreaView>
         </Modal>
@@ -87,13 +113,17 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 32,
+    paddingBottom: 100,
     paddingTop: 4,
   },
   centeredWrapper: {
     width: '100%',
     maxWidth: 520,
     alignSelf: 'center',
+  },
+  hubWrap: {
+    paddingHorizontal: 20,
+    marginTop: 16,
   },
   modalSafe: {
     flex: 1,

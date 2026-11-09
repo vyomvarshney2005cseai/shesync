@@ -1,4 +1,28 @@
-import { supabase } from './supabase';
+import { isAuthRetryableFetchError } from '@supabase/supabase-js';
+import { isSupabaseConfigured, supabase } from './supabase';
+
+/** Thrown by auth calls when the app runs without a Supabase project. */
+export class OfflineModeError extends Error {
+  constructor() {
+    super('On-device mode: no Supabase project is configured.');
+    this.name = 'OfflineModeError';
+  }
+}
+
+/**
+ * True when an auth failure means "the server could not be reached", so the
+ * app may fall back to an on-device session.
+ *
+ * Wrong passwords, existing accounts and other answers from the server are
+ * NOT offline errors: those must be shown to the user. Before this check the
+ * login screen accepted any password on any error.
+ */
+export function isOfflineAuthError(err: unknown): boolean {
+  if (!isSupabaseConfigured || err instanceof OfflineModeError) return true;
+  if (isAuthRetryableFetchError(err)) return true;
+  const msg = String((err as { message?: string } | null)?.message ?? '').toLowerCase();
+  return msg.includes('network request failed') || msg.includes('failed to fetch');
+}
 
 export interface SupabaseProfile {
   id: string;
@@ -31,8 +55,11 @@ export interface SupabaseDailyLog {
  * Diagnostic function to test connectivity to the Supabase project
  */
 export async function testSupabaseConnection(): Promise<{ success: boolean; message: string }> {
+  if (!isSupabaseConfigured) {
+    return { success: false, message: 'Supabase is not configured (on-device mode).' };
+  }
   try {
-    const { data, error } = await supabase.from('profiles').select('id').limit(1);
+    const { error } = await supabase.from('profiles').select('id').limit(1);
     if (error) {
       return { success: false, message: error.message };
     }
@@ -45,6 +72,7 @@ export async function testSupabaseConnection(): Promise<{ success: boolean; mess
 // ─── AUTH SERVICES ──────────────────────────────────────────────
 
 export async function signUpWithSupabase(email: string, password: string, name?: string) {
+  if (!isSupabaseConfigured) throw new OfflineModeError();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -82,6 +110,7 @@ export async function signUpWithSupabase(email: string, password: string, name?:
 }
 
 export async function signInWithSupabase(email: string, password: string) {
+  if (!isSupabaseConfigured) throw new OfflineModeError();
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -92,6 +121,7 @@ export async function signInWithSupabase(email: string, password: string) {
 }
 
 export async function signOutSupabase() {
+  if (!isSupabaseConfigured) return;
   try {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -103,15 +133,21 @@ export async function signOutSupabase() {
 }
 
 export async function getCurrentSupabaseUser() {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error) return null;
-  return user;
+  if (!isSupabaseConfigured) return null;
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error) return null;
+    return user;
+  } catch {
+    return null;
+  }
 }
 
 /**
  * Sends a password reset email to the specified user address via Supabase Auth.
  */
 export async function sendPasswordResetEmail(email: string, redirectTo?: string) {
+  if (!isSupabaseConfigured) throw new OfflineModeError();
   const options: { redirectTo?: string } = {};
   if (redirectTo) {
     options.redirectTo = redirectTo;
@@ -125,6 +161,7 @@ export async function sendPasswordResetEmail(email: string, redirectTo?: string)
  * Updates the user's password in Supabase.
  */
 export async function updateUserPassword(newPassword: string) {
+  if (!isSupabaseConfigured) throw new OfflineModeError();
   const { data, error } = await supabase.auth.updateUser({
     password: newPassword,
   });
@@ -140,7 +177,7 @@ export async function saveCycleToSupabase(cycle: {
   cycle_length?: number | null;
 }) {
   const user = await getCurrentSupabaseUser();
-  if (!user) throw new Error('User not logged in');
+  if (!user) return null; // on-device mode or signed out: nothing to sync
 
   const { data, error } = await supabase
     .from('cycles')
@@ -202,7 +239,7 @@ export async function saveDailyLogToSupabase(log: {
   notes?: string | null;
 }) {
   const user = await getCurrentSupabaseUser();
-  if (!user) throw new Error('User not logged in');
+  if (!user) return null; // on-device mode or signed out: nothing to sync
 
   const { data, error } = await supabase
     .from('daily_logs')

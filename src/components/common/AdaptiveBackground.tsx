@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet, Dimensions, Platform } from 'react-native';
-import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect, Circle } from 'react-native-svg';
+import { View, StyleSheet, Platform } from 'react-native';
+import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect } from 'react-native-svg';
 import { useAppStore } from '@/store/useAppStore';
 
 interface AdaptiveBackgroundProps {
@@ -54,7 +54,8 @@ export function AdaptiveBackground({ children }: AdaptiveBackgroundProps) {
         blob2Opacity: 0.6,
         blob3Color: '#FB7185', // Radiant rose
         blob3Opacity: 0.65,
-        overlayTint: 'rgba(255, 240, 245, 0.25)',
+        // Softened so grey subtitles and captions stay readable on top.
+        overlayTint: 'rgba(255, 244, 248, 0.38)',
         statusLabel: 'Warm Rose Quartz • Steady Phase',
       };
     } else {
@@ -70,7 +71,10 @@ export function AdaptiveBackground({ children }: AdaptiveBackgroundProps) {
         blob2Opacity: 0.55,
         blob3Color: '#E11D48', // Intense deep crimson rose
         blob3Opacity: 0.75,
-        overlayTint: 'rgba(244, 63, 94, 0.15)',
+        // A light veil keeps the deep "high strain" aura but restores text
+        // contrast: on hard days (when users feel worst) headers and captions
+        // were nearly unreadable grey-on-magenta.
+        overlayTint: 'rgba(255, 241, 246, 0.58)',
         statusLabel: 'Deep Magenta Aura • High Strain',
       };
     }

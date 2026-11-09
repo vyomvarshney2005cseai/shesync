@@ -8,7 +8,6 @@ import {
   Shield,
   ClipboardList,
   Sparkles,
-  HeartPulse,
   Calendar,
   ShieldAlert,
 } from 'lucide-react-native';
@@ -26,10 +25,11 @@ export const CalibratedScorecard: React.FC = () => {
   const latestFlow = logs.find((l) => l.flow !== undefined);
   const latestMood = logs.find((l) => l.mood !== undefined);
 
-  const painVal = latestPain?.pain ?? 4;
-  const flowVal = latestFlow?.flow ?? 'spotting';
-  const moodVal = latestMood?.mood ?? 3;
-  const energyVal = latestMood?.energy ?? 'moderate';
+  // Show "not logged" instead of inventing defaults.
+  const painVal = latestPain?.pain;
+  const flowVal = latestFlow?.flow;
+  const moodVal = latestMood?.mood;
+  const energyVal = latestMood?.energy;
 
   const getStrainColor = (level: string) => {
     switch (level) {
@@ -52,14 +52,14 @@ export const CalibratedScorecard: React.FC = () => {
       <View style={styles.topBadgeRow}>
         <View style={styles.calibratedPill}>
           <Sparkles size={13} color={Theme.colors.primary} />
-          <Text style={styles.calibratedPillText}>FINE-TUNED CLINICAL MATRIX</Text>
+          <Text style={styles.calibratedPillText}>FINE-TUNED FROM YOUR LOGS</Text>
         </View>
-        <Text style={styles.timestampText}>Live Biometric Sync</Text>
+        <Text style={styles.timestampText}>Updates as you log</Text>
       </View>
 
       <Text style={styles.cardTitle}>Calibrated Health Baseline</Text>
       <Text style={styles.cardSubtitle}>
-        Generated dynamically from your 10-question assessment, baseline pain, flow, and mood check-in.
+        Built from your 10-question assessment and your latest pain, flow, mood and sleep logs.
       </Text>
 
       {/* 4-Pillar Grid */}
@@ -68,10 +68,10 @@ export const CalibratedScorecard: React.FC = () => {
         <View style={styles.gridItem}>
           <View style={styles.itemHeader}>
             <Activity size={16} color={strainColor} />
-            <Text style={styles.itemTitle}>Allostatic Strain</Text>
+            <Text style={styles.itemTitle}>Daily Strain</Text>
           </View>
           <Text style={[styles.itemValue, { color: strainColor }]}>
-            {biometrics.strainScore}%
+            {biometrics.strainScore}/100
           </Text>
           <Text style={styles.itemSubtext}>
             {biometrics.strainLevel.toUpperCase()} STRAIN
@@ -81,19 +81,19 @@ export const CalibratedScorecard: React.FC = () => {
         {/* Metric 2: Pain Severity */}
         <View style={styles.gridItem}>
           <View style={styles.itemHeader}>
-            <Flame size={16} color={painVal >= 6 ? Theme.colors.strainHigh : Theme.colors.strainAmber} />
+            <Flame size={16} color={(painVal ?? 0) >= 6 ? Theme.colors.strainHigh : Theme.colors.strainAmber} />
             <Text style={styles.itemTitle}>Pain Baseline</Text>
           </View>
           <Text
             style={[
               styles.itemValue,
-              { color: painVal >= 6 ? Theme.colors.strainHigh : Theme.colors.strainAmber },
+              { color: (painVal ?? 0) >= 6 ? Theme.colors.strainHigh : Theme.colors.strainAmber },
             ]}
           >
-            {painVal}/10
+            {painVal != null ? `${painVal}/10` : '—'}
           </Text>
           <Text style={styles.itemSubtext} numberOfLines={1}>
-            {latestPain?.painLocation?.[0] || 'Pelvic Cramping'}
+            {latestPain?.painLocation?.[0] || (painVal != null ? 'Logged' : 'Not logged yet')}
           </Text>
         </View>
 
@@ -104,10 +104,10 @@ export const CalibratedScorecard: React.FC = () => {
             <Text style={styles.itemTitle}>Active Flow</Text>
           </View>
           <Text style={[styles.itemValue, { color: Theme.colors.primary }]}>
-            {flowVal.toUpperCase()}
+            {flowVal ? flowVal.toUpperCase() : '—'}
           </Text>
           <Text style={styles.itemSubtext} numberOfLines={1}>
-            {latestFlow?.flowColor || 'Cervical markers'}
+            {latestFlow?.flowColor || (flowVal ? 'Logged' : 'Not logged yet')}
           </Text>
         </View>
 
@@ -118,10 +118,10 @@ export const CalibratedScorecard: React.FC = () => {
             <Text style={styles.itemTitle}>Mood & Energy</Text>
           </View>
           <Text style={[styles.itemValue, { color: Theme.colors.secondary }]}>
-            {moodVal}/5
+            {moodVal != null ? `${moodVal}/5` : '—'}
           </Text>
           <Text style={styles.itemSubtext} numberOfLines={1}>
-            {energyVal.toUpperCase()} VITALITY
+            {energyVal ? `${energyVal.toUpperCase()} ENERGY` : 'Not logged yet'}
           </Text>
         </View>
       </View>
@@ -130,7 +130,7 @@ export const CalibratedScorecard: React.FC = () => {
       <View style={styles.shieldRow}>
         <Shield size={16} color={Theme.colors.strainOptimal} />
         <View style={{ flex: 1 }}>
-          <Text style={styles.shieldLabel}>Primary Clinical Shield & Archetype:</Text>
+          <Text style={styles.shieldLabel}>Archetype & focus areas (self-chosen):</Text>
           <Text style={styles.shieldValue}>
             {settings.archetypeName} ({cycle.conditions.join(', ') || 'Cycle Sync'})
           </Text>
@@ -269,11 +269,11 @@ export const CalibratedScorecard: React.FC = () => {
           </Text>
         </View>
 
-        {painVal >= 6 && (
+        {(painVal ?? 0) >= 6 && (
           <View style={styles.talkingPoint}>
             <Text style={styles.bullet}>•</Text>
             <Text style={styles.talkingPointText}>
-              <Text style={styles.boldText}>Severe Dysmenorrhea:</Text> Pain score peaks at {painVal}/10. Request ultrasound evaluation for secondary dysmenorrhea or pelvic adhesions.
+              <Text style={styles.boldText}>Strong period pain:</Text> logged at {painVal}/10. Ask whether tests such as an ultrasound are needed to look for causes like endometriosis or fibroids.
             </Text>
           </View>
         )}
@@ -282,16 +282,16 @@ export const CalibratedScorecard: React.FC = () => {
           <View style={styles.talkingPoint}>
             <Text style={styles.bullet}>•</Text>
             <Text style={styles.talkingPointText}>
-              <Text style={styles.boldText}>Menorrhagia Risk:</Text> Heavy flow logged with clots. Request complete blood count (CBC) and serum ferritin/iron stores test.
+              <Text style={styles.boldText}>Heavy flow:</Text> heavy bleeding was logged. Ask whether a blood count and ferritin (iron) test make sense.
             </Text>
           </View>
         )}
 
-        {moodVal <= 2 && (
+        {moodVal != null && moodVal <= 2 && (
           <View style={styles.talkingPoint}>
             <Text style={styles.bullet}>•</Text>
             <Text style={styles.talkingPointText}>
-              <Text style={styles.boldText}>Luteal PMDD Sensitivity:</Text> Significant mood dips correlating with late luteal phase. Inquire about cycle-phase neuro-steroid support.
+              <Text style={styles.boldText}>Low mood:</Text> logged at {moodVal}/5. If dips come back before most periods, ask about PMS/PMDD screening and support.
             </Text>
           </View>
         )}
@@ -299,7 +299,7 @@ export const CalibratedScorecard: React.FC = () => {
         <View style={styles.talkingPoint}>
           <Text style={styles.bullet}>•</Text>
           <Text style={styles.talkingPointText}>
-            <Text style={styles.boldText}>Autonomic Balance:</Text> HRV currently at {biometrics.hrv.current} ms ({biometrics.hrv.label}). Adrenal cortisol override active.
+            <Text style={styles.boldText}>Daily strain:</Text> {biometrics.strainScore}/100 ({biometrics.strainLevel}) — a SheSync score from logged pain, flow, mood and sleep, not a lab or device reading.
           </Text>
         </View>
       </View>

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop, G } from 'react-native-svg';
 import Animated, {
   useSharedValue,
@@ -29,7 +29,7 @@ export const StrainGauge: React.FC<StrainGaugeProps> = ({ score, level }) => {
       duration: 1400,
       easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
     });
-  }, [score]);
+  }, [score, progress]);
 
   const animatedProps = useAnimatedProps(() => ({
     strokeDashoffset: CIRCUMFERENCE * (1 - progress.value),

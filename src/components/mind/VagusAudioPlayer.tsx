@@ -36,7 +36,7 @@ export const VagusAudioPlayer: React.FC<VagusAudioPlayerProps> = ({
     } else {
       waveAnim.value = withTiming(0, { duration: 300 });
     }
-  }, [session.isPlaying]);
+  }, [session.isPlaying, waveAnim]);
 
   const waveStyle = useAnimatedStyle(() => ({
     opacity: 0.4 + waveAnim.value * 0.6,
@@ -119,7 +119,7 @@ export const VagusAudioPlayer: React.FC<VagusAudioPlayerProps> = ({
                   backgroundColor: session.isPlaying
                     ? Theme.colors.secondary
                     : Theme.colors.secondaryBorder,
-                  opacity: session.isPlaying ? 0.5 + Math.random() * 0.5 : 0.3,
+                  opacity: session.isPlaying ? 0.5 + ((i * 37) % 10) / 20 : 0.3, // deterministic shimmer (no Math.random in render)
                 },
               ]}
             />

@@ -14,9 +14,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
   Check,
-  Smile,
   BatteryCharging,
-  Heart,
   Tag,
   Sparkles,
   ArrowRight,

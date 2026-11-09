@@ -25,7 +25,7 @@ export const AdaptiveWorkoutCard: React.FC<AdaptiveWorkoutCardProps> = ({
           <Leaf size={22} color={Theme.colors.strainOptimal} />
         </View>
         <View style={styles.headerText}>
-          <Text style={styles.label}>TODAY'S ADAPTIVE PLAN</Text>
+          <Text style={styles.label}>TODAY’S ADAPTIVE PLAN</Text>
           <Text style={styles.title}>{workout.title}</Text>
         </View>
       </View>
@@ -70,14 +70,14 @@ export const AdaptiveWorkoutCard: React.FC<AdaptiveWorkoutCardProps> = ({
       {/* Action buttons */}
       <View style={styles.buttonStack}>
         <PrimaryButton
-          title="Start Restorative Flow"
+          title={`Start ${workout.type.toLowerCase()} · ${workout.duration}`}
           variant="rose"
           icon={<ArrowRight size={16} color="#FFFFFF" />}
           onPress={onStartFlow}
           fullWidth
         />
         <PrimaryButton
-          title="View Biological Reasoning"
+          title="Why this session?"
           variant="outline"
           onPress={onViewReasoning}
           fullWidth

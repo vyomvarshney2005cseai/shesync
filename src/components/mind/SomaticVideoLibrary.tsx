@@ -15,10 +15,7 @@ import {
   ExternalLink,
   Sparkles,
   Clock,
-  Heart,
-  Shield,
   Activity,
-  CheckCircle2,
 } from 'lucide-react-native';
 import { Theme } from '@/constants/theme';
 import type { YouTubeVideoSession } from '@/types';

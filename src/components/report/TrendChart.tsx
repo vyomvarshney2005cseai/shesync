@@ -1,17 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import Svg, {
-  Path,
-  Line,
-  Circle,
-  Rect,
-  Text as SvgText,
-  Defs,
-  LinearGradient,
-  Stop,
-  G,
-} from 'react-native-svg';
+import Svg, { Path, Line, Circle, Rect, Text as SvgText, G } from 'react-native-svg';
 import { Theme } from '@/constants/theme';
+import { shortDateLabel } from '@/lib/dates';
 import type { DailyDataPoint } from '@/types';
 
 interface TrendChartProps {
@@ -19,156 +10,115 @@ interface TrendChartProps {
 }
 
 const CHART_HEIGHT = 200;
-const CHART_PADDING = { top: 20, right: 16, bottom: 36, left: 36 };
+const PAD = { top: 20, right: 16, bottom: 36, left: 36 };
 
+/**
+ * 90-day pain chart drawn only from days the user actually logged pain.
+ * Period days come from saved cycles and logged flow; shaded spans are
+ * saved cycles longer than 35 days.
+ */
 export const TrendChart: React.FC<TrendChartProps> = ({ data }) => {
   const screenWidth = Dimensions.get('window').width;
-  const effectiveWidth = Math.min(screenWidth, 520);
-  const chartWidth = Math.max(260, effectiveWidth - 76); // accounting for screen padding + card padding
-  const plotWidth = chartWidth - CHART_PADDING.left - CHART_PADDING.right;
-  const plotHeight = CHART_HEIGHT - CHART_PADDING.top - CHART_PADDING.bottom;
+  const chartWidth = Math.max(260, Math.min(screenWidth, 520) - 76);
+  const plotWidth = chartWidth - PAD.left - PAD.right;
+  const plotHeight = CHART_HEIGHT - PAD.top - PAD.bottom;
+  const n = Math.max(2, data.length);
 
-  const maxPain = 10;
-  const xScale = (day: number) =>
-    CHART_PADDING.left + ((day - 1) / 89) * plotWidth;
-  const yScale = (val: number) =>
-    CHART_PADDING.top + plotHeight - (val / maxPain) * plotHeight;
+  const x = (day: number) => PAD.left + ((day - 1) / (n - 1)) * plotWidth;
+  const y = (val: number) => PAD.top + plotHeight - (val / 10) * plotHeight;
 
-  // Build path for pain severity line
-  const painPath = data
-    .map((d, i) => {
-      const x = xScale(d.day);
-      const y = yScale(d.painSeverity);
-      return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-    })
-    .join(' ');
+  const logged = data.filter((d) => d.painSeverity !== null);
+  const painPath = logged.map((d, i) => `${i === 0 ? 'M' : 'L'} ${x(d.day)} ${y(d.painSeverity as number)}`).join(' ');
 
-  // Area fill path
-  const areaPath = `${painPath} L ${xScale(data[data.length - 1].day)} ${yScale(0)} L ${xScale(data[0].day)} ${yScale(0)} Z`;
+  // Contiguous long-cycle spans.
+  const spans: { start: number; end: number }[] = [];
+  data.forEach((d) => {
+    if (!d.isAnovulatory) return;
+    const last = spans[spans.length - 1];
+    if (last && last.end === d.day - 1) last.end = d.day;
+    else spans.push({ start: d.day, end: d.day });
+  });
 
-  // Find anovulatory gap regions
-  const gapStart = data.findIndex((d) => d.isAnovulatory);
-  const gapEnd = data.findLastIndex((d) => d.isAnovulatory);
+  const xLabels = [1, 31, 61, 90].filter((d) => d <= data.length);
 
   return (
     <View style={styles.container}>
       <Text style={styles.chartTitle}>90-Day Pain vs. Cycle Trend</Text>
       <Text style={styles.chartSubtitle}>
-        Pain severity overlaid against cycle irregularity
+        {logged.length >= 2
+          ? `${logged.length} days of logged pain, with your period days marked`
+          : 'Log pain on a few days and your real trend will appear here'}
       </Text>
 
       <Svg width={chartWidth} height={CHART_HEIGHT}>
-        <Defs>
-          <LinearGradient id="painGradient" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor={Theme.colors.strainHigh} stopOpacity="0.3" />
-            <Stop offset="100%" stopColor={Theme.colors.strainHigh} stopOpacity="0.02" />
-          </LinearGradient>
-        </Defs>
-
-        {/* Y axis grid lines */}
         {[0, 2, 4, 6, 8, 10].map((val) => (
           <G key={`grid-${val}`}>
             <Line
-              x1={CHART_PADDING.left}
-              y1={yScale(val)}
-              x2={chartWidth - CHART_PADDING.right}
-              y2={yScale(val)}
+              x1={PAD.left}
+              y1={y(val)}
+              x2={chartWidth - PAD.right}
+              y2={y(val)}
               stroke={Theme.colors.cardBorder}
               strokeWidth={1}
               strokeDasharray="4,4"
             />
-            <SvgText
-              x={CHART_PADDING.left - 8}
-              y={yScale(val) + 4}
-              textAnchor="end"
-              fontSize={10}
-              fill={Theme.colors.textTertiary}
-            >
+            <SvgText x={PAD.left - 8} y={y(val) + 4} textAnchor="end" fontSize={10} fill={Theme.colors.textTertiary}>
               {val}
             </SvgText>
           </G>
         ))}
 
-        {/* Anovulatory gap highlight */}
-        {gapStart >= 0 && gapEnd >= 0 && (
+        {spans.map((s) => (
           <Rect
-            x={xScale(data[gapStart].day)}
-            y={CHART_PADDING.top}
-            width={xScale(data[gapEnd].day) - xScale(data[gapStart].day)}
+            key={`span-${s.start}`}
+            x={x(s.start)}
+            y={PAD.top}
+            width={Math.max(2, x(s.end) - x(s.start))}
             height={plotHeight}
-            fill="rgba(245, 158, 11, 0.08)"
+            fill="rgba(245, 158, 11, 0.10)"
             rx={4}
           />
+        ))}
+
+        {logged.length >= 2 && (
+          <Path d={painPath} stroke={Theme.colors.strainHigh} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
         )}
+        {logged.map((d) => (
+          <Circle key={`p-${d.day}`} cx={x(d.day)} cy={y(d.painSeverity as number)} r={3.5} fill={Theme.colors.strainHigh} />
+        ))}
 
-        {/* Area under curve */}
-        <Path d={areaPath} fill="url(#painGradient)" />
-
-        {/* Pain line */}
-        <Path
-          d={painPath}
-          stroke={Theme.colors.strainHigh}
-          strokeWidth={2}
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {/* Menstrual markers */}
         {data
           .filter((d) => d.isMenstrual)
           .map((d) => (
-            <Circle
-              key={`mens-${d.day}`}
-              cx={xScale(d.day)}
-              cy={yScale(0) + 8}
-              r={2.5}
-              fill={Theme.colors.primary}
-            />
+            <Circle key={`mens-${d.day}`} cx={x(d.day)} cy={y(0) + 8} r={2.5} fill={Theme.colors.primary} />
           ))}
 
-        {/* X axis labels */}
-        {[1, 15, 30, 45, 60, 75, 90].map((day) => (
+        {xLabels.map((day) => (
           <SvgText
             key={`xlab-${day}`}
-            x={xScale(day)}
+            x={x(day)}
             y={CHART_HEIGHT - 6}
-            textAnchor="middle"
+            textAnchor={day === 1 ? 'start' : day === data.length ? 'end' : 'middle'}
             fontSize={10}
             fill={Theme.colors.textTertiary}
           >
-            D{day}
+            {day === data.length ? 'Today' : shortDateLabel(data[day - 1].dateKey)}
           </SvgText>
         ))}
-
-        {/* Gap label */}
-        {gapStart >= 0 && gapEnd >= 0 && (
-          <SvgText
-            x={(xScale(data[gapStart].day) + xScale(data[gapEnd].day)) / 2}
-            y={CHART_PADDING.top + 14}
-            textAnchor="middle"
-            fontSize={9}
-            fontWeight="bold"
-            fill={Theme.colors.strainAmber}
-          >
-            45-Day Anovulatory Gap
-          </SvgText>
-        )}
       </Svg>
 
-      {/* Legend */}
       <View style={styles.legend}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: Theme.colors.strainHigh }]} />
-          <Text style={styles.legendText}>Pain Severity (0-10)</Text>
+          <Text style={styles.legendText}>Logged pain (0–10)</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: Theme.colors.primary }]} />
-          <Text style={styles.legendText}>Menstrual Days</Text>
+          <Text style={styles.legendText}>Period days</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: Theme.colors.strainAmber, opacity: 0.4 }]} />
-          <Text style={styles.legendText}>Anovulatory Gap</Text>
+          <Text style={styles.legendText}>Cycle longer than 35 days</Text>
         </View>
       </View>
     </View>
@@ -184,18 +134,8 @@ const styles = StyleSheet.create({
     borderColor: Theme.colors.cardBorder,
     ...Theme.shadows.card,
   },
-  chartTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: Theme.colors.textPrimary,
-    letterSpacing: -0.3,
-  },
-  chartSubtitle: {
-    fontSize: 12,
-    color: Theme.colors.textSecondary,
-    marginTop: 2,
-    marginBottom: 14,
-  },
+  chartTitle: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary, letterSpacing: -0.3 },
+  chartSubtitle: { fontSize: 12, color: Theme.colors.textSecondary, marginTop: 2, marginBottom: 14 },
   legend: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -205,19 +145,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Theme.colors.cardBorder,
   },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  legendText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Theme.colors.textTertiary,
-  },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendText: { fontSize: 11, fontWeight: '600', color: Theme.colors.textTertiary },
 });

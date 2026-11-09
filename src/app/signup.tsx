@@ -16,7 +16,7 @@ import { router } from 'expo-router';
 import { Theme } from '@/constants/theme';
 import { FeministQuoteCard } from '@/components/common/FeministQuoteCard';
 import { useAppStore } from '@/store/useAppStore';
-import { signUpWithSupabase } from '@/lib/supabaseService';
+import { isOfflineAuthError, signUpWithSupabase } from '@/lib/supabaseService';
 import {
   ArrowLeft,
   User,
@@ -34,7 +34,9 @@ const FOCUS_TAGS = [
   'Hormonal Balance',
   'PCOS & PMDD Support',
   'Somatic Calm',
-  'Sleep & HRV Recovery',
+  'Sleep & Recovery',
+  'Fitness & Weight',
+  'Study Focus',
 ];
 
 export default function SignUpScreen() {
@@ -45,10 +47,9 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedFocus, setSelectedFocus] = useState<string[]>([
-    'Cycle Syncing',
-    'PCOS & PMDD Support',
-  ]);
+  // Only one neutral default: focus areas are shown on her profile, so the
+  // app must not pre-select a condition like PCOS for her.
+  const [selectedFocus, setSelectedFocus] = useState<string[]>(['Cycle Syncing']);
   const [agreedToTerms, setAgreedToTerms] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -86,13 +87,22 @@ export default function SignUpScreen() {
 
     try {
       await signUpWithSupabase(email.trim(), password, name.trim());
-      signup(name.trim(), email.trim());
+      signup(name.trim(), email.trim(), selectedFocus);
       router.replace('/assessment');
     } catch (err: any) {
-      console.warn('[SignUp] Remote Supabase sign up error, proceeding with local session:', err?.message);
-      // Graceful local authentication fallback so users can always sign up and test the app
-      signup(name.trim(), email.trim());
-      router.replace('/assessment');
+      if (isOfflineAuthError(err)) {
+        // No server reachable (or none configured): create the account on this device.
+        signup(name.trim(), email.trim(), selectedFocus, { offline: true });
+        router.replace('/assessment');
+      } else {
+        // The server answered (e.g. "User already registered"): show it instead of faking success.
+        const msg = String(err?.message || '');
+        setErrorMsg(
+          /already registered|already exists/i.test(msg)
+            ? 'An account with this email already exists. Please log in instead.'
+            : msg || 'Sign up failed. Please try again.'
+        );
+      }
     } finally {
       setLoading(false);
     }

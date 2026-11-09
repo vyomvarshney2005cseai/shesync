@@ -29,7 +29,7 @@ export const ClinicalExportCTA: React.FC<ClinicalExportCTAProps> = ({
     } else {
       successOpacity.value = 0;
     }
-  }, [generatedAt]);
+  }, [generatedAt, successOpacity]);
 
   const successStyle = useAnimatedStyle(() => ({
     opacity: successOpacity.value,

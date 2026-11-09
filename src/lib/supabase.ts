@@ -3,26 +3,42 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { AppState, Platform } from 'react-native';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = (process.env.EXPO_PUBLIC_SUPABASE_URL || '').trim();
+const supabaseAnonKey = (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '').trim();
 
-if (!supabaseUrl || !supabaseAnonKey) {
+/**
+ * True only when both Supabase env vars are present.
+ *
+ * Without them the app runs in on-device mode: accounts and health data stay
+ * in local storage and nothing is sent to a server. Previously an empty URL
+ * made `createClient` throw at import time, so a fresh clone without `.env`
+ * crashed on launch.
+ */
+export const isSupabaseConfigured = supabaseUrl.length > 0 && supabaseAnonKey.length > 0;
+
+if (!isSupabaseConfigured) {
   console.warn(
-    '[Supabase] Warning: EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY is missing. Check your .env file.'
+    '[Supabase] EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_ANON_KEY missing — running in on-device mode.'
   );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-});
+// A syntactically valid placeholder keeps the client constructible; every
+// service call checks `isSupabaseConfigured` before touching the network.
+export const supabase = createClient(
+  isSupabaseConfigured ? supabaseUrl : 'https://offline.invalid',
+  isSupabaseConfigured ? supabaseAnonKey : 'offline-anon-key',
+  {
+    auth: {
+      storage: AsyncStorage,
+      autoRefreshToken: isSupabaseConfigured,
+      persistSession: isSupabaseConfigured,
+      detectSessionInUrl: false,
+    },
+  }
+);
 
 // Refresh session in foreground for native platforms
-if (Platform.OS !== 'web') {
+if (isSupabaseConfigured && Platform.OS !== 'web') {
   AppState.addEventListener('change', (state) => {
     if (state === 'active') {
       supabase.auth.startAutoRefresh();

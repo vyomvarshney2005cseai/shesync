@@ -7,6 +7,7 @@ import type {
   HealthScores,
   CyclePhase,
 } from '@/types';
+import { daysAgoKey, daysSinceKey, parseDateKey } from '@/lib/dates';
 
 /**
  * Enhanced Clinical Cycle Prediction & Precision Precaution Engine
@@ -35,7 +36,7 @@ export function calculateCyclePredictionAndPrecautions(
             daysAgo: 14,
             lengthDays: 28,
             periodDurationDays: 5,
-            startDate: new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0],
+            startDate: daysAgoKey(14),
           },
         ];
 
@@ -117,30 +118,25 @@ export function calculateCyclePredictionAndPrecautions(
     daysAgo: 14,
     lengthDays: avgCycleLength,
     periodDurationDays: 5,
-    startDate: new Date(todayMidnight.getTime() - 14 * 86400000).toISOString().split('T')[0],
+    startDate: daysAgoKey(14),
   };
 
-  // Determine last period start midnight
+  // Determine last period start midnight (local calendar date)
   let lastPeriodStartMidnight: Date;
   if (mostRecent.startDate) {
-    const parts = mostRecent.startDate.split('-').map(Number);
-    if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
-      lastPeriodStartMidnight = new Date(parts[0], parts[1] - 1, parts[2]);
-    } else {
-      const parsed = new Date(mostRecent.startDate);
-      lastPeriodStartMidnight = new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
-    }
+    lastPeriodStartMidnight = parseDateKey(mostRecent.startDate);
   } else if (typeof mostRecent.daysAgo === 'number') {
     lastPeriodStartMidnight = new Date(todayMidnight.getTime() - mostRecent.daysAgo * 86400000);
   } else {
     lastPeriodStartMidnight = new Date(todayMidnight.getTime() - 14 * 86400000);
   }
 
-  // Exact calendar days elapsed since last period start
-  const daysAgo =
-    typeof mostRecent.daysAgo === 'number'
-      ? mostRecent.daysAgo
-      : Math.max(0, Math.round((todayMidnight.getTime() - lastPeriodStartMidnight.getTime()) / 86400000));
+  // Calendar days elapsed since the last period started. Always derived from
+  // the start date: the stored `daysAgo` is frozen at save time, which kept
+  // "next period in N days" from ever counting down.
+  const daysAgo = mostRecent.startDate
+    ? Math.max(0, daysSinceKey(mostRecent.startDate))
+    : Math.max(0, mostRecent.daysAgo ?? 14);
 
   // Current Cycle Day (Day 1 is start of bleeding)
   const currentCycleDay = daysAgo + 1;

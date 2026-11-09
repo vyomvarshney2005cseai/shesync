@@ -11,35 +11,28 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useNavigation } from 'expo-router';
+import { router } from 'expo-router';
 import { Theme } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import {
-  User,
   Sparkles,
   Activity,
-  Heart,
-  Shield,
-  Moon,
   ChevronRight,
   RefreshCw,
   LogOut,
   FileText,
   Sliders,
   CheckCircle2,
-  Calendar,
 } from 'lucide-react-native';
 
 import * as ImagePicker from 'expo-image-picker';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
 
 export default function ProfileScreen() {
-  const navigation = useNavigation();
   const userName = useAppStore((s) => s.userName);
   const userEmail = useAppStore((s) => s.userEmail);
   const userPhoto = useAppStore((s) => s.userPhoto);
   const updateUserPhoto = useAppStore((s) => s.updateUserPhoto);
-  const cycle = useAppStore((s) => s.cycle);
   const isAssessmentCompleted = useAppStore((s) => s.isAssessmentCompleted);
   const assessmentAnswers = useAppStore((s) => s.assessmentAnswers);
   const fineTuningSettings = useAppStore((s) => s.fineTuningSettings);
@@ -52,7 +45,7 @@ export default function ProfileScreen() {
 
   const handlePickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 1,
@@ -67,30 +60,28 @@ export default function ProfileScreen() {
     router.push('/assessment' as any);
   };
 
+  const confirmLogout = () => {
+    const title = 'Sign out of SheSync?';
+    const msg =
+      'For your privacy, signing out removes your logs, cycles and dashboard data from this device.';
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(`${title}\n\n${msg}`)) handleLogout();
+      return;
+    }
+    Alert.alert(title, msg, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign out', style: 'destructive', onPress: () => handleLogout() },
+    ]);
+  };
+
   const handleLogout = async () => {
     try {
+      // Clearing the session is enough: the signed-in area's AuthGate sends
+      // the user to the welcome screen. Navigating here as well raced with it
+      // and caused a "Maximum update depth exceeded" loop on web.
       await logout();
     } catch (err) {
       console.warn('Logout error', err);
-    }
-
-    if (Platform.OS === 'web') {
-      try {
-        router.replace('/');
-      } catch (_) {}
-      if (typeof window !== 'undefined' && window.location.pathname !== '/') {
-        window.location.href = '/';
-      }
-    } else {
-      const parent = navigation.getParent();
-      if (parent) {
-        parent.reset({
-          index: 0,
-          routes: [{ name: 'index' }],
-        });
-      } else {
-        router.replace('/');
-      }
     }
   };
 
@@ -265,7 +256,7 @@ export default function ProfileScreen() {
             <View style={{ flex: 1, paddingRight: 12 }}>
               <Text style={styles.settingLabel}>Cortisol Workout Override</Text>
               <Text style={styles.settingHelp}>
-                Replaces high-strain sessions with pelvic/vagus flows when cortisol is elevated.
+                Swaps intense sessions for gentle pelvic, yoga or vagus flows when your strain score is high.
               </Text>
             </View>
             <Switch
@@ -347,7 +338,7 @@ export default function ProfileScreen() {
         {/* Logout Button */}
         <TouchableOpacity
           style={styles.logoutButton}
-          onPress={handleLogout}
+          onPress={confirmLogout}
           activeOpacity={0.8}
         >
           <LogOut size={16} color="#DC2626" style={{ marginRight: 8 }} />
@@ -374,7 +365,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingTop: 12,
-    paddingBottom: 40,
+    paddingBottom: 100,
   },
   centeredWrapper: {
     width: '100%',

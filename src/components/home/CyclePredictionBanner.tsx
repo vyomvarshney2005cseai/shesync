@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
-import { Calendar, ChevronRight, ShieldAlert, Sparkles, Clock } from 'lucide-react-native';
+import { Calendar, ChevronRight, ShieldAlert, Sparkles } from 'lucide-react-native';
 import { Theme } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 

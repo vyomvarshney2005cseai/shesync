@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { AlertTriangle, TrendingDown, Activity } from 'lucide-react-native';
+import { AlertTriangle, TrendingDown, Activity, Droplets, Moon, Heart } from 'lucide-react-native';
 import { Theme } from '@/constants/theme';
 import type { ClinicalAnomaly } from '@/types';
 
@@ -16,9 +16,23 @@ const getIcon = (type: ClinicalAnomaly['type']) => {
       return <Activity size={16} color={Theme.colors.strainHigh} />;
     case 'hrv_drop':
       return <TrendingDown size={16} color={Theme.colors.secondary} />;
+    case 'flow_heavy':
+      return <Droplets size={16} color={Theme.colors.strainHigh} />;
+    case 'sleep_deficit':
+      return <Moon size={16} color={Theme.colors.secondary} />;
+    case 'mood_pattern':
+      return <Heart size={16} color={Theme.colors.secondary} />;
     default:
       return <AlertTriangle size={16} color={Theme.colors.strainAmber} />;
   }
+};
+
+const TYPE_LABELS: Partial<Record<ClinicalAnomaly['type'], string>> = {
+  anovulatory_gap: 'cycle pattern',
+  pain_cluster: 'pain',
+  flow_heavy: 'bleeding',
+  mood_pattern: 'mood',
+  sleep_deficit: 'sleep',
 };
 
 const getSeverityColor = (severity: ClinicalAnomaly['severity']) => {
@@ -37,8 +51,16 @@ const getSeverityColor = (severity: ClinicalAnomaly['severity']) => {
 export const AnomalyCard: React.FC<AnomalyCardProps> = ({ anomalies }) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Anomaly Highlights</Text>
-      <Text style={styles.sectionSubtitle}>Clinically significant patterns detected</Text>
+      <Text style={styles.sectionTitle}>Patterns to Discuss</Text>
+      <Text style={styles.sectionSubtitle}>From your last 30 days of logs — observations, not a diagnosis</Text>
+      {anomalies.length === 0 ? (
+        <View style={[styles.card, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
+          <Text style={[styles.title, { color: '#047857' }]}>Nothing flagged yet</Text>
+          <Text style={[styles.description, { marginBottom: 0 }]}>
+            Keep logging pain, flow, mood and sleep. Patterns worth raising with a doctor will show up here.
+          </Text>
+        </View>
+      ) : null}
       {anomalies.map((anomaly) => {
         const colors = getSeverityColor(anomaly.severity);
         return (
@@ -56,11 +78,11 @@ export const AnomalyCard: React.FC<AnomalyCardProps> = ({ anomalies }) => {
             <View style={styles.severityRow}>
               <View style={[styles.severityBadge, { backgroundColor: colors.text }]}>
                 <Text style={styles.severityText}>
-                  {anomaly.severity.toUpperCase()}
+                  {anomaly.severity === 'critical' ? 'SEE A DOCTOR' : anomaly.severity === 'severe' ? 'WORTH ASKING' : 'KEEP AN EYE'}
                 </Text>
               </View>
               <Text style={[styles.typeText, { color: colors.text }]}>
-                {anomaly.type.replace(/_/g, ' ')}
+                {TYPE_LABELS[anomaly.type] ?? anomaly.type.replace(/_/g, ' ')}
               </Text>
             </View>
           </View>

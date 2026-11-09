@@ -36,7 +36,7 @@ export const SOSFab: React.FC<SOSFabProps> = ({ onPress }) => {
       -1,
       true
     );
-  }, []);
+  }, [glowOpacity, scale]);
 
   const animatedScale = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],

@@ -21,7 +21,6 @@ import {
   KeyRound,
   CheckCircle2,
   AlertCircle,
-  Sparkles,
   Send,
   RefreshCw,
   ShieldCheck,
@@ -213,7 +212,7 @@ export default function ForgotPasswordScreen() {
                     2. Click the password reset link inside to enter a new password.
                   </Text>
                   <Text style={styles.instructionStep}>
-                    3. If you don't see it within a couple minutes, please check your spam or promotions folder.
+                    3. If you don’t see it within a couple minutes, please check your spam or promotions folder.
                   </Text>
 
                   {/* Resend Action */}

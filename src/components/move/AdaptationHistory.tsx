@@ -12,6 +12,13 @@ export const AdaptationHistory: React.FC<AdaptationHistoryProps> = ({ history })
   return (
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>Past Adaptation History</Text>
+      {history.length === 0 ? (
+        <View style={styles.historyCard}>
+          <Text style={styles.reason}>
+            No adjustments yet. When a high-strain day changes your plan, it will be recorded here with the reason.
+          </Text>
+        </View>
+      ) : null}
       {history.map((item, index) => (
         <View key={index} style={styles.historyCard}>
           <View style={styles.dateRow}>

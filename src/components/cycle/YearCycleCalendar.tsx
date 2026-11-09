@@ -5,21 +5,18 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Platform,
 } from 'react-native';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   Check,
   Plus,
   Trash2,
-  RotateCcw,
   Info,
   Layers,
-  Heart,
 } from 'lucide-react-native';
+import { addDaysToKey, daysAgoKey, shortDateLabel } from '@/lib/dates';
 import { Theme } from '@/constants/theme';
 import type { PastCycleRecord } from '@/types';
 
@@ -81,18 +78,15 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
 
   // Temporary staging for period currently being selected or edited
   const [activeStart, setActiveStart] = useState<string | null>(
-    pastCycles[0]?.startDate ??
-      new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0]
+    pastCycles[0]?.startDate ?? daysAgoKey(14)
   );
   const [activeEnd, setActiveEnd] = useState<string | null>(() => {
     if (pastCycles[0]?.endDate) return pastCycles[0].endDate;
     if (pastCycles[0]?.startDate) {
       const dur = pastCycles[0].periodDurationDays || 5;
-      const s = new Date(pastCycles[0].startDate);
-      const e = new Date(s.getTime() + (dur - 1) * 86400000);
-      return e.toISOString().split('T')[0];
+      return addDaysToKey(pastCycles[0].startDate, dur - 1);
     }
-    return new Date(Date.now() - 9 * 86400000).toISOString().split('T')[0];
+    return daysAgoKey(9);
   });
 
   // Set of all logged period dates across all pastCycles: YYYY-MM-DD -> { cycleId, isStart, isEnd, isMiddle }
@@ -163,9 +157,7 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
       setActiveStart(dateStr);
       // If activeEnd is before new start, automatically set end to start + 4 days
       if (!activeEnd || activeEnd < dateStr) {
-        const s = new Date(dateStr);
-        const autoEnd = new Date(s.getTime() + 4 * 86400000).toISOString().split('T')[0];
-        setActiveEnd(autoEnd);
+        setActiveEnd(addDaysToKey(dateStr, 4));
       }
       setSelectionTarget('end');
     } else {
@@ -296,7 +288,7 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
     const startDayOfWeek = firstDay.getDay(); // 0 = Sun, 1 = Mon ...
     const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
 
-    const cells: Array<{ dayNum: number | null; dateStr: string | null }> = [];
+    const cells: { dayNum: number | null; dateStr: string | null }[] = [];
 
     // Empty cells before day 1
     for (let i = 0; i < startDayOfWeek; i++) {
@@ -307,6 +299,12 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${year}-${String(monthIdx + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       cells.push({ dayNum: d, dateStr });
+    }
+
+    // Pad trailing empty cells so calendar rows are complete 7-day weeks
+    const totalCells = Math.ceil(cells.length / 7) * 7;
+    for (let i = cells.length; i < totalCells; i++) {
+      cells.push({ dayNum: null, dateStr: null });
     }
 
     return cells;
@@ -450,12 +448,7 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
               >
                 <Text style={styles.datePillLabel}>🩸 PERIOD START</Text>
                 <Text style={styles.datePillValue}>
-                  {activeStart
-                    ? new Date(activeStart).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                      })
-                    : 'Tap Date'}
+                  {activeStart ? shortDateLabel(activeStart) : 'Tap Date'}
                 </Text>
               </TouchableOpacity>
 
@@ -476,12 +469,7 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
               >
                 <Text style={styles.datePillLabel}>✨ PERIOD END</Text>
                 <Text style={styles.datePillValue}>
-                  {activeEnd
-                    ? new Date(activeEnd).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                      })
-                    : 'Tap Date'}
+                  {activeEnd ? shortDateLabel(activeEnd) : 'Tap Date'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -575,7 +563,11 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
           <View style={styles.daysGrid}>
             {currentMonthMatrix.map((cell, idx) => {
               if (!cell.dayNum || !cell.dateStr) {
-                return <View key={`empty-${idx}`} style={styles.dayCellEmpty} />;
+                return (
+                  <View key={`empty-${idx}`} style={styles.dayCellWrap}>
+                    <View style={styles.dayCellEmpty} />
+                  </View>
+                );
               }
 
               const dateStr = cell.dateStr;
@@ -594,42 +586,43 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
                 `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
               return (
-                <TouchableOpacity
-                  key={dateStr}
-                  style={[
-                    styles.dayCell,
-                    inActiveRange && styles.dayCellInRange,
-                    isStart && styles.dayCellStart,
-                    isEnd && styles.dayCellEnd,
-                    isLogged && !inActiveRange && styles.dayCellLogged,
-                    isPredicted && !inActiveRange && styles.dayCellPredicted,
-                    isToday && !inActiveRange && styles.dayCellToday,
-                  ]}
-                  onPress={() => handleDatePress(dateStr)}
-                  activeOpacity={0.7}
-                >
-                  <Text
+                <View key={dateStr} style={styles.dayCellWrap}>
+                  <TouchableOpacity
                     style={[
-                      styles.dayCellText,
-                      inActiveRange && styles.dayCellTextInRange,
-                      (isStart || isEnd) && styles.dayCellTextEndpoint,
-                      isLogged && !inActiveRange && styles.dayCellTextLogged,
-                      isToday && !inActiveRange && styles.dayCellTextToday,
+                      styles.dayCell,
+                      inActiveRange && styles.dayCellInRange,
+                      isStart && styles.dayCellStart,
+                      isEnd && styles.dayCellEnd,
+                      isLogged && !inActiveRange && styles.dayCellLogged,
+                      isPredicted && !inActiveRange && styles.dayCellPredicted,
+                      isToday && !inActiveRange && styles.dayCellToday,
                     ]}
+                    onPress={() => handleDatePress(dateStr)}
+                    activeOpacity={0.7}
                   >
-                    {cell.dayNum}
-                  </Text>
+                    <Text
+                      style={[
+                        styles.dayCellText,
+                        inActiveRange && styles.dayCellTextInRange,
+                        (isStart || isEnd) && styles.dayCellTextEndpoint,
+                        isLogged && !inActiveRange && styles.dayCellTextLogged,
+                        isToday && !inActiveRange && styles.dayCellTextToday,
+                      ]}
+                    >
+                      {cell.dayNum}
+                    </Text>
 
-                  {/* Micro Indicators */}
-                  {isStart && <Text style={styles.endpointLabel}>START</Text>}
-                  {isEnd && !isStart && <Text style={styles.endpointLabel}>END</Text>}
-                  {isLogged && !inActiveRange && (
-                    <View style={styles.loggedDot} />
-                  )}
-                  {isPredicted && !inActiveRange && (
-                    <View style={styles.predictedDot} />
-                  )}
-                </TouchableOpacity>
+                    {/* Micro Indicators */}
+                    {isStart && <Text style={styles.endpointLabel}>START</Text>}
+                    {isEnd && !isStart && <Text style={styles.endpointLabel}>END</Text>}
+                    {isLogged && !inActiveRange && (
+                      <View style={styles.loggedDot} />
+                    )}
+                    {isPredicted && !inActiveRange && (
+                      <View style={styles.predictedDot} />
+                    )}
+                  </TouchableOpacity>
+                </View>
               );
             })}
           </View>
@@ -1020,11 +1013,11 @@ const styles = StyleSheet.create({
   },
   dayLabelsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    width: '100%',
     marginBottom: 8,
   },
   dayLabelText: {
-    width: 38,
+    width: '14.285%',
     textAlign: 'center',
     fontSize: 12,
     fontWeight: '700',
@@ -1036,21 +1029,27 @@ const styles = StyleSheet.create({
   daysGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-around',
+    width: '100%',
+    justifyContent: 'flex-start',
     marginBottom: 14,
   },
-  dayCellEmpty: {
-    width: 38,
-    height: 44,
-    marginVertical: 2,
-  },
-  dayCell: {
-    width: 38,
+  dayCellWrap: {
+    width: '14.285%',
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 10,
     marginVertical: 2,
+  },
+  dayCellEmpty: {
+    width: 38,
+    height: 40,
+  },
+  dayCell: {
+    width: 38,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
   },
   dayCellInRange: {
     backgroundColor: 'rgba(236, 72, 153, 0.22)',
@@ -1209,6 +1208,8 @@ const styles = StyleSheet.create({
   miniMatrix: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    width: 42,
+    alignSelf: 'center',
     gap: 2,
     height: 38,
   },

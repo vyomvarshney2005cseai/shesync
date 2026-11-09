@@ -1,20 +1,23 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Theme } from '@/constants/theme';
 import { Header } from '@/components/common/Header';
 import { StrainGauge } from '@/components/home/StrainGauge';
 import { BiometricScroll } from '@/components/home/BiometricScroll';
 import { QuickActionGrid } from '@/components/home/QuickActionGrid';
 import { CyclePredictionBanner } from '@/components/home/CyclePredictionBanner';
+import { YourGoGirlHomeCard } from '@/components/yourgogirl/YourGoGirlHomeCard';
 import { router } from 'expo-router';
 import { useAppStore } from '@/store/useAppStore';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
+import { WellnessHub } from '@/components/common/WellnessHub';
+import { timeOfDayGreeting } from '@/lib/dates';
 
 export default function HomeScreen() {
   const biometrics = useAppStore((s) => s.biometrics);
   const cycle = useAppStore((s) => s.cycle);
   const userName = useAppStore((s) => s.userName);
+  const firstName = (userName || 'there').trim().split(' ')[0];
 
   const handleQuickAction = (id: string) => {
     switch (id) {
@@ -30,6 +33,12 @@ export default function HomeScreen() {
       case 'voice':
         router.push('/voice-journal');
         break;
+      case 'yourgogirl':
+        router.push('/your-go-girl' as any);
+        break;
+      case 'cycle':
+        router.push('/log-cycle');
+        break;
     }
   };
 
@@ -43,8 +52,8 @@ export default function HomeScreen() {
         >
           <View style={styles.centeredWrapper}>
             <Header
-              title={`Good morning, ${userName}`}
-              subtitle={`Cycle ${cycle.label} • ${cycle.conditions.join(' / ')}`}
+              title={`${timeOfDayGreeting()}, ${firstName}`}
+              subtitle={cycle.label}
               badge="SheSync Engine"
             />
             <StrainGauge
@@ -52,8 +61,12 @@ export default function HomeScreen() {
               level={biometrics.strainLevel}
             />
             <BiometricScroll biometrics={biometrics} cycle={cycle} />
+            <YourGoGirlHomeCard />
             <CyclePredictionBanner />
             <QuickActionGrid onAction={handleQuickAction} />
+            <View style={styles.hubWrap}>
+              <WellnessHub />
+            </View>
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -72,11 +85,15 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 32,
+    paddingBottom: 100,
   },
   centeredWrapper: {
     width: '100%',
     maxWidth: 520,
     alignSelf: 'center',
+  },
+  hubWrap: {
+    paddingHorizontal: 20,
+    marginTop: 12,
   },
 });

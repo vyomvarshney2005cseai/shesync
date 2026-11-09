@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type {
   AppState,
   FineTuningSettings,
@@ -7,910 +9,768 @@ import type {
   BiometricSnapshot,
   CycleData,
   SymptomLog,
+  SleepLog,
   PastCycleRecord,
   CyclePrediction,
+  CBTPrompt,
+  TherapySession,
+  WorkoutHistory,
+  AdaptiveWorkout,
+  ClinicalReport,
+  YourGoGirlMessage,
+  CounsellorMode,
 } from '@/types';
 import { calculateArchetype } from '@/constants/assessment';
 import { calculateCyclePredictionAndPrecautions } from '@/constants/cyclePrediction';
-import {
-  saveDailyLogToSupabase,
-  saveCycleToSupabase,
-  signOutSupabase,
-} from '@/lib/supabaseService';
-
-const initialPastCycles: PastCycleRecord[] = [
-  {
-    id: 'cycle-1',
-    cycleNumber: 1,
-    startDate: new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0],
-    daysAgo: 14,
-    lengthDays: 28,
-    periodDurationDays: 5,
-  },
-  {
-    id: 'cycle-2',
-    cycleNumber: 2,
-    startDate: new Date(Date.now() - 42 * 86400000).toISOString().split('T')[0],
-    daysAgo: 42,
-    lengthDays: 28,
-    periodDurationDays: 5,
-  },
-  {
-    id: 'cycle-3',
-    cycleNumber: 3,
-    startDate: new Date(Date.now() - 71 * 86400000).toISOString().split('T')[0],
-    daysAgo: 71,
-    lengthDays: 29,
-    periodDurationDays: 6,
-  },
-];
-
+import { saveDailyLogToSupabase, saveCycleToSupabase, signOutSupabase } from '@/lib/supabaseService';
+import { daysBetweenKeys, daysSinceKey, lastNDaysKeys, todayKey } from '@/lib/dates';
+import { recommendWorkout } from '@/lib/fitness';
+import { recentLog, recentSignals } from '@/lib/recent';
+import { createInitialWelcomeMessage } from '@/lib/yourGoGirlEngine';
+import { useFitnessStore } from './useFitnessStore';
+import { useStudyStore } from './useStudyStore';
+import { useGamesStore } from './useGamesStore';
 
 // ============================================================
-// Dynamic 90-day clinical trend data generator
-// Scales realistically with the user's logged pain and cycle status
+// Defaults for a brand-new account.
+//
+// New users start EMPTY. Earlier builds shipped demo logs, demo cycles,
+// a demo user ("Maya") and invented workout history as if they were the
+// user's own data, and hard-coded PCOS + PMDD onto every account.
 // ============================================================
-function generateDynamicTrendData(
-  painSeverity: number = 4,
-  isIrregular: boolean = true,
-  pastCycles: PastCycleRecord[] = []
-): DailyDataPoint[] {
-  const data: DailyDataPoint[] = [];
-  const basePain = Math.max(1, Math.min(10, painSeverity));
 
-  // Cycle 1: Days 1-28 (Most recent cycle)
-  const c1Length = pastCycles[0]?.lengthDays || 28;
-  const c1Duration = pastCycles[0]?.periodDurationDays || 5;
+const DEFAULT_SETTINGS: FineTuningSettings = {
+  archetypeId: 'empowered_cycle_optimizer',
+  archetypeName: 'Empowered Cyclical Optimizer',
+  archetypeTagline: 'Dynamic Vitality & Natural Alignment',
+  archetypeDescription: 'Complete the health assessment to personalise SheSync for your body.',
+  strainSensitivity: 'balanced',
+  preferredTherapy: 'somatic',
+  autoCortisolOverride: true,
+  pmddEarlyShield: false,
+  dailySleepTargetHours: 8,
+  primaryCondition: 'Cycle Optimization',
+};
 
-  for (let d = 1; d <= 28; d++) {
-    const isMenstrual = d <= c1Duration;
-    const isLateLuteal = d >= Math.max(20, c1Length - 6);
-    let dayPain: number;
+const DEFAULT_CBT: CBTPrompt = {
+  id: 'cbt-general',
+  trigger: 'your check-in',
+  prompt:
+    'Hard days are information, not failure. What is one small thing you could take off your plate today?',
+  placeholder: 'e.g. "I can ask a friend to share class notes today"',
+  userResponse: undefined,
+};
 
-    if (isMenstrual) {
-      // Menstrual prostaglandin peak on day 1-2, declining by day 5
-      const peakFactor = d <= 2 ? 1.05 : 0.8;
-      dayPain = Math.max(1, basePain * peakFactor + Math.sin(d * 1.2) * 0.4);
-    } else if (isLateLuteal) {
-      // Pre-menstrual inflammatory tone
-      dayPain = Math.max(1, basePain * 0.7 + Math.cos(d * 0.8) * 0.5);
-    } else {
-      // Follicular / Ovulatory baseline
-      dayPain = Math.max(0.5, basePain * 0.25 + Math.sin(d * 2) * 0.3);
-    }
+const DEFAULT_THERAPY: TherapySession = {
+  id: 'therapy-vagus',
+  type: 'somatic',
+  title: 'Somatic Vagus Nerve Grounding',
+  description:
+    'A guided somatic practice using slow humming, gentle neck release and bilateral tapping to settle a racing nervous system.',
+  durationSeconds: 615,
+  isPlaying: false,
+  progress: 0,
+  youtubeUrl: 'https://www.youtube.com/watch?v=eFV0FfMc_uo',
+  youtubeId: 'eFV0FfMc_uo',
+};
 
-    data.push({
-      day: d,
-      painSeverity: Math.min(10, Math.round(dayPain * 10) / 10),
-      cycleDay: d,
-      isMenstrual,
-      isAnovulatory: false,
-    });
+/** Fields that belong to one person and are wiped on sign-out / new account. */
+function freshUserData() {
+  return {
+    userName: '',
+    userEmail: '',
+    userPhoto: undefined as string | undefined,
+    isAuthenticated: false,
+    isOfflineAccount: false,
+    focusAreas: [] as string[],
+    isAssessmentCompleted: false,
+    assessmentAnswers: {} as Record<string, string>,
+    fineTuningSettings: { ...DEFAULT_SETTINGS },
+    rememberedCyclesCount: 0,
+    pastCycles: [] as PastCycleRecord[],
+    symptomLogs: [] as SymptomLog[],
+    sleepLogs: [] as SleepLog[],
+    workoutHistory: [] as WorkoutHistory[],
+    cbtPrompt: { ...DEFAULT_CBT },
+    activeTherapy: { ...DEFAULT_THERAPY },
+    showBiologicalReasoning: false,
+    sosActive: false,
+    yourGoGirlMessages: [] as YourGoGirlMessage[],
+    yourGoGirlMode: 'empathetic_counsellor' as CounsellorMode,
+  };
+}
+
+type UserData = ReturnType<typeof freshUserData>;
+
+// ============================================================
+// Helpers
+// ============================================================
+
+/** `daysAgo` is stored at save time and goes stale; always re-derive it from the start date. */
+export function withFreshDaysAgo(cycles: PastCycleRecord[]): PastCycleRecord[] {
+  return cycles
+    .filter((c) => !!c.startDate)
+    .map((c) => ({ ...c, daysAgo: Math.max(0, daysSinceKey(c.startDate)) }))
+    .sort((a, b) => a.daysAgo - b.daysAgo)
+    .map((c, i) => ({ ...c, cycleNumber: i + 1 }));
+}
+
+const BLEEDING_FLOWS = new Set(['light', 'moderate', 'heavy', 'severe']);
+
+// ============================================================
+// 90-day trend — built ONLY from what the user logged.
+// (Earlier builds drew sine waves and labelled them as her history.)
+// ============================================================
+function buildTrendData(logs: SymptomLog[], cycles: PastCycleRecord[]): DailyDataPoint[] {
+  const keys = lastNDaysKeys(90);
+  const painByDay = new Map<string, number>();
+  const bleedingDays = new Set<string>();
+  for (const l of logs) {
+    if (typeof l.pain === 'number') painByDay.set(l.date, Math.max(painByDay.get(l.date) ?? 0, l.pain));
+    if (l.flow && BLEEDING_FLOWS.has(l.flow)) bleedingDays.add(l.date);
   }
+  // Oldest cycle first so "latest start on or before this day" is easy.
+  const starts = [...cycles].sort((a, b) => (a.startDate < b.startDate ? -1 : 1));
 
-  // Cycle 2: Days 29-73 (Simulated anovulatory or previous cycle)
-  for (let d = 29; d <= 73; d++) {
-    const dayInGap = d - 28;
-    const isLateLuteal = isIrregular ? dayInGap >= 32 : (dayInGap % 28) >= 22;
-    const isMensesInCycle2 = !isIrregular && (dayInGap % 28) <= c1Duration;
-
-    let dayPain: number;
-    if (isIrregular) {
-      if (isLateLuteal) {
-        dayPain = Math.max(1.5, basePain * 0.88 + Math.sin(d * 0.7) * 0.6);
-      } else {
-        dayPain = Math.max(0.8, basePain * 0.35 + Math.cos(d * 1.5) * 0.4);
+  return keys.map((key, i) => {
+    let cycleDay: number | null = null;
+    let isMenstrual = bleedingDays.has(key);
+    let isAnovulatory = false;
+    for (let c = starts.length - 1; c >= 0; c--) {
+      const cyc = starts[c];
+      if (cyc.startDate <= key) {
+        const offset = daysBetweenKeys(cyc.startDate, key);
+        cycleDay = offset + 1;
+        if (offset < (cyc.periodDurationDays || 5)) isMenstrual = true;
+        // A saved cycle longer than 35 days is a long / possibly anovulatory cycle.
+        const next = starts[c + 1];
+        const length = next ? daysBetweenKeys(cyc.startDate, next.startDate) : cyc.lengthDays;
+        if (length > 35 && offset < length) isAnovulatory = true;
+        break;
       }
-    } else {
-      dayPain = isMensesInCycle2
-        ? Math.max(1, basePain * 0.85)
-        : isLateLuteal
-        ? Math.max(1, basePain * 0.7)
-        : 1.2;
     }
-
-    data.push({
-      day: d,
-      painSeverity: Math.min(10, Math.round(dayPain * 10) / 10),
-      cycleDay: isIrregular ? null : ((dayInGap - 1) % 28) + 1,
-      isMenstrual: !isIrregular && isMensesInCycle2,
-      isAnovulatory: isIrregular,
-    });
-  }
-
-  // Cycle 3: Days 74-90 (New cycle restart)
-  for (let d = 74; d <= 90; d++) {
-    const newCycleDay = d - 73;
-    const isMenstrual = newCycleDay <= c1Duration;
-    const dayPain = isMenstrual
-      ? Math.max(1, basePain * 0.9 + Math.sin(d) * 0.4)
-      : Math.max(0.8, basePain * 0.28);
-
-    data.push({
-      day: d,
-      painSeverity: Math.min(10, Math.round(dayPain * 10) / 10),
-      cycleDay: newCycleDay,
+    return {
+      day: i + 1,
+      dateKey: key,
+      painSeverity: painByDay.has(key) ? painByDay.get(key)! : null,
+      cycleDay,
       isMenstrual,
-      isAnovulatory: false,
-    });
-  }
-
-  return data;
+      isAnovulatory,
+    };
+  });
 }
 
 // ============================================================
-// Dynamic Clinical Anomalies Generator
-// Generates accurate, user-friendly anomalies matching specific biomarkers
+// Patterns to discuss with a doctor — from the last 30 days of logs.
+// Worded as observations, never as diagnoses.
 // ============================================================
-function generateDynamicAnomalies(
-  pain: number,
-  flow: string,
-  mood: number,
-  strainScore: number,
-  hrvDelta: number,
-  conditions: string[],
-  sleepDeficit: boolean = false
-): ClinicalAnomaly[] {
+function buildPatterns(
+  logs: SymptomLog[],
+  sleepLogs: SleepLog[],
+  cycles: PastCycleRecord[],
+  prediction: CyclePrediction,
+  sleepTarget: number
+): { anomalies: ClinicalAnomaly[]; flags: string[] } {
   const anomalies: ClinicalAnomaly[] = [];
+  const flags: string[] = [];
+  const last30 = logs.filter((l) => {
+    const age = daysSinceKey(l.date);
+    return age >= 0 && age <= 30;
+  });
 
-  // Anomaly 1: Pelvic Pain / Prostaglandin Profile
-  if (pain >= 7) {
+  const pains = last30.filter((l) => typeof l.pain === 'number').map((l) => l.pain as number);
+  if (pains.length) {
+    const maxPain = Math.max(...pains);
+    if (maxPain >= 7) {
+      flags.push('Severe period pain logged');
+      anomalies.push({
+        id: 'pattern-pain-severe',
+        type: 'pain_cluster',
+        severity: 'critical',
+        title: `Severe period pain logged (${maxPain}/10)`,
+        description:
+          'Pain this strong is worth raising with a gynaecologist — especially if it stops you studying or working, or painkillers do not help. Note which cycle days it peaks.',
+        icon: '⚡',
+      });
+    } else if (maxPain >= 4) {
+      anomalies.push({
+        id: 'pattern-pain-moderate',
+        type: 'pain_cluster',
+        severity: 'moderate',
+        title: `Moderate cramps logged (up to ${maxPain}/10)`,
+        description: 'Heat, gentle movement and rest help many people. Track whether it changes cycle to cycle.',
+        icon: '🌸',
+      });
+    }
+  }
+
+  const heavyDays = new Set(last30.filter((l) => l.flow === 'heavy' || l.flow === 'severe').map((l) => l.date));
+  if (heavyDays.size) {
+    flags.push('Heavy flow logged');
     anomalies.push({
-      id: 'anomaly-pain-severe',
-      type: 'pain_cluster',
+      id: 'pattern-flow-heavy',
+      type: 'flow_heavy',
       severity: 'critical',
-      title: `Severe Pelvic Dysmenorrhea Peak (${pain}/10)`,
-      description: `Acute pain score of ${pain}/10 logged with uterine spasms. Prostaglandin-driven myometrial contractions are elevated. Deploy heat therapy and restorative pelvic floor decompression.`,
-      icon: '⚡',
-    });
-  } else if (pain >= 4) {
-    anomalies.push({
-      id: 'anomaly-pain-mod',
-      type: 'pain_cluster',
-      severity: 'moderate',
-      title: `Moderate Cyclical Cramping (${pain}/10)`,
-      description: `Discomfort score of ${pain}/10 logged. Responsive to restorative somatic flows, magnesium glycinate, and warm compresses.`,
-      icon: '🌸',
-    });
-  } else {
-    anomalies.push({
-      id: 'anomaly-pain-low',
-      type: 'pain_cluster',
-      severity: 'moderate',
-      title: `Optimal Pelvic Comfort (${pain}/10)`,
-      description: `Baseline pelvic comfort remains steady. Uterine smooth muscle shows balanced inflammatory signaling and low spasm activity.`,
-      icon: '✨',
+      title: `Heavy flow logged on ${heavyDays.size} day${heavyDays.size > 1 ? 's' : ''}`,
+      description:
+        'See a doctor if you soak a pad or tampon every 1–2 hours, pass clots bigger than a ₹2 coin, bleed for more than 7 days, or feel dizzy or breathless. Ask whether an iron (ferritin) test makes sense.',
+      icon: '🩸',
     });
   }
 
-  // Anomaly 2: Flow or Cycle Interval
-  if (flow === 'heavy' || flow === 'severe') {
+  if (prediction.regularityStatus === 'irregular_pcos') {
+    const lengths = cycles.map((c) => c.lengthDays).filter((n) => n > 0);
+    const range = lengths.length > 1 ? ` Your saved cycles range from ${Math.min(...lengths)} to ${Math.max(...lengths)} days.` : '';
+    flags.push('Irregular cycle lengths');
     anomalies.push({
-      id: 'anomaly-flow-hmb',
-      type: 'anovulatory_gap',
-      severity: 'critical',
-      title: 'Heavy Menstrual Bleeding (HMB) Saturation',
-      description: `Rapid protection saturation logged with clot formation. Recommend monitoring serum ferritin, staying hydrated with electrolytes, and clinical consultation if saturation persists >2 hours.`,
-      icon: '🩸',
-    });
-  } else if (conditions.includes('PCOS') || flow === 'spotting') {
-    anomalies.push({
-      id: 'anomaly-pcos-gap',
+      id: 'pattern-cycle-irregular',
       type: 'anovulatory_gap',
       severity: 'severe',
-      title: 'Extended Follicular / Anovulatory Gap',
-      description: `Extended interval without ovulatory progesterone markers recorded. Pattern correlates with metabolic or stress-induced follicular arrest.`,
-      icon: '⚠️',
-    });
-  } else {
-    anomalies.push({
-      id: 'anomaly-cycle-regular',
-      type: 'anovulatory_gap',
-      severity: 'moderate',
-      title: 'Predictable Menstrual Phase Synchronization',
-      description: `Cycle markers demonstrate consistent physiological phasing without anovulatory disruption.`,
+      title: 'Irregular cycle lengths',
+      description: `Cycles shorter than 21 days, longer than 35 days, or that vary a lot are worth checking with a gynaecologist, who may suggest tests (for example for PCOS or thyroid).${range}`,
       icon: '🔄',
     });
   }
 
-  // Anomaly 3: Neuro-Endocrine / Mood / HRV
-  if (mood <= 2) {
+  const lowMoodDays = new Set(last30.filter((l) => typeof l.mood === 'number' && (l.mood as number) <= 2).map((l) => l.date));
+  if (lowMoodDays.size) {
+    if (lowMoodDays.size >= 2) flags.push('Low-mood days logged');
     anomalies.push({
-      id: 'anomaly-pmdd-mood',
-      type: 'hrv_drop',
-      severity: 'severe',
-      title: 'Late Luteal PMDD Neuro-Dysphoria Drop',
-      description: `Acute mood dip (Level ${mood}/5) logged. Reflects GABA-A receptor sensitivity to shifting allopregnanolone levels prior to menstruation. Somatic vagal grounding recommended.`,
-      icon: '🥺',
-    });
-  } else if (strainScore >= 65 || hrvDelta <= -20) {
-    anomalies.push({
-      id: 'anomaly-hrv-suppression',
-      type: 'hrv_drop',
-      severity: 'moderate',
-      title: 'Persistent Autonomic HRV Suppression',
-      description: `Heart rate variability is ${Math.abs(hrvDelta)}% below baseline, indicating heightened sympathetic strain. Downshift workout intensity and engage slow diaphragmatic breathing.`,
-      icon: '📉',
-    });
-  } else {
-    anomalies.push({
-      id: 'anomaly-autonomic-bal',
-      type: 'hrv_drop',
-      severity: 'moderate',
-      title: 'Resilient Parasympathetic Vagal Tone',
-      description: `Autonomic nervous system shows healthy vagal flexibility and stable neuro-endocrine regulation.`,
-      icon: '🌿',
+      id: 'pattern-mood-low',
+      type: 'mood_pattern',
+      severity: lowMoodDays.size >= 3 ? 'severe' : 'moderate',
+      title: `Low mood on ${lowMoodDays.size} day${lowMoodDays.size > 1 ? 's' : ''} this month`,
+      description:
+        'If low mood, irritability or anxiety return in the week before most periods and ease once it starts, ask your doctor about PMS/PMDD. If you ever feel unsafe, call Tele-MANAS on 14416 (free, 24×7).',
+      icon: '💜',
     });
   }
 
-  // Anomaly 4: Sleep Architecture Disruption
-  if (sleepDeficit) {
+  const recentSleep = sleepLogs.filter((s) => {
+    const age = daysSinceKey(s.date);
+    return age >= 0 && age < 7;
+  });
+  const shortNights = recentSleep.filter((s) => s.hours < sleepTarget - 1.5).length;
+  if (shortNights >= 3) {
+    flags.push('Short sleep');
     anomalies.push({
-      id: 'anomaly-sleep-deficit',
+      id: 'pattern-sleep-short',
       type: 'sleep_deficit',
       severity: 'moderate',
-      title: 'Restorative Sleep Debt Detected',
-      description: `Sleep duration fell short of the restorative baseline. Lack of deep slow-wave sleep impairs cortisol clearance and elevates luteal pain sensitivity.`,
+      title: `Short sleep on ${shortNights} of the last 7 nights`,
+      description: 'Sleep loss makes pain, cravings and low mood feel worse. A steady bedtime helps more than catching up at weekends.',
       icon: '🌙',
     });
   }
 
-  return anomalies;
+  return { anomalies, flags };
 }
 
-export const useAppStore = create<AppState>((set, get) => ({
-  // ─── User & Auth ─────────────────────────────────
-  userName: 'Maya',
-  userEmail: 'maya@shesync.app',
-  userPhoto: undefined,
-  isAuthenticated: false,
-
-  // ─── Assessment & Fine-Tuning ─────────────────────
-  isAssessmentCompleted: false,
-  assessmentAnswers: {},
-  fineTuningSettings: {
-    archetypeId: 'pcos_strain_adaptive',
-    archetypeName: 'PCOS Bio-Adaptive Synchronizer',
-    archetypeTagline: 'Metabolic Stability & Cycle Harmony',
-    archetypeDescription:
-      'Calibrated for gentle insulin-sensitive strength, hormonal equilibrium, and nervous system recovery.',
-    strainSensitivity: 'gentle',
-    preferredTherapy: 'somatic',
-    autoCortisolOverride: true,
-    pmddEarlyShield: true,
-    dailySleepTargetHours: 8.5,
-    primaryCondition: 'PCOS & Metabolic Health',
-  },
-
-  // ─── Biometrics (Initial baseline, dynamically updated) ─────
-  biometrics: {
-    hrv: {
-      current: 34,
-      baseline: 58,
-      status: 'below',
-      label: '34 ms (41.4% Below Baseline)',
-      delta: -41.4,
-    },
-    sleep: {
-      hoursSlept: 5,
-      minutesSlept: 30,
-      deficit: true,
-      severity: 'moderate',
-      label: '5h 30m (Restorative Deficit)',
-      quality: 42,
-    },
-    cortisol: {
-      level: 'high',
-      value: 26.8,
-      isOverride: true,
-      timestamp: new Date().toISOString(),
-    },
-    strainScore: 74,
-    strainLevel: 'high',
-  },
-
-  // ─── Cycle & Prediction ─────────────────────────
-  cycle: {
-    currentDay: 14,
-    expectedLength: 28,
-    phase: 'ovulatory',
-    isIrregular: false,
-    lastPeriodDate: new Date(Date.now() - 14 * 86400000).toISOString().split('T')[0],
-    label: 'Day 14 (Ovulatory Phase • Peak Estrogen)',
-    progesteroneStatus: 'rising',
-    conditions: ['Cycle Sync'],
-  },
-  rememberedCyclesCount: 3,
-  pastCycles: initialPastCycles,
-  cyclePrediction: calculateCyclePredictionAndPrecautions(3, initialPastCycles, {}, 4, 'none'),
-
-  // ─── Initial Baseline Symptom Logs ───────────────
-  symptomLogs: [
-    {
-      id: 'log-initial-pain',
-      date: new Date().toISOString().split('T')[0],
-      pain: 6,
-      painLocation: ['Pelvic / Uterine Cramps', 'Lower Back'],
-      reliefMethods: ['Heating Pad / Warm Bath'],
-      notes: '[Cramping Spasms] Baseline pelvic cramping logged during setup.',
-      timestamp: new Date().toISOString(),
-    },
-    {
-      id: 'log-initial-flow',
-      date: new Date().toISOString().split('T')[0],
-      flow: 'spotting',
-      flowColor: 'Deep Burgundy',
-      notes: 'Light luteal spotting detected before full menses.',
-      timestamp: new Date().toISOString(),
-    },
-    {
-      id: 'log-initial-mood',
-      date: new Date().toISOString().split('T')[0],
-      mood: 2,
-      energy: 'low',
-      tags: ['Tender', 'Brain Fog'],
-      notes: 'Luteal mood sensitivity with physical exhaustion.',
-      timestamp: new Date().toISOString(),
-    },
-  ],
-
-  // ─── Adaptive Movement ───────────────────────────
-  todayWorkout: {
-    id: 'workout-today',
-    title: '20-Min Restorative Pelvic Floor Flow',
-    duration: '20 min',
-    intensity: 'restorative',
-    type: 'Pelvic Floor Flow',
-    description:
-      'A gentle, restorative sequence targeting deep pelvic floor engagement, diaphragmatic breathing, and parasympathetic activation. Designed to reduce cortisol without triggering a sympathetic spike.',
-    overriddenFrom: '35-Min High-Intensity Interval Training',
-    reason:
-      'Elevated physiological strain detected. HIIT exercise during high strain amplifies HPA axis dysregulation, which can worsen PCOS symptoms and delay cycles. This restorative flow activates the parasympathetic nervous system, reducing cortisol by ~18% within 20 minutes.',
-    tags: ['Parasympathetic', 'Pelvic Floor', 'Cortisol-Safe', 'PCOS Adaptive'],
-  },
-
-  workoutHistory: [
-    {
-      date: '2026-09-28',
-      original: '30-Min Power Yoga',
-      adapted: '15-Min Gentle Stretch & Breathwork',
-      reason: 'HRV dropped 41% below baseline. Sleep deficit of 3.2 hours detected.',
-      strainAtTime: 76,
-    },
-    {
-      date: '2026-09-27',
-      original: '40-Min Spin Session',
-      adapted: '20-Min Walking Meditation',
-      reason:
-        'Late luteal phase detected with elevated inflammatory markers. High-intensity cardio contraindicated.',
-      strainAtTime: 71,
-    },
-    {
-      date: '2026-09-26',
-      original: '25-Min HIIT Circuit',
-      adapted: '20-Min Somatic Movement Flow',
-      reason:
-        'Cortisol spike detected at 24.1 µg/dL. Progesterone dropping — sympathetic overload risk.',
-      strainAtTime: 68,
-    },
-  ],
-
-  showBiologicalReasoning: false,
-
-  // ─── Mental Therapy & YouTube Sessions ───────────
-  activeTherapy: {
-    id: 'therapy-vagus',
-    type: 'somatic',
-    title: 'Somatic Vagus Nerve Grounding',
-    description:
-      'A guided somatic practice stimulating the vagus nerve through slow humming, cold water exposure cues, and bilateral tapping. Designed for acute PMDD emotional dysregulation.',
-    durationSeconds: 615,
-    isPlaying: false,
-    progress: 0,
-    youtubeUrl: 'https://www.youtube.com/watch?v=eFV0FfMc_uo',
-    youtubeId: 'eFV0FfMc_uo',
-  },
-
-  cbtPrompt: {
-    id: 'cbt-brainfog',
-    trigger: 'severe brain fog',
-    prompt:
-      'You logged severe brain fog. Remember, this is a biological response to dropping progesterone — not a personal failure. What is one task we can offload today?',
-    placeholder: 'e.g., "I can delegate the report review to Sarah and focus on rest..."',
-    userResponse: undefined,
-  },
-
-  sosActive: false,
-
-  // ─── Clinical Report ─────────────────────────────
-  clinicalReport: {
-    trendData: generateDynamicTrendData(6, true),
-    anomalies: generateDynamicAnomalies(6, 'spotting', 2, 74, -41.4, ['PCOS', 'PMDD']),
-    isGenerating: false,
-  },
-
-  // ─── Core Fine-Tuning Analytics Engine ───────────
-  fineTuneAllAnalytics: () => {
-    const state = get();
-    const logs = state.symptomLogs;
-    const answers = state.assessmentAnswers;
-    const sensitivity = state.fineTuningSettings?.strainSensitivity || 'gentle';
-
-    // Find most recent logged metrics
-    const latestPainLog = logs.find((l) => l.pain !== undefined);
-    const latestFlowLog = logs.find((l) => l.flow !== undefined);
-    const latestMoodLog = logs.find((l) => l.mood !== undefined);
-
-    const painVal = latestPainLog?.pain ?? 4;
-    const flowVal = latestFlowLog?.flow ?? 'spotting';
-    const moodVal = latestMoodLog?.mood ?? 3;
-    const energyVal = latestMoodLog?.energy ?? 'moderate';
-
-    // 1. Calculate Multi-Domain Allostatic Strain Score (0 - 100)
-    // Domain A: Neuro-Endocrine & Stress (Assessment + Mood)
-    let neuroStrain = 6;
-    if (answers['q6'] === 'q6_opt4') neuroStrain += 10;
-    else if (answers['q6'] === 'q6_opt3') neuroStrain += 6;
-
-    if (answers['q7'] === 'q7_opt4') neuroStrain += 10;
-    else if (answers['q7'] === 'q7_opt3') neuroStrain += 6;
-
-    if (moodVal === 1) neuroStrain += 14;
-    else if (moodVal === 2) neuroStrain += 9;
-    else if (moodVal === 4) neuroStrain -= 5;
-    else if (moodVal === 5) neuroStrain -= 9;
-
-    // Domain B: Physical & Pelvic Inflammatory Strain (Pain + Location)
-    let pelvicStrain = Math.round(painVal * 3.3);
-    if (answers['q2'] === 'q2_opt4') pelvicStrain += 8;
-    else if (answers['q2'] === 'q2_opt3') pelvicStrain += 5;
-
-    // Domain C: Flow & Blood Loss Demand
-    let flowStrain = 4;
-    if (flowVal === 'severe') flowStrain += 18;
-    else if (flowVal === 'heavy') flowStrain += 12;
-    else if (flowVal === 'moderate') flowStrain += 6;
-    else if (flowVal === 'spotting') flowStrain += 2;
-
-    // Domain D: Sleep & Recovery Deficit
-    let recoveryStrain = 4;
-    if (answers['q5'] === 'q5_opt4') recoveryStrain += 10;
-    else if (answers['q5'] === 'q5_opt3') recoveryStrain += 6;
-
-    if (answers['q3'] === 'q3_opt4') recoveryStrain += 8;
-    else if (answers['q3'] === 'q3_opt3') recoveryStrain += 5;
-
-    if (energyVal === 'low') recoveryStrain += 7;
-    else if (energyVal === 'high') recoveryStrain -= 6;
-
-    // Domain E: Metabolic & Irregularity Strain
-    if (answers['q1'] === 'q1_opt4' || answers['q1'] === 'q1_opt5') recoveryStrain += 6;
-    if (answers['q8'] === 'q8_opt3' || answers['q8'] === 'q8_opt4') recoveryStrain += 5;
-
-    // Base allostatic total
-    let totalStrain = neuroStrain + pelvicStrain + flowStrain + recoveryStrain;
-
-    // Sensitivity Calibration
-    if (sensitivity === 'gentle') {
-      totalStrain = Math.round(totalStrain * 1.08); // Higher vigilance for sensitive nervous systems
-    } else if (sensitivity === 'dynamic') {
-      totalStrain = Math.round(totalStrain * 0.92); // Athletic resilience dampening
-    }
-
-    const finalStrain = Math.min(96, Math.max(10, totalStrain));
-    const strainLevel: 'low' | 'moderate' | 'high' | 'severe' =
-      finalStrain >= 80 ? 'severe' : finalStrain >= 60 ? 'high' : finalStrain >= 36 ? 'moderate' : 'low';
-
-    // 2. Fine-Tuned HRV (Personal Baseline Calibrated)
-    const baseHrv = 58;
-    // Logarithmic suppression model
-    const currentHrv = Math.max(18, Math.round(74 - (finalStrain / 100) * 46));
-    const hrvDelta = Math.round(((currentHrv - baseHrv) / baseHrv) * 1000) / 10;
-    const hrvStatus: 'below' | 'at' | 'above' =
-      hrvDelta < -10 ? 'below' : hrvDelta > 10 ? 'above' : 'at';
-    const hrvLabel = `${currentHrv} ms (${
-      hrvStatus === 'below'
-        ? `${Math.abs(hrvDelta)}% Below Baseline`
-        : hrvStatus === 'above'
-        ? `${hrvDelta}% Above Baseline`
-        : 'Near Baseline'
-    })`;
-
-    // 3. Fine-Tuned Biological Cortisol
-    let cortisolLevel: 'low' | 'normal' | 'elevated' | 'high' = 'normal';
-    let cortisolValue = 13.5;
-    let isOverride = false;
-
-    if (finalStrain >= 65 || painVal >= 7 || moodVal <= 2) {
-      cortisolLevel = 'high';
-      cortisolValue = Math.round((24.0 + (finalStrain / 100) * 5.4) * 10) / 10;
-      isOverride = true;
-    } else if (finalStrain >= 40 || painVal >= 5) {
-      cortisolLevel = 'elevated';
-      cortisolValue = Math.round((17.5 + (finalStrain / 100) * 3.8) * 10) / 10;
-      isOverride = true;
-    } else {
-      cortisolLevel = 'normal';
-      cortisolValue = Math.round((11.2 + (finalStrain / 100) * 3.2) * 10) / 10;
-      isOverride = false;
-    }
-
-    // 4. Fine-Tuned Sleep Quality & Deficit
-    let hoursSlept = 7;
-    let minutesSlept = 30;
-    let sleepDeficit = false;
-    let sleepSeverity: 'mild' | 'moderate' | 'severe' = 'mild';
-    let sleepQuality = 82;
-
-    if (answers['q5'] === 'q5_opt4' || energyVal === 'low' || finalStrain >= 75) {
-      hoursSlept = 4;
-      minutesSlept = 45;
-      sleepDeficit = true;
-      sleepSeverity = 'severe';
-      sleepQuality = 34;
-    } else if (answers['q5'] === 'q5_opt3' || finalStrain >= 50) {
-      hoursSlept = 6;
-      minutesSlept = 15;
-      sleepDeficit = true;
-      sleepSeverity = 'moderate';
-      sleepQuality = 58;
-    }
-
-    const sleepLabel = `${hoursSlept}h ${minutesSlept}m (${
-      sleepDeficit ? `${sleepSeverity === 'severe' ? 'Severe ' : ''}Deficit` : 'Restorative'
-    })`;
-
-    // 5. Dynamic Cycle Prediction & Precaution Engine
-    const activeCycles =
-      state.pastCycles && state.pastCycles.length > 0 ? state.pastCycles : initialPastCycles;
-    const effectiveCount = state.rememberedCyclesCount || 3;
-    const newPrediction = calculateCyclePredictionAndPrecautions(
-      effectiveCount,
-      activeCycles,
-      answers,
-      painVal,
-      flowVal
-    );
-
-    const isIrregular = newPrediction.regularityStatus === 'irregular_pcos';
-
-    // 6. Dynamic Cycle Day, Phase, and Label Calculation
-    const mostRecentCycle = activeCycles[0];
-    const today = new Date();
-    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-    let daysSinceStart = 14;
-    let periodStartDateStr = mostRecentCycle?.startDate;
-    if (periodStartDateStr) {
-      const parts = periodStartDateStr.split('-').map(Number);
-      if (parts.length === 3 && !isNaN(parts[0])) {
-        const startMidnight = new Date(parts[0], parts[1] - 1, parts[2]);
-        daysSinceStart = Math.max(
-          0,
-          Math.round((todayMidnight.getTime() - startMidnight.getTime()) / 86400000)
-        );
-      }
-    } else if (typeof mostRecentCycle?.daysAgo === 'number') {
-      daysSinceStart = Math.max(0, mostRecentCycle.daysAgo);
-      periodStartDateStr = new Date(todayMidnight.getTime() - daysSinceStart * 86400000)
-        .toISOString()
-        .split('T')[0];
-    }
-
-    const calculatedCycleDay = Math.max(1, daysSinceStart + 1);
-    const predictedLen = newPrediction.predictedCycleLength || 28;
-    const periodDuration = mostRecentCycle?.periodDurationDays || 5;
-
-    let cyclePhase: CycleData['phase'] = 'follicular';
-    let cycleLabel = `Day ${calculatedCycleDay}`;
-
-    if (
-      flowVal === 'moderate' ||
-      flowVal === 'heavy' ||
-      flowVal === 'severe' ||
-      calculatedCycleDay <= periodDuration
-    ) {
-      cyclePhase = 'menstrual';
-      cycleLabel = `Day ${calculatedCycleDay} (Active ${
-        flowVal !== 'none' ? flowVal.toUpperCase() + ' ' : ''
-      }Menstrual Flow)`;
-    } else if (calculatedCycleDay < Math.max(8, predictedLen - 16)) {
-      cyclePhase = 'follicular';
-      cycleLabel = `Day ${calculatedCycleDay} (Follicular Phase • Rising Energy)`;
-    } else if (calculatedCycleDay <= Math.max(12, predictedLen - 12)) {
-      cyclePhase = 'ovulatory';
-      cycleLabel = `Day ${calculatedCycleDay} (Ovulatory Phase • Peak Estrogen)`;
-    } else if (calculatedCycleDay <= predictedLen) {
-      cyclePhase = 'luteal';
-      cycleLabel = `Day ${calculatedCycleDay} (Luteal Phase${
-        flowVal === 'spotting' ? ' • Spotting' : ''
-      })`;
-    } else {
-      cyclePhase = isIrregular ? 'irregular' : 'luteal';
-      cycleLabel = isIrregular
-        ? `Day ${calculatedCycleDay} (Extended / Irregular Gap)`
-        : `Day ${calculatedCycleDay} (Delayed / Overdue • Cycle Completion Expected)`;
-    }
-
-    // 7. Dynamic Trend Data & Clinical Anomalies
-    const conditions = [...state.cycle.conditions];
-    if (painVal >= 6 && !conditions.includes('Dysmenorrhea')) conditions.push('Dysmenorrhea');
-    if ((flowVal === 'heavy' || flowVal === 'severe') && !conditions.includes('Menorrhagia'))
-      conditions.push('Menorrhagia');
-    if (moodVal <= 2 && !conditions.includes('PMDD')) conditions.push('PMDD');
-    if (isIrregular && !conditions.includes('PCOS')) conditions.push('PCOS');
-
-    const newTrendData = generateDynamicTrendData(painVal, isIrregular, activeCycles);
-    const newAnomalies = generateDynamicAnomalies(
-      painVal,
-      flowVal,
-      moodVal,
-      finalStrain,
-      hrvDelta,
-      conditions,
-      sleepDeficit
-    );
-
-    set({
-      biometrics: {
-        hrv: {
-          current: currentHrv,
-          baseline: baseHrv,
-          status: hrvStatus,
-          label: hrvLabel,
-          delta: hrvDelta,
-        },
-        sleep: {
-          hoursSlept,
-          minutesSlept,
-          deficit: sleepDeficit,
-          severity: sleepSeverity,
-          label: sleepLabel,
-          quality: sleepQuality,
-        },
-        cortisol: {
-          level: cortisolLevel,
-          value: cortisolValue,
-          isOverride,
-          timestamp: new Date().toISOString(),
-        },
-        strainScore: finalStrain,
-        strainLevel,
-      },
-      cycle: {
-        ...state.cycle,
-        expectedLength: predictedLen,
-        lastPeriodDate: periodStartDateStr || state.cycle.lastPeriodDate,
-        isIrregular,
-        phase: cyclePhase,
-        currentDay: calculatedCycleDay,
-        label: cycleLabel,
-        conditions: conditions.slice(0, 3),
-      },
-      cyclePrediction: newPrediction,
-      clinicalReport: {
-        ...state.clinicalReport,
-        trendData: newTrendData,
-        anomalies: newAnomalies,
-      },
-    });
-  },
-
-  // ─── Past Cycles & Predictions ───────────────────
-  savePastCycles: (count: number, cycles: PastCycleRecord[]) => {
-    const state = get();
-    const latestPainLog = state.symptomLogs.find((l) => l.pain !== undefined);
-    const latestFlowLog = state.symptomLogs.find((l) => l.flow !== undefined);
-    const painVal = latestPainLog?.pain ?? 4;
-    const flowVal = latestFlowLog?.flow ?? 'spotting';
-
-    const newPrediction = calculateCyclePredictionAndPrecautions(
-      count,
-      cycles,
-      state.assessmentAnswers,
-      painVal,
-      flowVal
-    );
-
-    const mostRecent = cycles[0];
-    const isIrregular = newPrediction.regularityStatus === 'irregular_pcos';
-
-    set((s) => ({
-      rememberedCyclesCount: count,
-      pastCycles: cycles,
-      cyclePrediction: newPrediction,
-      cycle: {
-        ...s.cycle,
-        expectedLength: newPrediction.predictedCycleLength,
-        lastPeriodDate: mostRecent?.startDate || s.cycle.lastPeriodDate,
-        isIrregular,
-      },
-    }));
-
-    get().fineTuneAllAnalytics();
-
-    // Async sync to Supabase (cycles table)
-    cycles.forEach((c) => {
-      saveCycleToSupabase({
-        start_date: c.startDate,
-        cycle_length: c.lengthDays,
-      }).catch(() => {
-        // Silent catch for offline or guest mode
-      });
-    });
-  },
-
-  // ─── Actions ─────────────────────────────────────
-  toggleAudioPlayback: () =>
-    set((state) => ({
-      activeTherapy: {
-        ...state.activeTherapy,
-        isPlaying: !state.activeTherapy.isPlaying,
-      },
-    })),
-
-  updateAudioProgress: (progress: number) =>
-    set((state) => ({
-      activeTherapy: {
-        ...state.activeTherapy,
-        progress: Math.min(Math.max(progress, 0), 1),
-      },
-    })),
-
-  submitCBTResponse: (response: string) =>
-    set((state) => ({
-      cbtPrompt: {
-        ...state.cbtPrompt,
-        userResponse: response,
-      },
-    })),
-
-  // ─── Auth Actions ────────────────────────────────
-  login: (email?: string, name?: string) =>
-    set((state) => ({
-      isAuthenticated: true,
-      userName: name || state.userName || 'Maya',
-      userEmail: email || state.userEmail || 'maya@shesync.app',
-    })),
-
-  signup: (name: string, email: string) =>
-    set({
-      isAuthenticated: true,
-      userName: name,
-      userEmail: email,
-    }),
-
-  logout: async () => {
-    try {
-      await signOutSupabase();
-    } catch (e) {
-      console.warn('Logout signOutSupabase error', e);
-    }
-    set({
-      isAuthenticated: false,
-      userName: '',
-      userEmail: '',
-      userPhoto: undefined,
-      isAssessmentCompleted: false,
-    });
-  },
-
-  updateUserPhoto: (uri: string) =>
-    set({
-      userPhoto: uri,
-    }),
-
-  completeAssessment: (answers: Record<string, string>) => {
-    const archetype = calculateArchetype(answers);
-    const newConditions = ['PCOS', 'PMDD'];
-    if (archetype.primaryCondition && !newConditions.includes(archetype.primaryCondition)) {
-      newConditions.unshift(archetype.primaryCondition);
-    }
-
-    set((state) => ({
-      isAssessmentCompleted: true,
-      assessmentAnswers: answers,
-      fineTuningSettings: {
-        archetypeId: archetype.id,
-        archetypeName: archetype.name,
-        archetypeTagline: archetype.tagline,
-        archetypeDescription: archetype.description,
-        strainSensitivity: archetype.recommendedStrainSensitivity,
-        preferredTherapy: archetype.defaultTherapy,
-        autoCortisolOverride: archetype.cortisolOverrideDefault,
-        pmddEarlyShield: archetype.pmddAlertDefault,
-        dailySleepTargetHours: archetype.sleepTargetHours,
-        primaryCondition: archetype.primaryCondition,
-      },
-      cycle: {
-        ...state.cycle,
-        conditions: newConditions.slice(0, 2),
-      },
-    }));
-
-    // Trigger full analytics fine-tuning
-    get().fineTuneAllAnalytics();
-  },
-
-  updateFineTuningSettings: (settings: Partial<FineTuningSettings>) =>
-    set((state) => ({
-      fineTuningSettings: {
-        ...state.fineTuningSettings,
-        ...settings,
-      },
-    })),
-
-  triggerSOS: () => set({ sosActive: true }),
-  dismissSOS: () => set({ sosActive: false }),
-
-  toggleBiologicalReasoning: () =>
-    set((state) => ({
-      showBiologicalReasoning: !state.showBiologicalReasoning,
-    })),
-
-  generateClinicalPDF: async () => {
-    set((state) => ({
-      clinicalReport: { ...state.clinicalReport, isGenerating: true },
-    }));
-
-    try {
-      const { generateAndDownloadClinicalPDF } = await import('@/lib/pdfReportService');
-      await generateAndDownloadClinicalPDF(get());
-      set((state) => ({
-        clinicalReport: {
-          ...state.clinicalReport,
-          isGenerating: false,
-          generatedAt: new Date().toISOString(),
-        },
-      }));
-    } catch (err) {
-      console.error('[Report] Failed to generate/share PDF:', err);
-      set((state) => ({
-        clinicalReport: {
-          ...state.clinicalReport,
-          isGenerating: false,
-        },
-      }));
-    }
-  },
-
-  setStrainScore: (score: number) => {
-    const clamped = Math.min(100, Math.max(0, Math.round(score)));
-    const level: 'low' | 'moderate' | 'high' | 'severe' =
-      clamped >= 82 ? 'severe' : clamped >= 62 ? 'high' : clamped >= 38 ? 'moderate' : 'low';
-    set((state) => ({
-      biometrics: {
-        ...state.biometrics,
-        strainScore: clamped,
-        strainLevel: level,
-      },
-    }));
-  },
-
-  logSymptom: (log: Partial<SymptomLog>) => {
-    const newLog: SymptomLog = {
-      id: `log-${Date.now()}`,
-      date: new Date().toISOString().split('T')[0],
-      timestamp: new Date().toISOString(),
-      ...log,
+function deriveCbtPrompt(logs: SymptomLog[], previous: CBTPrompt): CBTPrompt {
+  const moodLog = recentLog(logs, 'mood', 2);
+  const painLog = recentLog(logs, 'pain', 2);
+  let next: CBTPrompt = DEFAULT_CBT;
+  if (moodLog?.tags?.includes('Brain Fog')) {
+    next = {
+      id: 'cbt-brainfog',
+      trigger: 'brain fog',
+      prompt:
+        'You logged brain fog. That is your body asking for a lighter load — not a personal failure. What is one task you can make smaller or hand off today?',
+      placeholder: 'e.g. "I can ask a friend to share class notes today"',
     };
+  } else if (moodLog && (moodLog.mood as number) <= 2) {
+    next = {
+      id: 'cbt-lowmood',
+      trigger: 'a low mood',
+      prompt: 'You logged a low mood. Write down one thought that keeps repeating — then a kinder, more balanced version of it.',
+      placeholder: 'e.g. "I am behind on everything" → "I am behind on two things and can start one today"',
+    };
+  } else if (painLog && (painLog.pain as number) >= 6) {
+    next = {
+      id: 'cbt-pain',
+      trigger: 'strong pain',
+      prompt: 'Pain drains focus. What would “good enough” look like for today, instead of perfect?',
+      placeholder: 'e.g. "Revise one chapter with a heat pad, skip the gym"',
+    };
+  }
+  return next.id === previous.id ? previous : { ...next, userResponse: undefined };
+}
 
-    set((state) => ({
-      symptomLogs: [newLog, ...state.symptomLogs],
-    }));
+// ============================================================
+// Core analytics engine — everything below is derived from the
+// user's logs, assessment answers and saved cycles.
+// ============================================================
+type EngineInput = Pick<
+  UserData,
+  | 'symptomLogs'
+  | 'sleepLogs'
+  | 'assessmentAnswers'
+  | 'fineTuningSettings'
+  | 'pastCycles'
+  | 'rememberedCyclesCount'
+  | 'focusAreas'
+  | 'cbtPrompt'
+>;
 
-    // Immediately fine-tune all analytics across the entire application
-    get().fineTuneAllAnalytics();
+interface Derived {
+  biometrics: BiometricSnapshot;
+  cycle: CycleData;
+  cyclePrediction: CyclePrediction;
+  trendData: DailyDataPoint[];
+  anomalies: ClinicalAnomaly[];
+  patternFlags: string[];
+  todayWorkout: AdaptiveWorkout;
+  workoutIsOverride: boolean;
+  cbtPrompt: CBTPrompt;
+  pastCycles: PastCycleRecord[];
+}
 
-    // Async sync to Supabase (daily_logs table)
-    saveDailyLogToSupabase({
-      log_date: newLog.date,
-      pain_level: newLog.pain ?? null,
-      mood: newLog.mood ? String(newLog.mood) : null,
-      symptoms: newLog.painLocation || [],
-      notes: newLog.notes || null,
-    }).catch(() => {
-      // Guest / offline mode fallback
-    });
-  },
-}));
+function computeDerived(input: EngineInput): Derived {
+  const logs = input.symptomLogs;
+  const answers = input.assessmentAnswers;
+  const settings = input.fineTuningSettings;
+  const sensitivity = settings?.strainSensitivity || 'balanced';
+  const sleepTarget = settings?.dailySleepTargetHours || 8;
+
+  // Only recent logs describe "today": a heavy-flow log from three weeks ago
+  // must not keep the user in her menstrual phase.
+  const signals = recentSignals(logs);
+  const flowLog = signals.flowLog;
+  const painVal = signals.pain;
+  const flowVal = signals.flow;
+  const moodVal = signals.mood ?? 3;
+  const energyVal = signals.energy ?? 'moderate';
+  const sleepLog = input.sleepLogs.find((s) => {
+    const age = daysSinceKey(s.date);
+    return age >= 0 && age <= 1;
+  });
+
+  // ── 1. Strain score (0–100) ─────────────────────────────
+  let neuroStrain = 6;
+  if (answers['q6'] === 'q6_opt4') neuroStrain += 10;
+  else if (answers['q6'] === 'q6_opt3') neuroStrain += 6;
+  if (answers['q7'] === 'q7_opt4') neuroStrain += 10;
+  else if (answers['q7'] === 'q7_opt3') neuroStrain += 6;
+  if (moodVal === 1) neuroStrain += 14;
+  else if (moodVal === 2) neuroStrain += 9;
+  else if (moodVal === 4) neuroStrain -= 5;
+  else if (moodVal === 5) neuroStrain -= 9;
+
+  let pelvicStrain = Math.round((painVal ?? 1) * 3.3);
+  if (answers['q2'] === 'q2_opt4') pelvicStrain += 8;
+  else if (answers['q2'] === 'q2_opt3') pelvicStrain += 5;
+
+  let flowStrain = 4;
+  if (flowVal === 'severe') flowStrain += 18;
+  else if (flowVal === 'heavy') flowStrain += 12;
+  else if (flowVal === 'moderate') flowStrain += 6;
+  else if (flowVal === 'spotting' || flowVal === 'light') flowStrain += 2;
+
+  let recoveryStrain = 4;
+  if (sleepLog) {
+    const shortBy = sleepTarget - sleepLog.hours;
+    if (shortBy >= 2.5) recoveryStrain += 10;
+    else if (shortBy >= 1.5) recoveryStrain += 6;
+    else if (shortBy >= 0.75) recoveryStrain += 3;
+    else if (sleepLog.hours >= sleepTarget) recoveryStrain -= 3;
+  } else if (answers['q5'] === 'q5_opt4') recoveryStrain += 10;
+  else if (answers['q5'] === 'q5_opt3') recoveryStrain += 6;
+  if (answers['q3'] === 'q3_opt4') recoveryStrain += 8;
+  else if (answers['q3'] === 'q3_opt3') recoveryStrain += 5;
+  if (energyVal === 'low') recoveryStrain += 7;
+  else if (energyVal === 'high') recoveryStrain -= 6;
+  if (answers['q1'] === 'q1_opt4' || answers['q1'] === 'q1_opt5') recoveryStrain += 6;
+  if (answers['q8'] === 'q8_opt3' || answers['q8'] === 'q8_opt4') recoveryStrain += 5;
+
+  let totalStrain = neuroStrain + pelvicStrain + flowStrain + recoveryStrain;
+  if (sensitivity === 'gentle') totalStrain = Math.round(totalStrain * 1.08);
+  else if (sensitivity === 'dynamic') totalStrain = Math.round(totalStrain * 0.92);
+
+  const finalStrain = Math.min(96, Math.max(10, totalStrain));
+  const strainLevel: BiometricSnapshot['strainLevel'] =
+    finalStrain >= 80 ? 'severe' : finalStrain >= 60 ? 'high' : finalStrain >= 36 ? 'moderate' : 'low';
+
+  // Internal model estimates only — never displayed as measurements.
+  const baseHrv = 58;
+  const currentHrv = Math.max(18, Math.round(74 - (finalStrain / 100) * 46));
+  const hrvDelta = Math.round(((currentHrv - baseHrv) / baseHrv) * 1000) / 10;
+  const hrvStatus: 'below' | 'at' | 'above' = hrvDelta < -10 ? 'below' : hrvDelta > 10 ? 'above' : 'at';
+  const strainOverride = finalStrain >= 65 || (painVal ?? 0) >= 7 || moodVal <= 2;
+  const cortisolLevel: BiometricSnapshot['cortisol']['level'] = strainOverride
+    ? 'high'
+    : finalStrain >= 40 || (painVal ?? 0) >= 5
+    ? 'elevated'
+    : 'normal';
+
+  // ── 2. Sleep — from the user's own log ─────────────────
+  let sleep: BiometricSnapshot['sleep'];
+  if (sleepLog) {
+    const hours = Math.floor(sleepLog.hours);
+    const minutes = Math.round((sleepLog.hours - hours) * 60);
+    const shortBy = Math.max(0, sleepTarget - sleepLog.hours);
+    const deficit = shortBy >= 0.5;
+    sleep = {
+      hoursSlept: hours,
+      minutesSlept: minutes,
+      deficit,
+      severity: shortBy >= 2 ? 'severe' : shortBy >= 1 ? 'moderate' : 'mild',
+      label: deficit ? `${hours}h ${minutes}m (${shortBy.toFixed(1)}h short)` : `${hours}h ${minutes}m (on target)`,
+      quality: Math.max(10, Math.min(100, Math.round((sleepLog.hours / sleepTarget) * 100))),
+      logged: true,
+    };
+  } else {
+    sleep = { hoursSlept: 0, minutesSlept: 0, deficit: false, severity: 'mild', label: 'Not logged', quality: 0, logged: false };
+  }
+
+  // ── 3. Cycle prediction ────────────────────────────────
+  const cycles = withFreshDaysAgo(input.pastCycles);
+  const hasCycleData = cycles.length > 0;
+  const effectiveCount = hasCycleData ? Math.max(1, Math.min(cycles.length, input.rememberedCyclesCount || cycles.length)) : 1;
+  const prediction = calculateCyclePredictionAndPrecautions(effectiveCount, cycles, answers, painVal ?? 2, flowVal);
+  const isIrregular = prediction.regularityStatus === 'irregular_pcos';
+
+  const mostRecent = cycles[0];
+  const bleedingToday = BLEEDING_FLOWS.has(flowVal);
+  let currentDay = 0;
+  let phase: CycleData['phase'] = bleedingToday ? 'menstrual' : 'irregular';
+  let label = bleedingToday ? 'Period logged today' : 'Add your period dates to unlock predictions';
+  if (mostRecent) {
+    currentDay = Math.max(1, mostRecent.daysAgo + 1);
+    const predictedLen = prediction.predictedCycleLength || 28;
+    const periodDuration = mostRecent.periodDurationDays || 5;
+    if (bleedingToday || currentDay <= periodDuration) {
+      phase = 'menstrual';
+      label = `Day ${currentDay} · Menstrual phase${flowLog?.flow ? ` (${flowLog.flow} flow)` : ''}`;
+    } else if (currentDay < Math.max(8, predictedLen - 16)) {
+      phase = 'follicular';
+      label = `Day ${currentDay} · Follicular phase`;
+    } else if (currentDay <= Math.max(12, predictedLen - 12)) {
+      phase = 'ovulatory';
+      label = `Day ${currentDay} · Ovulatory window`;
+    } else if (currentDay <= predictedLen) {
+      phase = 'luteal';
+      label = `Day ${currentDay} · Luteal phase`;
+    } else {
+      phase = isIrregular ? 'irregular' : 'luteal';
+      label = isIrregular ? `Day ${currentDay} · Long cycle` : `Day ${currentDay} · Period due`;
+    }
+  }
+
+  // ── 4. Patterns, trend, CBT, workout ───────────────────
+  const { anomalies, flags } = buildPatterns(logs, input.sleepLogs, cycles, prediction, sleepTarget);
+  const trendData = buildTrendData(logs, cycles);
+  const place = useFitnessStore.getState().profile?.trainingPlace ?? 'home';
+  const plan = recommendWorkout({
+    phase,
+    strainLevel,
+    strainScore: finalStrain,
+    recentPain: painVal ?? undefined,
+    recentFlow: flowVal,
+    place,
+  });
+
+  return {
+    biometrics: {
+      hrv: {
+        current: currentHrv,
+        baseline: baseHrv,
+        status: hrvStatus,
+        label: `Estimated from logs`,
+        delta: hrvDelta,
+      },
+      sleep,
+      cortisol: { level: cortisolLevel, value: 0, isOverride: strainOverride, timestamp: todayKey() },
+      strainScore: finalStrain,
+      strainLevel,
+      recoveryScore: Math.max(5, Math.min(99, 105 - finalStrain)),
+    },
+    cycle: {
+      currentDay,
+      expectedLength: prediction.predictedCycleLength,
+      phase,
+      isIrregular,
+      lastPeriodDate: mostRecent?.startDate ?? '',
+      label,
+      progesteroneStatus: phase === 'luteal' ? 'peak' : phase === 'menstrual' ? 'low' : 'rising',
+      conditions: input.focusAreas.slice(0, 3),
+      hasCycleData,
+    },
+    cyclePrediction: prediction,
+    trendData,
+    anomalies,
+    patternFlags: flags,
+    todayWorkout: plan.card,
+    workoutIsOverride: plan.isOverride,
+    cbtPrompt: deriveCbtPrompt(logs, input.cbtPrompt),
+    pastCycles: cycles,
+  };
+}
+
+function engineInput(s: EngineInput): EngineInput {
+  return {
+    symptomLogs: s.symptomLogs,
+    sleepLogs: s.sleepLogs,
+    assessmentAnswers: s.assessmentAnswers,
+    fineTuningSettings: s.fineTuningSettings,
+    pastCycles: s.pastCycles,
+    rememberedCyclesCount: s.rememberedCyclesCount,
+    focusAreas: s.focusAreas,
+    cbtPrompt: s.cbtPrompt,
+  };
+}
+
+function derivedState(d: Derived, report?: Partial<ClinicalReport>) {
+  return {
+    biometrics: d.biometrics,
+    cycle: d.cycle,
+    cyclePrediction: d.cyclePrediction,
+    patternFlags: d.patternFlags,
+    todayWorkout: d.todayWorkout,
+    cbtPrompt: d.cbtPrompt,
+    pastCycles: d.pastCycles,
+    clinicalReport: {
+      trendData: d.trendData,
+      anomalies: d.anomalies,
+      isGenerating: report?.isGenerating ?? false,
+      generatedAt: report?.generatedAt,
+    },
+  };
+}
+
+function resetFeatureStores() {
+  useFitnessStore.getState().reset();
+  useStudyStore.getState().reset();
+  useGamesStore.getState().reset();
+}
+
+const initialUser = freshUserData();
+
+export const useAppStore = create<AppState>()(
+  persist(
+    (set, get) => ({
+      ...initialUser,
+      ...derivedState(computeDerived(engineInput(initialUser))),
+
+      // ─── Core analytics refresh ──────────────────────
+      fineTuneAllAnalytics: () => {
+        const state = get();
+        const d = computeDerived(engineInput(state));
+        const today = todayKey();
+        let workoutHistory = state.workoutHistory;
+        // Record a real adaptation (once per day) when today's plan was swapped.
+        if (d.workoutIsOverride && d.todayWorkout.overriddenFrom && !workoutHistory.some((h) => h.date === today)) {
+          workoutHistory = [
+            {
+              date: today,
+              original: d.todayWorkout.overriddenFrom,
+              adapted: d.todayWorkout.title,
+              reason: d.todayWorkout.reason ?? '',
+              strainAtTime: d.biometrics.strainScore,
+            },
+            ...workoutHistory,
+          ].slice(0, 60);
+        }
+        set({ ...derivedState(d, state.clinicalReport), workoutHistory });
+      },
+
+      // ─── Past cycles ─────────────────────────────────
+      savePastCycles: (count: number, cycles: PastCycleRecord[]) => {
+        const fresh = withFreshDaysAgo(cycles);
+        set({ rememberedCyclesCount: count, pastCycles: fresh });
+        get().fineTuneAllAnalytics();
+        fresh.forEach((c) => {
+          saveCycleToSupabase({ start_date: c.startDate, end_date: c.endDate ?? null, cycle_length: c.lengthDays }).catch(() => {});
+        });
+      },
+
+      // ─── Audio / CBT / SOS ───────────────────────────
+      toggleAudioPlayback: () =>
+        set((state) => ({ activeTherapy: { ...state.activeTherapy, isPlaying: !state.activeTherapy.isPlaying } })),
+
+      updateAudioProgress: (progress: number) =>
+        set((state) => ({
+          activeTherapy: { ...state.activeTherapy, progress: Math.min(Math.max(progress, 0), 1) },
+        })),
+
+      submitCBTResponse: (response: string) =>
+        set((state) => ({ cbtPrompt: { ...state.cbtPrompt, userResponse: response } })),
+
+      triggerSOS: () => set({ sosActive: true }),
+      dismissSOS: () => set({ sosActive: false }),
+
+      toggleBiologicalReasoning: () => set((state) => ({ showBiologicalReasoning: !state.showBiologicalReasoning })),
+
+      // ─── Auth ────────────────────────────────────────
+      login: (email?: string, name?: string, options?: { offline?: boolean }) => {
+        const s = get();
+        const cleanEmail = (email ?? '').trim();
+        const sameAccount = !!s.userEmail && s.userEmail.toLowerCase() === cleanEmail.toLowerCase();
+        if (!sameAccount) {
+          // A different account on this device never sees the previous person's data.
+          resetFeatureStores();
+          const fresh = freshUserData();
+          set({ ...fresh, ...derivedState(computeDerived(engineInput(fresh))) });
+        }
+        set({
+          isAuthenticated: true,
+          userEmail: cleanEmail,
+          userName: (name || get().userName || cleanEmail.split('@')[0] || 'Friend').trim(),
+          isOfflineAccount: !!options?.offline,
+        });
+      },
+
+      signup: (name: string, email: string, focusAreas: string[] = [], options?: { offline?: boolean }) => {
+        resetFeatureStores();
+        const fresh = { ...freshUserData(), focusAreas };
+        set({
+          ...fresh,
+          ...derivedState(computeDerived(engineInput(fresh))),
+          isAuthenticated: true,
+          userName: name.trim(),
+          userEmail: email.trim(),
+          isOfflineAccount: !!options?.offline,
+        });
+      },
+
+      logout: async () => {
+        try {
+          await signOutSupabase();
+        } catch (e) {
+          console.warn('Logout signOutSupabase error', e);
+        }
+        // Health data is personal: sign-out removes it from this device.
+        resetFeatureStores();
+        const fresh = freshUserData();
+        set({ ...fresh, ...derivedState(computeDerived(engineInput(fresh))) });
+      },
+
+      updateUserPhoto: (uri: string) => set({ userPhoto: uri }),
+
+      // ─── Assessment ──────────────────────────────────
+      completeAssessment: (answers: Record<string, string>) => {
+        const archetype = calculateArchetype(answers);
+        set({
+          isAssessmentCompleted: true,
+          assessmentAnswers: answers,
+          fineTuningSettings: {
+            archetypeId: archetype.id,
+            archetypeName: archetype.name,
+            archetypeTagline: archetype.tagline,
+            archetypeDescription: archetype.description,
+            strainSensitivity: archetype.recommendedStrainSensitivity,
+            preferredTherapy: archetype.defaultTherapy,
+            autoCortisolOverride: archetype.cortisolOverrideDefault,
+            pmddEarlyShield: archetype.pmddAlertDefault,
+            dailySleepTargetHours: archetype.sleepTargetHours,
+            primaryCondition: archetype.primaryCondition,
+          },
+        });
+        get().fineTuneAllAnalytics();
+      },
+
+      updateFineTuningSettings: (settings: Partial<FineTuningSettings>) => {
+        set((state) => ({ fineTuningSettings: { ...state.fineTuningSettings, ...settings } }));
+        // Sensitivity and sleep target change the strain score immediately.
+        get().fineTuneAllAnalytics();
+      },
+
+      // ─── Report ──────────────────────────────────────
+      generateClinicalPDF: async () => {
+        set((state) => ({ clinicalReport: { ...state.clinicalReport, isGenerating: true } }));
+        try {
+          const { generateAndDownloadClinicalPDF } = await import('@/lib/pdfReportService');
+          await generateAndDownloadClinicalPDF(get());
+          set((state) => ({
+            clinicalReport: { ...state.clinicalReport, isGenerating: false, generatedAt: new Date().toISOString() },
+          }));
+        } catch (err) {
+          console.error('[Report] Failed to generate/share PDF:', err);
+          set((state) => ({ clinicalReport: { ...state.clinicalReport, isGenerating: false } }));
+        }
+      },
+
+      setStrainScore: (score: number) => {
+        const clamped = Math.min(100, Math.max(0, Math.round(score)));
+        const level: BiometricSnapshot['strainLevel'] =
+          clamped >= 80 ? 'severe' : clamped >= 60 ? 'high' : clamped >= 36 ? 'moderate' : 'low';
+        set((state) => ({
+          biometrics: { ...state.biometrics, strainScore: clamped, strainLevel: level, recoveryScore: Math.max(5, Math.min(99, 105 - clamped)) },
+        }));
+      },
+
+      // ─── Logging ─────────────────────────────────────
+      logSymptom: (log: Partial<SymptomLog>) => {
+        const now = new Date();
+        const newLog: SymptomLog = {
+          ...log,
+          id: `log-${now.getTime()}`,
+          date: log.date ?? todayKey(),
+          timestamp: now.toISOString(),
+        };
+        set((state) => ({ symptomLogs: [newLog, ...state.symptomLogs].slice(0, 1500) }));
+        get().fineTuneAllAnalytics();
+        saveDailyLogToSupabase({
+          log_date: newLog.date,
+          pain_level: newLog.pain ?? null,
+          mood: newLog.mood ? String(newLog.mood) : null,
+          symptoms: newLog.painLocation || newLog.tags || [],
+          notes: newLog.notes || null,
+        }).catch(() => {});
+      },
+
+      logSleep: (hours: number) => {
+        const clean = Math.round(Math.max(0, Math.min(16, hours)) * 4) / 4;
+        const today = todayKey();
+        set((state) => ({
+          sleepLogs: [{ date: today, hours: clean }, ...state.sleepLogs.filter((s) => s.date !== today)].slice(0, 400),
+        }));
+        get().fineTuneAllAnalytics();
+      },
+
+      // ─── YourGoGirl AI Counsellor ────────────────────
+      addYourGoGirlMessage: (msg: YourGoGirlMessage) =>
+        set((state) => ({
+          yourGoGirlMessages: [...state.yourGoGirlMessages, msg],
+        })),
+
+      setYourGoGirlMode: (mode: CounsellorMode) =>
+        set({ yourGoGirlMode: mode }),
+
+      clearYourGoGirlChat: () =>
+        set((state) => ({
+          yourGoGirlMessages: [
+            createInitialWelcomeMessage(state.userName, state.cycle, state.biometrics),
+          ],
+        })),
+    }),
+    {
+      name: 'shesync.app',
+      version: 1,
+      storage: createJSONStorage(() => AsyncStorage),
+      // Persist the user's own data; everything derived is recomputed on launch.
+      partialize: (s) => ({
+        userName: s.userName,
+        userEmail: s.userEmail,
+        userPhoto: s.userPhoto,
+        isAuthenticated: s.isAuthenticated,
+        isOfflineAccount: s.isOfflineAccount,
+        focusAreas: s.focusAreas,
+        isAssessmentCompleted: s.isAssessmentCompleted,
+        assessmentAnswers: s.assessmentAnswers,
+        fineTuningSettings: s.fineTuningSettings,
+        rememberedCyclesCount: s.rememberedCyclesCount,
+        pastCycles: s.pastCycles,
+        symptomLogs: s.symptomLogs,
+        sleepLogs: s.sleepLogs,
+        workoutHistory: s.workoutHistory,
+        cbtPrompt: s.cbtPrompt,
+        yourGoGirlMessages: s.yourGoGirlMessages,
+        yourGoGirlMode: s.yourGoGirlMode,
+      }),
+      onRehydrateStorage: () => (state) => {
+        // Dates move on between launches: recompute phase, prediction and trend.
+        state?.fineTuneAllAnalytics();
+      },
+    }
+  )
+);

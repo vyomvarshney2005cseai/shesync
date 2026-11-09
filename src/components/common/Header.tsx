@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image, Alert, Platform } from 'react-native';
-import { Bell, LogOut } from 'lucide-react-native';
+import { View, Text, StyleSheet, Pressable, Image, Platform, Alert } from 'react-native';
+import { Bell } from 'lucide-react-native';
 import { Theme } from '@/constants/theme';
 import { router } from 'expo-router';
 import { useAppStore } from '@/store/useAppStore';
@@ -13,14 +13,16 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  title = "Good morning, Maya",
-  subtitle = "Cycle Day 45 • Luteal Strain Phase",
-  badge = "PCOS Adaptive Mode",
+  title = "SheSync",
+  subtitle = "",
+  badge = "SheSync",
   onNotificationPress,
 }) => {
   const userName = useAppStore((s) => s.userName);
   const userPhoto = useAppStore((s) => s.userPhoto);
-  const initial = (userName || 'Maya').charAt(0).toUpperCase();
+  const nextPrecaution = useAppStore((s) => s.cyclePrediction?.precautionMeasures?.[0]);
+  const hasCycleData = useAppStore((s) => !!s.cycle.hasCycleData);
+  const initial = (userName || 'S').charAt(0).toUpperCase();
 
   const handleAvatarPress = () => {
     router.push('/profile');
@@ -30,7 +32,11 @@ export const Header: React.FC<HeaderProps> = ({
     if (onNotificationPress) {
       onNotificationPress();
     } else {
-      const msg = 'You have 1 new update: Your personalized PMDD Shield recommendations are ready.';
+      // Real, derived update: the next precaution from her own cycle prediction.
+      const msg =
+        hasCycleData && nextPrecaution
+          ? `${nextPrecaution.title}\n\n${nextPrecaution.advice}`
+          : 'No new updates. Add your period dates to get cycle precautions here.';
       if (Platform.OS === 'web') {
         window.alert(msg);
       } else {
@@ -62,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({
           style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
         >
           <Bell size={20} color={Theme.colors.textPrimary} />
-          <View style={styles.notificationDot} />
+          {hasCycleData && nextPrecaution ? <View style={styles.notificationDot} /> : null}
         </Pressable>
         <Pressable
           onPress={handleAvatarPress}

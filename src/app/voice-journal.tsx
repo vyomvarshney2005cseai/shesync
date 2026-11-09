@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,12 +17,9 @@ import {
   Check,
   Mic,
   Square,
-  Play,
-  Pause,
   RotateCcw,
   Volume2,
   Brain,
-  Radio,
 } from 'lucide-react-native';
 import { Theme } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
@@ -36,13 +33,12 @@ export default function VoiceJournalScreen() {
   const [seconds, setSeconds] = useState(0);
   const [hasRecorded, setHasRecorded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [transcript, setTranscript] = useState(
-    "I'm feeling a noticeable shift in energy today as I head into my luteal phase. There's a little tension around my lower back and mild pelvic tightness, but mentally I'm trying to soften and give myself permission to slow down rather than pushing through."
-  );
+  // Starts empty: earlier builds pre-filled a canned entry and saved it as hers.
+  const [transcript, setTranscript] = useState('');
   const [isSaved, setIsSaved] = useState(false);
 
   // Animation for pulse effect during recording
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const [pulseAnim] = useState(() => new Animated.Value(1));
 
   useEffect(() => {
     let interval: any;
@@ -69,7 +65,7 @@ export default function VoiceJournalScreen() {
       pulseAnim.setValue(1);
     }
     return () => clearInterval(interval);
-  }, [isRecording, isPaused]);
+  }, [isRecording, isPaused, pulseAnim]);
 
   const toggleRecording = () => {
     if (!isRecording) {
@@ -94,10 +90,6 @@ export default function VoiceJournalScreen() {
     setIsPlaying(false);
   };
 
-  const togglePlayback = () => {
-    setIsPlaying((prev) => !prev);
-  };
-
   const formatTime = (secs: number) => {
     const mins = Math.floor(secs / 60);
     const rem = secs % 60;
@@ -105,15 +97,22 @@ export default function VoiceJournalScreen() {
   };
 
   const handleSave = () => {
+    const text = transcript.trim();
+    if (!text) {
+      const msg = 'Write or dictate a few words first — only your text is saved.';
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert('Nothing to save yet', msg);
+      return;
+    }
     logSymptom({
       voiceJournal: true,
-      transcript: transcript.trim(),
-      audioDuration: formatTime(seconds || 38),
-      notes: `[Voice Journal ${formatTime(seconds || 38)}] ${transcript.trim()}`,
+      transcript: text,
+      audioDuration: seconds > 0 ? formatTime(seconds) : undefined,
+      notes: `[Journal${seconds > 0 ? ` · spoke for ${formatTime(seconds)}` : ''}] ${text}`,
     });
 
     setIsSaved(true);
-    const msg = 'Voice journal & somatic transcript saved!';
+    const msg = 'Journal entry saved.';
     if (Platform.OS === 'web') {
       window.alert(msg);
       router.back();
@@ -139,7 +138,7 @@ export default function VoiceJournalScreen() {
         </TouchableOpacity>
         <View style={styles.navCenter}>
           <Text style={styles.navTitle}>Voice Journal</Text>
-          <Text style={styles.navSubtitle}>Somatic Vocal Biomarkers</Text>
+          <Text style={styles.navSubtitle}>Speak it out, write it down</Text>
         </View>
         <View style={{ width: 40 }} />
       </View>
@@ -155,16 +154,16 @@ export default function VoiceJournalScreen() {
             <View style={[styles.statusDot, isRecording && styles.statusDotRecording]} />
             <Text style={styles.statusText}>
               {isRecording
-                ? 'RECORDING SOMATIC AUDIO'
+                ? 'SPEAK-IT-OUT TIMER RUNNING'
                 : hasRecorded
-                ? 'RECORDING COMPLETE • AUDIO READY'
-                : 'TAP MIC TO START SPEAKING'}
+                ? 'NICE — NOW WRITE DOWN WHAT CAME UP'
+                : 'TAP THE MIC, THEN TALK IT THROUGH OUT LOUD'}
             </Text>
           </View>
 
           {/* Time Counter */}
           <Text style={styles.timerText}>
-            {formatTime(seconds || (hasRecorded ? 38 : 0))}
+            {formatTime(seconds)}
           </Text>
 
           {/* Animated Waveform Bars */}
@@ -227,21 +226,10 @@ export default function VoiceJournalScreen() {
                 activeOpacity={0.7}
               >
                 <RotateCcw size={16} color={Theme.colors.textSecondary} />
-                <Text style={styles.secondaryBtnText}>Re-record</Text>
+                <Text style={styles.secondaryBtnText}>Reset timer</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.playBtn}
-                onPress={togglePlayback}
-                activeOpacity={0.8}
-              >
-                {isPlaying ? (
-                  <Pause size={18} color="#FFFFFF" />
-                ) : (
-                  <Play size={18} color="#FFFFFF" />
-                )}
-                <Text style={styles.playBtnText}>{isPlaying ? 'Pause Audio' : 'Play Preview'}</Text>
-              </TouchableOpacity>
+
             </View>
           )}
         </View>
@@ -250,10 +238,10 @@ export default function VoiceJournalScreen() {
         <View style={styles.section}>
           <View style={styles.sectionRow}>
             <Brain size={18} color={Theme.colors.secondary} />
-            <Text style={styles.sectionHeaderInline}>Automated Speech-to-Text</Text>
+            <Text style={styles.sectionHeaderInline}>Your reflection</Text>
           </View>
           <Text style={styles.sectionSubtext}>
-            Captured vocal transcript with real-time biological terminology parsing
+            Type it, or tap the mic on your phone keyboard to dictate. Audio is never recorded — only this text is saved.
           </Text>
 
           <TextInput
@@ -262,41 +250,32 @@ export default function VoiceJournalScreen() {
             numberOfLines={5}
             value={transcript}
             onChangeText={setTranscript}
-            placeholder="Your voice transcription will appear here... you can edit directly."
+            placeholder="How does your body feel today? What is on your mind?"
             placeholderTextColor={Theme.colors.textTertiary}
           />
         </View>
 
-        {/* AI Somatic Tone Analysis */}
+        {/* Reflection prompts (no fake voice "analysis") */}
         <View style={styles.section}>
           <View style={styles.sectionRow}>
             <Volume2 size={18} color={Theme.colors.strainOptimal} />
-            <Text style={styles.sectionHeaderInline}>Voice Biomarker Insights</Text>
+            <Text style={styles.sectionHeaderInline}>Need a starting point?</Text>
           </View>
-
           <View style={styles.insightBox}>
-            <View style={styles.insightTagRow}>
-              <View style={styles.insightPill}>
-                <Text style={styles.insightPillText}>Vocal Cadence: 44 bpm (Slow/Reflective)</Text>
-              </View>
-              <View style={[styles.insightPill, { backgroundColor: '#FEF3C7' }]}>
-                <Text style={[styles.insightPillText, { color: Theme.colors.strainAmber }]}>
-                  Luteal Hormonal Tone
-                </Text>
-              </View>
-            </View>
-
-            <Text style={styles.insightBody}>
-              Vocal pitch analysis detects mild nervous system fatigue and natural luteal slowness.
-              Corticosteroid voice markers are within balanced range.
-            </Text>
-
-            <View style={styles.recommendationWrap}>
-              <Text style={styles.recTitle}>Suggested Somatic Micro-Practice:</Text>
-              <Text style={styles.recText}>
-                5 minutes of non-judgmental resting breathing or a warm cup of herbal tea.
-              </Text>
-            </View>
+            {[
+              'Where in my body do I feel tension right now?',
+              'What drained my energy today, and what gave some back?',
+              'What is one kind thing I can do for myself tonight?',
+            ].map((q) => (
+              <TouchableOpacity
+                key={q}
+                onPress={() => setTranscript((t) => (t ? `${t}\n\n${q} ` : `${q} `))}
+                activeOpacity={0.8}
+                style={styles.recommendationWrap}
+              >
+                <Text style={styles.recText}>＋ {q}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
@@ -309,7 +288,7 @@ export default function VoiceJournalScreen() {
         >
           <Check size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
           <Text style={styles.saveButtonText}>
-            {isSaved ? 'Voice Entry Saved' : 'Save Voice Journal'}
+            {isSaved ? 'Entry Saved' : 'Save Journal Entry'}
           </Text>
         </TouchableOpacity>
       </ScrollView>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Smile, Flame, Droplets, Mic } from 'lucide-react-native';
+import { Smile, Flame, Droplets, Mic, Sparkles, Calendar } from 'lucide-react-native';
 import { Theme } from '@/constants/theme';
 
 interface QuickAction {
@@ -49,12 +49,28 @@ const actions: QuickAction[] = [
     color: Theme.colors.strainAmber,
     bgColor: '#FEF3C7',
   },
+  {
+    id: 'yourgogirl',
+    label: 'YourGoGirl AI',
+    sub: 'Women Counsellor',
+    icon: <Sparkles size={22} color={Theme.colors.primaryDark} />,
+    color: Theme.colors.primaryDark,
+    bgColor: '#FFE4E8',
+  },
+  {
+    id: 'cycle',
+    label: 'Log Period',
+    sub: 'Cycle Calendar',
+    icon: <Calendar size={22} color="#0284C7" />,
+    color: '#0284C7',
+    bgColor: '#E0F2FE',
+  },
 ];
 
 export const QuickActionGrid: React.FC<QuickActionGridProps> = ({ onAction }) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Quick Check-in</Text>
+      <Text style={styles.sectionTitle}>Quick Check-in & Actions</Text>
       <View style={styles.grid}>
         {actions.map((action) => (
           <Pressable
@@ -88,11 +104,11 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'space-between',
     gap: 10,
   },
   tile: {
-    flex: 1,
-    minWidth: '45%',
+    width: '48.5%',
     backgroundColor: '#FFFFFF',
     borderRadius: Theme.radius.lg,
     paddingVertical: 14,

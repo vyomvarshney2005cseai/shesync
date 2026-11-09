@@ -1,14 +1,16 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { View, Platform, StyleSheet } from 'react-native';
-import { Home, Activity, Brain, FileText, User } from 'lucide-react-native';
+import { Home, Activity, Brain, FileText, User, Sparkles } from 'lucide-react-native';
 import { Theme } from '@/constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AuthGate } from '@/components/common/AuthGate';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
 
   return (
+    <AuthGate>
     <Tabs
       detachInactiveScreens={true}
       screenOptions={{
@@ -17,12 +19,12 @@ export default function TabLayout() {
         tabBarActiveTintColor: Theme.colors.primary,
         tabBarInactiveTintColor: Theme.colors.textTertiary,
         tabBarStyle: {
-          backgroundColor: 'rgba(255, 255, 255, 0.88)',
+          backgroundColor: 'rgba(255, 255, 255, 0.92)',
           borderTopWidth: 1,
           borderTopColor: 'rgba(255, 226, 235, 0.7)',
-          height: Platform.OS === 'ios' ? 64 + insets.bottom : 70,
-          paddingTop: 8,
-          paddingBottom: Platform.OS === 'ios' ? insets.bottom : 10,
+          height: Platform.OS === 'ios' ? 64 + insets.bottom : 68,
+          paddingTop: 6,
+          paddingBottom: Platform.OS === 'ios' ? insets.bottom : 8,
           ...(Platform.OS === 'web'
             ? ({
                 maxWidth: 500,
@@ -37,9 +39,9 @@ export default function TabLayout() {
           ...Theme.shadows.soft,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: '600',
-          marginTop: 2,
+          marginTop: 1,
         },
       }}
     >
@@ -49,7 +51,18 @@ export default function TabLayout() {
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && styles.activeIconBg]}>
-              <Home size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />
+              <Home size={20} color={color} strokeWidth={focused ? 2.4 : 1.8} />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="your-go-girl"
+        options={{
+          title: 'YourGoGirl',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconContainer, focused && styles.activeIconBg]}>
+              <Sparkles size={20} color={color} strokeWidth={focused ? 2.4 : 1.8} />
             </View>
           ),
         }}
@@ -60,7 +73,7 @@ export default function TabLayout() {
           title: 'Move',
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && styles.activeIconBg]}>
-              <Activity size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />
+              <Activity size={20} color={color} strokeWidth={focused ? 2.4 : 1.8} />
             </View>
           ),
         }}
@@ -71,7 +84,7 @@ export default function TabLayout() {
           title: 'Mind',
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && styles.activeIconBg]}>
-              <Brain size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />
+              <Brain size={20} color={color} strokeWidth={focused ? 2.4 : 1.8} />
             </View>
           ),
         }}
@@ -82,7 +95,7 @@ export default function TabLayout() {
           title: 'Report',
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && styles.activeIconBg]}>
-              <FileText size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />
+              <FileText size={20} color={color} strokeWidth={focused ? 2.4 : 1.8} />
             </View>
           ),
         }}
@@ -93,12 +106,13 @@ export default function TabLayout() {
           title: 'Profile',
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && styles.activeIconBg]}>
-              <User size={22} color={color} strokeWidth={focused ? 2.4 : 1.8} />
+              <User size={20} color={color} strokeWidth={focused ? 2.4 : 1.8} />
             </View>
           ),
         }}
       />
     </Tabs>
+    </AuthGate>
   );
 }
 
@@ -106,9 +120,9 @@ const styles = StyleSheet.create({
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 3,
-    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 14,
   },
   activeIconBg: {
     backgroundColor: Theme.colors.primaryLight,

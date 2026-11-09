@@ -1,7 +1,6 @@
 import React from 'react';
 import { ScrollView, View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Theme } from '@/constants/theme';
 import { Header } from '@/components/common/Header';
 import { CalibratedScorecard } from '@/components/report/CalibratedScorecard';
 import { TrendChart } from '@/components/report/TrendChart';
@@ -56,7 +55,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 32,
+    paddingBottom: 100,
     paddingTop: 4,
   },
   centeredWrapper: {

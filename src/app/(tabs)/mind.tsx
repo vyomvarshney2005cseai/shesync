@@ -1,7 +1,8 @@
 import React from 'react';
-import { ScrollView, View, Text, StyleSheet, Modal, Pressable } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, Modal, Pressable, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, Heart, Phone, MessageCircle } from 'lucide-react-native';
+import { X, Heart, Phone, MessageCircle, Wind, Siren, Sparkles, ChevronRight } from 'lucide-react-native';
+import { router } from 'expo-router';
 import { Theme } from '@/constants/theme';
 import { Header } from '@/components/common/Header';
 import { SomaticVideoLibrary } from '@/components/mind/SomaticVideoLibrary';
@@ -10,6 +11,8 @@ import { SOSFab } from '@/components/mind/SOSFab';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
 import { useAppStore } from '@/store/useAppStore';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
+import { WellnessHub } from '@/components/common/WellnessHub';
+import { callNumber, composeSms, CRISIS_LINES } from '@/lib/openExternal';
 
 export default function MindScreen() {
   const cbtPrompt = useAppStore((s) => s.cbtPrompt);
@@ -33,21 +36,44 @@ export default function MindScreen() {
               subtitle="Cycle-Aware Somatic & Cognitive Support"
               badge="YouTube Somatics"
             />
-            {/* Strain-aware therapy intro */}
+
+            {/* YourGoGirl Counsellor Quick Launch Banner */}
+            <TouchableOpacity
+              style={styles.counsellorBanner}
+              activeOpacity={0.85}
+              onPress={() => router.push('/your-go-girl' as any)}
+            >
+              <View style={styles.counsellorIconWrap}>
+                <Sparkles size={20} color="#FFFFFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.counsellorTitle}>
+                  Need to talk through brain fog, low motivation, or period stress?
+                </Text>
+                <Text style={styles.counsellorSub}>
+                  Chat with YourGoGirl — your 24/7 AI Women&apos;s Health Counsellor
+                </Text>
+              </View>
+              <ChevronRight size={18} color={Theme.colors.primaryDark} />
+            </TouchableOpacity>
+
+            {/* Strain-aware therapy intro (from the user's own logs) */}
             <View style={styles.introCard}>
               <Text style={styles.introTitle}>
                 {biometrics.strainLevel === 'high' || biometrics.strainLevel === 'severe'
-                  ? 'High Strain State Detected'
+                  ? 'A heavy day, by your logs'
                   : biometrics.strainLevel === 'moderate'
-                  ? 'Moderate Biomarker Load'
-                  : 'Restorative Equilibrium'}
+                  ? 'A moderate-strain day'
+                  : 'A steadier day'}
               </Text>
               <Text style={styles.introDesc}>
                 {biometrics.strainLevel === 'high' || biometrics.strainLevel === 'severe'
-                  ? `Your HRV is ${Math.abs(biometrics.hrv.delta)}% below baseline. We've queued targeted YouTube polyvagal resets and somatic releases to calm neuro-endocrine tension.`
-                  : `Your autonomic nervous system is in a responsive rhythm. Complement your day with gentle vagus nerve regulation and somatic body releases.`}
+                  ? `Your strain score is ${biometrics.strainScore}/100 from what you logged today. Start with a short calming session below — even five minutes helps.`
+                  : 'Keep your nervous system steady with a short somatic session, a reframing note, or a calming game.'}
               </Text>
             </View>
+
+            <WellnessHub only={['games', 'study']} title="Calm your mind & focus" />
 
             {/* Curated YouTube Somatic Therapy Library */}
             <SomaticVideoLibrary />
@@ -80,35 +106,59 @@ export default function MindScreen() {
                 <X size={18} color={Theme.colors.textSecondary} />
               </Pressable>
             </View>
-            <Text style={styles.sosTitle}>You're Not Alone</Text>
+            <Text style={styles.sosTitle}>{"You're not alone"}</Text>
             <Text style={styles.sosDesc}>
-              Acute mood drops during PMDD are caused by a biological sensitivity to
-              normal hormonal shifts — not a personal failing. Here's what might help
-              right now:
+              Strong feelings before or during a period are real and they pass. Pick one thing
+              that helps right now:
             </Text>
             <View style={styles.sosActions}>
               <PrimaryButton
-                title="5-Min Vagal Breathing"
+                title="Chat with YourGoGirl Counsellor"
                 variant="rose"
-                icon={<Heart size={16} color="#FFFFFF" />}
+                icon={<Sparkles size={16} color="#FFFFFF" />}
+                onPress={() => {
+                  dismissSOS();
+                  router.push('/your-go-girl' as any);
+                }}
                 fullWidth
               />
               <PrimaryButton
-                title="Call Crisis Support"
+                title="Breathe with me (2 min)"
+                variant="dark"
+                icon={<Wind size={16} color="#FFFFFF" />}
+                onPress={() => {
+                  dismissSOS();
+                  router.push('/games/breathe');
+                }}
+                fullWidth
+              />
+              <PrimaryButton
+                title={`Call Tele-MANAS ${CRISIS_LINES.teleManas.number} (free, 24×7)`}
                 variant="dark"
                 icon={<Phone size={16} color="#FFFFFF" />}
+                onPress={() => callNumber(CRISIS_LINES.teleManas.number, CRISIS_LINES.teleManas.label)}
                 fullWidth
               />
               <PrimaryButton
-                title="Message a Friend"
+                title="Message a friend"
                 variant="outline"
                 icon={<MessageCircle size={16} color={Theme.colors.textPrimary} />}
+                onPress={() =>
+                  composeSms("Hey, I'm having a really hard time right now. Can you call me or come over?")
+                }
                 fullWidth
               />
             </View>
-            <Text style={styles.sosFooter}>
-              If you are in immediate danger, please call 988 (Suicide & Crisis Lifeline).
-            </Text>
+            <Pressable
+              onPress={() => callNumber(CRISIS_LINES.emergency.number, CRISIS_LINES.emergency.label)}
+              style={styles.sosEmergency}
+              accessibilityRole="button"
+            >
+              <Siren size={14} color={Theme.colors.strainHigh} />
+              <Text style={styles.sosFooter}>
+                In immediate danger? Call {CRISIS_LINES.emergency.number} (India emergency).
+              </Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
@@ -138,6 +188,37 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: 16,
   },
+  counsellorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: Theme.radius.xl,
+    padding: 14,
+    marginBottom: 14,
+    borderWidth: 1.5,
+    borderColor: '#FFB8D0',
+    ...Theme.shadows.soft,
+  },
+  counsellorIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: Theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  counsellorTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: Theme.colors.textPrimary,
+    marginBottom: 2,
+  },
+  counsellorSub: {
+    fontSize: 11.5,
+    color: Theme.colors.primaryDark,
+    fontWeight: '600',
+  },
   introCard: {
     backgroundColor: Theme.colors.primaryLight,
     borderRadius: Theme.radius.xl,
@@ -166,7 +247,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   sosModal: {
-    backgroundColor: Theme.colors.card,
+    // Opaque: the translucent card let the screen behind bleed through.
+    backgroundColor: '#FFFFFF',
     borderRadius: Theme.radius.xl,
     padding: 24,
     width: '100%',
@@ -211,12 +293,18 @@ const styles = StyleSheet.create({
   sosActions: {
     gap: 10,
   },
-  sosFooter: {
-    fontSize: 11,
-    lineHeight: 16,
-    color: Theme.colors.textTertiary,
-    textAlign: 'center',
+  sosEmergency: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     marginTop: 16,
-    fontStyle: 'italic',
+  },
+  sosFooter: {
+    fontSize: 12,
+    lineHeight: 16,
+    color: Theme.colors.textSecondary,
+    textAlign: 'center',
+    fontWeight: '600',
   },
 });

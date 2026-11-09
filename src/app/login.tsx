@@ -16,7 +16,7 @@ import { router } from 'expo-router';
 import { Theme } from '@/constants/theme';
 import { FeministQuoteCard } from '@/components/common/FeministQuoteCard';
 import { useAppStore } from '@/store/useAppStore';
-import { signInWithSupabase } from '@/lib/supabaseService';
+import { isOfflineAuthError, signInWithSupabase } from '@/lib/supabaseService';
 import {
   ArrowLeft,
   Mail,
@@ -38,39 +38,46 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const isAssessmentCompleted = useAppStore((s) => s.isAssessmentCompleted);
 
   const handleLogin = async () => {
-    if (!email.trim()) {
-      setErrorMsg('Please enter your email or username');
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setErrorMsg('Please enter the email you signed up with');
+      return;
+    }
+    if (password.length < 6) {
+      setErrorMsg('Password must be at least 6 characters');
       return;
     }
 
     setLoading(true);
     setErrorMsg('');
 
+    const goNext = () => {
+      // Read after login(): a different account starts with a fresh profile.
+      router.replace(useAppStore.getState().isAssessmentCompleted ? '/(tabs)' : '/assessment');
+    };
+
     try {
-      const res = await signInWithSupabase(email.trim(), password);
-      const name = res.user?.user_metadata?.full_name || currentUserName || 'Maya';
-      login(email.trim(), name);
-      if (!isAssessmentCompleted) {
-        router.replace('/assessment');
-      } else {
-        router.replace('/(tabs)');
-      }
+      const res = await signInWithSupabase(cleanEmail, password);
+      const name = res.user?.user_metadata?.full_name || currentUserName || cleanEmail.split('@')[0];
+      login(cleanEmail, name);
+      goNext();
     } catch (err: any) {
-      console.warn('[Login] Remote Supabase sign in error, checking local/demo credentials:', err?.message);
-      // Graceful fallback for demo account or offline/local testing
-      if (email.trim() && password.length >= 6) {
-        const fallbackName = currentUserName || email.split('@')[0] || 'Maya';
-        login(email.trim(), fallbackName);
-        if (!isAssessmentCompleted) {
-          router.replace('/assessment');
-        } else {
-          router.replace('/(tabs)');
-        }
+      if (isOfflineAuthError(err)) {
+        // No server reachable (or none configured): sign in on this device only.
+        login(cleanEmail, currentUserName || cleanEmail.split('@')[0], { offline: true });
+        goNext();
       } else {
-        setErrorMsg(err?.message || 'Login failed. Please verify credentials.');
+        // The server answered: wrong password, unconfirmed email, etc. Never let these through.
+        const msg = String(err?.message || '');
+        setErrorMsg(
+          /invalid login credentials/i.test(msg)
+            ? 'Email or password is incorrect.'
+            : /email not confirmed/i.test(msg)
+            ? 'Please confirm your email first — check your inbox for the link.'
+            : msg || 'Login failed. Please try again.'
+        );
       }
     } finally {
       setLoading(false);

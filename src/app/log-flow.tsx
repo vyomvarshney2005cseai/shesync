@@ -16,7 +16,6 @@ import {
   Check,
   Droplets,
   Palette,
-  Clock,
   Sparkles,
   ArrowRight,
 } from 'lucide-react-native';

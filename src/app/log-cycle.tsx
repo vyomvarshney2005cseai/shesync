@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,20 +16,15 @@ import {
   Clock,
   Sparkles,
   ShieldAlert,
-  Heart,
-  Activity,
   CheckCircle2,
-  ChevronRight,
   Plus,
   Minus,
-  AlertTriangle,
-  Info,
   Layers,
   Zap,
-  TrendingUp,
 } from 'lucide-react-native';
 import { Theme } from '@/constants/theme';
-import { useAppStore } from '@/store/useAppStore';
+import { useAppStore, withFreshDaysAgo } from '@/store/useAppStore';
+import { daysAgoKey } from '@/lib/dates';
 import { calculateCyclePredictionAndPrecautions } from '@/constants/cyclePrediction';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
 import { YearCycleCalendar } from '@/components/cycle/YearCycleCalendar';
@@ -62,15 +57,15 @@ export default function LogCycleScreen() {
   // Full dynamic cycles state (synced with Calendar and Steppers)
   const [cyclesList, setCyclesList] = useState<PastCycleRecord[]>(() => {
     if (storedPastCycles && storedPastCycles.length > 0) {
-      return storedPastCycles;
+      // Saved "daysAgo" values are from the day they were saved; refresh them.
+      return withFreshDaysAgo(storedPastCycles);
     }
-    const today = Date.now();
     return [
       {
         id: 'cycle-1',
         cycleNumber: 1,
-        startDate: new Date(today - 14 * 86400000).toISOString().split('T')[0],
-        endDate: new Date(today - 9 * 86400000).toISOString().split('T')[0],
+        startDate: daysAgoKey(14),
+        endDate: daysAgoKey(9),
         daysAgo: 14,
         lengthDays: 28,
         periodDurationDays: 5,
@@ -78,8 +73,8 @@ export default function LogCycleScreen() {
       {
         id: 'cycle-2',
         cycleNumber: 2,
-        startDate: new Date(today - 42 * 86400000).toISOString().split('T')[0],
-        endDate: new Date(today - 37 * 86400000).toISOString().split('T')[0],
+        startDate: daysAgoKey(42),
+        endDate: daysAgoKey(37),
         daysAgo: 42,
         lengthDays: 29,
         periodDurationDays: 5,
@@ -87,8 +82,8 @@ export default function LogCycleScreen() {
       {
         id: 'cycle-3',
         cycleNumber: 3,
-        startDate: new Date(today - 71 * 86400000).toISOString().split('T')[0],
-        endDate: new Date(today - 65 * 86400000).toISOString().split('T')[0],
+        startDate: daysAgoKey(71),
+        endDate: daysAgoKey(65),
         daysAgo: 71,
         lengthDays: 30,
         periodDurationDays: 6,
@@ -138,17 +133,15 @@ export default function LogCycleScreen() {
     c2Len: number,
     c3Len: number
   ) => {
-    const today = Date.now();
-    const c1Start = new Date(today - c1DaysAgo * 86400000).toISOString().split('T')[0];
-    const c1End = new Date(today - (c1DaysAgo - c1Dur + 1) * 86400000)
-      .toISOString()
-      .split('T')[0];
+    // Local calendar keys (not UTC) so early-morning edits land on the right day.
+    const c1Start = daysAgoKey(c1DaysAgo);
+    const c1End = daysAgoKey(c1DaysAgo - c1Dur + 1);
 
     const c2DaysAgo = c1DaysAgo + c1Len;
-    const c2Start = new Date(today - c2DaysAgo * 86400000).toISOString().split('T')[0];
+    const c2Start = daysAgoKey(c2DaysAgo);
 
     const c3DaysAgo = c2DaysAgo + c2Len;
-    const c3Start = new Date(today - c3DaysAgo * 86400000).toISOString().split('T')[0];
+    const c3Start = daysAgoKey(c3DaysAgo);
 
     const updated: PastCycleRecord[] = [
       {
@@ -197,16 +190,6 @@ export default function LogCycleScreen() {
       latestFlow
     );
   }, [rememberedCount, cyclesList, assessmentAnswers, latestPain, latestFlow]);
-
-  // Formatted date for most recent period
-  const formattedLastStartDate = useMemo(() => {
-    const d = new Date(Date.now() - cycle1DaysAgo * 86400000);
-    return d.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  }, [cycle1DaysAgo]);
 
   const handleSaveAndProceed = () => {
     const effectiveCount = rememberedCount === -1 ? 1 : Math.max(1, rememberedCount);

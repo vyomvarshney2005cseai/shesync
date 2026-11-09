@@ -2,20 +2,50 @@ import * as Print from 'expo-print';
 import { Platform } from 'react-native';
 import type { AppState } from '@/types';
 
+const escapeHtml = (value: unknown) =>
+  String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
 export async function generateAndDownloadClinicalPDF(state: AppState): Promise<string | null> {
-  const userName = state.userName || 'Patient';
-  const userEmail = state.userEmail || 'Not specified';
-  const archetype = state.fineTuningSettings?.archetypeName || 'Empowered Cyclical Optimizer';
-  const archetypeTagline = state.fineTuningSettings?.archetypeTagline || '';
-  const primaryCondition = state.fineTuningSettings?.primaryCondition || 'Cycle Optimization';
-  const strainScore = state.biometrics?.strainScore ?? 42;
-  const painVal = state.symptomLogs?.[0]?.pain ?? 3;
+  // Everything in this report comes from the user's own logs. Values she
+  // never logged are shown as "not logged", never filled with defaults.
+  const userName = escapeHtml(state.userName || 'Patient');
+  const userEmail = escapeHtml(state.userEmail || 'Not specified');
+  const archetype = escapeHtml(state.fineTuningSettings?.archetypeName || 'Not assessed yet');
+  const archetypeTagline = escapeHtml(state.fineTuningSettings?.archetypeTagline || '');
+  const focusAreas = escapeHtml((state.focusAreas ?? []).join(', ') || 'Not specified');
+  const strainScore = state.biometrics?.strainScore ?? 0;
   const sleepTarget = state.fineTuningSettings?.dailySleepTargetHours ?? 8;
   const cyclePrediction = state.cyclePrediction;
-  const nextPeriod = cyclePrediction?.nextPeriodDate || 'Calculated dynamically';
-  const cycleRegularity = cyclePrediction?.regularityStatus?.toUpperCase() || 'NORMAL';
+  const hasCycles = (state.pastCycles ?? []).length > 0;
+  const nextPeriod = hasCycles ? escapeHtml(cyclePrediction?.nextPeriodDate) : 'Needs saved period dates';
+  const cycleRegularity = hasCycles
+    ? ({ regular: 'Regular', moderate_variance: 'Some variation', irregular_pcos: 'Irregular' } as Record<string, string>)[
+        cyclePrediction?.regularityStatus ?? 'regular'
+      ] ?? 'Regular'
+    : 'Not enough data';
   const anomalies = state.clinicalReport?.anomalies || [];
-  const currentDate = new Date().toLocaleDateString('en-US', {
+  const pains = (state.clinicalReport?.trendData ?? [])
+    .map((d) => d.painSeverity)
+    .filter((v): v is number => typeof v === 'number');
+  const avgPain = pains.length ? (pains.reduce((a, b) => a + b, 0) / pains.length).toFixed(1) : null;
+  const maxPain = pains.length ? Math.max(...pains) : null;
+  const sleepLogs = (state.sleepLogs ?? []).slice(0, 14);
+  const avgSleep = sleepLogs.length ? (sleepLogs.reduce((a, b) => a + b.hours, 0) / sleepLogs.length).toFixed(1) : null;
+  const cycleRows = (state.pastCycles ?? [])
+    .slice(0, 6)
+    .map(
+      (c) =>
+        `<tr><td>${escapeHtml(c.startDate)}</td><td>${escapeHtml(c.lengthDays)} days</td><td>${escapeHtml(
+          c.periodDurationDays
+        )} days</td></tr>`
+    )
+    .join('');
+  const currentDate = new Date().toLocaleDateString('en-IN', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
@@ -24,12 +54,11 @@ export async function generateAndDownloadClinicalPDF(state: AppState): Promise<s
   const anomalyRows = anomalies.length > 0
     ? anomalies.map((a) => `
         <div style="background: #FFF5F5; border-left: 4px solid #E53E3E; padding: 12px 16px; margin-bottom: 12px; border-radius: 4px;">
-          <div style="font-weight: bold; color: #9B2C2C; font-size: 14px;">${a.title} (${a.severity.toUpperCase()})</div>
-          <div style="color: #4A5568; font-size: 13px; margin-top: 4px;">${a.description}</div>
-          <div style="color: #718096; font-size: 12px; margin-top: 4px; font-style: italic;">Clinical Category: ${a.type.replace('_', ' ').toUpperCase()}</div>
+          <div style="font-weight: bold; color: #9B2C2C; font-size: 14px;">${escapeHtml(a.title)}</div>
+          <div style="color: #4A5568; font-size: 13px; margin-top: 4px;">${escapeHtml(a.description)}</div>
         </div>
       `).join('')
-    : '<div style="color: #48BB78; font-weight: 500;">✓ No critical clinical anomalies flagged in this 90-day window.</div>';
+    : '<div style="color: #2F855A; font-weight: 500;">No patterns flagged from the logs in the last 30 days.</div>';
 
   const html = `
     <!DOCTYPE html>
@@ -143,11 +172,11 @@ export async function generateAndDownloadClinicalPDF(state: AppState): Promise<s
       <div class="header">
         <div>
           <div class="brand">SheSync ✦ Doctor Co-Pilot</div>
-          <div class="brand-sub">90-Day Neuro-Hormonal & Biological Irregularity Intelligence</div>
+          <div class="brand-sub">90-day self-tracking summary for a consultation</div>
         </div>
         <div class="doc-meta">
           <div>Generated: <strong>${currentDate}</strong></div>
-          <div>Status: <strong>Clinical Verification Ready</strong></div>
+          <div>Source: <strong>patient self-logs</strong></div>
         </div>
       </div>
 
@@ -161,48 +190,52 @@ export async function generateAndDownloadClinicalPDF(state: AppState): Promise<s
           <div class="field-val">${userEmail}</div>
         </div>
         <div>
-          <div class="field-label">Identified Hormonal Archetype</div>
+          <div class="field-label">SheSync archetype (from questionnaire)</div>
           <div class="field-val" style="color: #6B46C1;">${archetype}</div>
           <div style="font-size: 11px; color: #718096;">${archetypeTagline}</div>
         </div>
         <div>
-          <div class="field-label">Primary Diagnostic Focus</div>
-          <div class="field-val">${primaryCondition}</div>
+          <div class="field-label">Focus areas (self-chosen, not a diagnosis)</div>
+          <div class="field-val">${focusAreas}</div>
         </div>
       </div>
 
-      <div class="section-title">90-Day Biometric & Cycle Summary</div>
+      <div class="section-title">90-Day Summary (self-logged)</div>
       <div class="metrics-grid">
         <div class="metric-box">
-          <div class="metric-num">${painVal}/10</div>
-          <div class="metric-lbl">Avg. Prostaglandin Pain</div>
+          <div class="metric-num">${avgPain ?? '—'}${avgPain ? '/10' : ''}</div>
+          <div class="metric-lbl">Average logged pain${maxPain != null ? ` (max ${maxPain})` : ''} · ${pains.length} days</div>
         </div>
         <div class="metric-box">
-          <div class="metric-num">${strainScore}</div>
-          <div class="metric-lbl">Allostatic Strain Index</div>
+          <div class="metric-num">${avgSleep ?? '—'}${avgSleep ? 'h' : ''}</div>
+          <div class="metric-lbl">Average logged sleep (target ${sleepTarget}h)</div>
         </div>
         <div class="metric-box">
-          <div class="metric-num">${sleepTarget}h</div>
-          <div class="metric-lbl">Target Restorative Sleep</div>
+          <div class="metric-num">${strainScore}/100</div>
+          <div class="metric-lbl">SheSync strain score today (app estimate)</div>
         </div>
         <div class="metric-box">
           <div class="metric-num">${cycleRegularity}</div>
-          <div class="metric-lbl">Cycle Regularity Status</div>
+          <div class="metric-lbl">Cycle regularity</div>
         </div>
       </div>
 
-      <div class="section-title">Flagged Clinical Anomalies & Irregularities</div>
+      <div class="section-title">Saved Cycles</div>
+      ${cycleRows
+        ? `<table style="width:100%; border-collapse: collapse; font-size: 13px;"><tr style="text-align:left; color:#718096;"><th>Period started</th><th>Cycle length</th><th>Bleeding</th></tr>${cycleRows}</table>`
+        : '<div style="color:#718096; font-size:13px;">No period dates saved yet.</div>'}
+
+      <div class="section-title">Patterns to Discuss</div>
       ${anomalyRows}
 
       <div class="section-title">Physician Consultation Notes & Precautions</div>
       <div style="font-size: 13px; color: #4A5568;">
         <p>• <strong>Predicted Next Menstrual Onset:</strong> ${nextPeriod}</p>
-        <p>• <strong>Phase Modulation Guidance:</strong> Patient is following phase-specific low-inflammatory strain thresholds with vagal parasympathetic support.</p>
-        <p>• <strong>Laboratory Cross-Checks:</strong> Inquire about baseline ferritin/iron panel, DHEA-S, free testosterone, and fasting glucose/insulin if anovulatory clusters persist.</p>
+        <p>• <strong>Questions the patient may want to ask:</strong> whether any tests are needed for the patterns above (for example iron studies for heavy bleeding, or hormone and thyroid tests for irregular cycles).</p>
       </div>
 
       <div class="clinical-notes">
-        <strong>Confidential Medical Intelligence Disclaimer:</strong> This document is generated for clinical discussion between patient and healthcare practitioner based on self-logged biometric markers and bio-adaptive modeling in SheSync. Not an automated medical diagnosis.
+        <strong>Please note:</strong> This summary was generated by the SheSync app from the patient’s own self-logged symptoms and dates. The strain score is an app estimate, not a measurement. It is meant to support a conversation with a healthcare professional and is not a diagnosis.
       </div>
     </body>
     </html>

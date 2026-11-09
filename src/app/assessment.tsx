@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -22,14 +21,12 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  CheckCircle2,
   Sparkles,
   Shield,
   Activity,
   Heart,
   Moon,
   Compass,
-  FileText,
   BarChart2,
   Calendar,
   ShieldAlert,
@@ -38,15 +35,15 @@ import {
 export default function AssessmentScreen() {
   const { reveal } = useLocalSearchParams<{ reveal?: string }>();
   const completeAssessment = useAppStore((s) => s.completeAssessment);
-  const userName = useAppStore((s) => s.userName);
   const savedAnswers = useAppStore((s) => s.assessmentAnswers);
   const biometrics = useAppStore((s) => s.biometrics);
+  const cycleLabel = useAppStore((s) => s.cycle.label);
   const isAssessmentCompleted = useAppStore((s) => s.isAssessmentCompleted);
   const cyclePrediction = useAppStore((s) => s.cyclePrediction);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>(savedAnswers || {});
-  const [isCompleted, setIsCompleted] = useState(reveal === 'true' || isAssessmentCompleted);
+  const isCompleted = reveal === 'true' || isAssessmentCompleted;
   const [calculatedResult, setCalculatedResult] = useState<ArchetypeResult | null>(() => {
     return calculateArchetype(savedAnswers || {});
   });
@@ -168,7 +165,7 @@ export default function AssessmentScreen() {
                   <Shield size={18} color={Theme.colors.strainOptimal} />
                 </View>
                 <View style={styles.calibTextWrap}>
-                  <Text style={styles.calibLabel}>Clinical Shield</Text>
+                  <Text style={styles.calibLabel}>Focus</Text>
                   <Text style={styles.calibValue}>
                     {calculatedResult.primaryCondition}
                   </Text>
@@ -183,21 +180,23 @@ export default function AssessmentScreen() {
                   <Activity size={15} color={Theme.colors.primary} />
                   <Text style={styles.metricRowLabel}>Calibrated Strain Score:</Text>
                 </View>
-                <Text style={styles.metricRowVal}>{biometrics.strainScore}% ({biometrics.strainLevel.toUpperCase()})</Text>
+                <Text style={styles.metricRowVal}>{biometrics.strainScore}/100 ({biometrics.strainLevel.toUpperCase()})</Text>
               </View>
               <View style={styles.metricRow}>
                 <View style={styles.metricRowLeft}>
                   <Heart size={15} color={Theme.colors.secondary} />
-                  <Text style={styles.metricRowLabel}>Parasympathetic HRV:</Text>
+                  <Text style={styles.metricRowLabel}>Readiness today:</Text>
                 </View>
-                <Text style={styles.metricRowVal}>{biometrics.hrv.current} ms</Text>
+                <Text style={styles.metricRowVal}>{biometrics.recoveryScore}%</Text>
               </View>
               <View style={styles.metricRow}>
                 <View style={styles.metricRowLeft}>
                   <Moon size={15} color="#6366F1" />
-                  <Text style={styles.metricRowLabel}>Active Progesterone:</Text>
+                  <Text style={styles.metricRowLabel}>Cycle today:</Text>
                 </View>
-                <Text style={styles.metricRowVal}>Dropping (Luteal)</Text>
+                <Text style={styles.metricRowVal} numberOfLines={1}>
+                  {cycleLabel}
+                </Text>
               </View>
             </View>
 

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SheSync • YourGoGirl AI Women's Health Counsellor</title>
+  <style>
+    :root {
+      --bg: #FFF4F7;
+      --bg-alt: #FFF0F5;
+      --card: #FFFFFF;
+      --border: #FFE2EB;
+      --primary: #FF4D8D;
+      --primary-dark: #E11D48;
+      --primary-light: #FFE4E8;
+      --secondary: #8B5CF6;
+      --secondary-dark: #6D28D9;
+      --secondary-light: #F3E8FF;
+      --text-primary: #1E1B2E;
+      --text-secondary: #6B7280;
+      --text-tertiary: #9CA3AF;
+      --optimal: #10B981;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background: linear-gradient(145deg, #FFF5F8 0%, #F3E8FF 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      color: var(--text-primary);
+    }
+    .app-shell {
+      width: 100%;
+      max-width: 500px;
+      height: 100vh;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 50px rgba(255, 77, 141, 0.14);
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .header {
+      background: rgba(255, 255, 255, 0.94);
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 4px 12px rgba(255, 77, 141, 0.06);
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .avatar-ring {
+      position: relative;
+      width: 46px;
+      height: 46px;
+      border-radius: 23px;
+      background: var(--primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .avatar-core {
+      width: 38px;
+      height: 38px;
+      border-radius: 19px;
+      background: linear-gradient(135deg, #FF4D8D, #8B5CF6);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .online-dot {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--optimal);
+      border: 2px solid #fff;
+    }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .bot-name {
+      font-size: 19px;
+      font-weight: 900;
+      letter-spacing: -0.4px;
+    }
+    .ai-pill {
+      font-size: 9px;
+      font-weight: 800;
+      color: var(--secondary-dark);
+      background: var(--secondary-light);
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid #DDD6FE;
+    }
+    .bot-sub {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+    .reset-btn {
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 6px 11px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+    .reset-btn:hover {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+    }
+    .bio-sync-bar {
+      background: #FFF5F8;
+      border: 1px solid #FFD8E4;
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary-dark);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .modes-row {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .mode-chip {
+      white-space: nowrap;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .mode-chip.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .topics-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--text-secondary);
+      letter-spacing: 0.7px;
+      margin-bottom: 7px;
+    }
+    .topics-grid {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .topic-btn {
+      white-space: nowrap;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-primary);
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(30, 27, 46, 0.04);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .topic-btn:hover {
+      border-color: var(--primary);
+      background: #FFF9FB;
+    }
+    .msg-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .msg-row.user {
+      justify-content: flex-end;
+    }
+    .msg-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 14px;
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+    .bubble {
+      max-width: 88%;
+      border-radius: 22px;
+      padding: 14px 15px;
+      font-size: 13.8px;
+      line-height: 1.52;
+    }
+    .bubble.bot {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-top-left-radius: 6px;
+      box-shadow: 0 2px 8px rgba(30, 27, 46, 0.04);
+    }
+    .bubble.user {
+      background: var(--primary);
+      color: #fff;
+      border-bottom-right-radius: 6px;
+      font-weight: 500;
+    }
+    .bio-box {
+      margin-top: 12px;
+      background: var(--secondary-light);
+      border-left: 3px solid var(--secondary);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .bio-box-title {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--secondary-dark);
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .bio-box-text {
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--text-primary);
+    }
+    .steps-box {
+      margin-top: 10px;
+      background: #FFF5F8;
+      border: 1px solid #FFE0EA;
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .steps-title {
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--primary-dark);
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .step-item {
+      font-size: 12.2px;
+      line-height: 1.45;
+      margin-bottom: 5px;
+      display: flex;
+      gap: 6px;
+    }
+    .affirmation-box {
+      margin-top: 10px;
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-style: italic;
+      font-weight: 700;
+      color: #92400E;
+    }
+    .followups {
+      margin-top: 11px;
+      padding-top: 9px;
+      border-top: 1px solid #FFF0F5;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .followup-chip {
+      background: var(--bg-alt);
+      border: 1px solid #FFD6E4;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 11.2px;
+      font-weight: 700;
+      color: var(--primary-dark);
+      cursor: pointer;
+    }
+    .followup-chip:hover {
+      background: var(--primary-light);
+    }
+    .timestamp {
+      font-size: 10px;
+      color: var(--text-tertiary);
+      margin-top: 6px;
+      text-align: right;
+    }
+    .bubble.user .timestamp {
+      color: rgba(255, 255, 255, 0.8);
+    }
+    .composer {
+      background: rgba(255, 255, 255, 0.96);
+      border-top: 1px solid var(--border);
+      padding: 10px 14px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .composer input {
+      flex: 1;
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 11px 16px;
+      font-size: 13.5px;
+      color: var(--text-primary);
+      outline: none;
+    }
+    .composer input:focus {
+      border-color: var(--primary);
+    }
+    .send-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 21px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(255, 77, 141, 0.25);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <div class="header">
+      <div class="header-top">
+        <div class="brand">
+          <div class="avatar-ring">
+            <div class="avatar-core">✨</div>
+            <div class="online-dot"></div>
+          </div>
+          <div>
+            <div class="title-row">
+              <span class="bot-name">YourGoGirl</span>
+              <span class="ai-pill">AI WOMEN COUNSELLOR</span>
+            </div>
+            <div class="bot-sub">Menstruation • Cycle Disturbances • Focus &amp; Motivation</div>
+          </div>
+        </div>
+        <button class="reset-btn" onclick="resetChat()">Reset Chat</button>
+      </div>
+
+      <div class="bio-sync-bar">
+        🛡️ Synced with Maya: Day 14 (Ovulatory/Luteal) • Strain 74% • PCOS / PMDD Aware
+      </div>
+
+      <div class="modes-row" id="modesRow">
+        <button class="mode-chip active" onclick="selectMode('empathetic_counsellor', this)">💜 Warm Counsellor</button>
+        <button class="mode-chip" onclick="selectMode('focus_motivation', this)">🎯 Focus &amp; Drive Coach</button>
+        <button class="mode-chip" onclick="selectMode('cycle_disturbances', this)">🌸 Cycle &amp; Hormone Guide</button>
+        <button class="mode-chip" onclick="selectMode('somatic_cbt', this)">🌿 Somatic &amp; CBT Reset</button>
+      </div>
+    </div>
+
+    <div class="chat-area" id="chatArea">
+      <div>
+        <div class="topics-label">ASK YOURGOGIRL ABOUT WHAT YOU'RE FACING TODAY:</div>
+        <div class="topics-grid">
+          <button class="topic-btn" onclick="sendQuick('I have zero motivation today and feel guilty for not getting enough done during my cycle.')">🔋 Loss of Motivation</button>
+          <button class="topic-btn" onclick="sendQuick('I cannot focus at all today. My mind feels foggy and scattered—how do I cope with menstrual brain fog?')">🌫️ Brain Fog &amp; Focus</button>
+          <button class="topic-btn" onclick="sendQuick('My periods have been irregular and unpredictable lately. Why does this happen and what can I do?')">🌸 Cycle Disturbances</button>
+          <button class="topic-btn" onclick="sendQuick('I am dealing with painful menstrual cramps, pelvic heaviness, and lower back ache right now.')">🫖 Period Cramps &amp; Pain</button>
+          <button class="topic-btn" onclick="sendQuick('I feel unusually tearful, anxious, and emotionally overwhelmed before my period. Can you counsel me through this?')">💜 Mood Swings &amp; PMDD</button>
+        </div>
+      </div>
+      <div id="messagesList" style="display:flex;flex-direction:column;gap:14px;"></div>
+    </div>
+
+    <form class="composer" onsubmit="handleFormSubmit(event)">
+      <input
+        id="chatInput"
+        type="text"
+        placeholder="Ask YourGoGirl about periods, disturbances, motivation, or focus..."
+      />
+      <button type="submit" class="send-btn">➤</button>
+    </form>
+  </div>
+
+  <script>
+    let activeMode = 'empathetic_counsellor';
+    const messagesList = document.getElementById('messagesList');
+    const chatArea = document.getElementById('chatArea');
+
+    function formatBold(str) {
+      return str.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>');
+    }
+
+    function appendBotMessage(data) {
+      const row = document.createElement('div');
+      row.className = 'msg-row bot';
+      const stepsHtml = (data.steps || [])
+        .map((s) => `<div class="step-item"><span>✅</span><span>${s}</span></div>`)
+        .join('');
+      const followupsHtml = (data.followUps || [])
+        .map((f) => `<button class="followup-chip" onclick="sendQuick('${f.replace(/'/g, "\\'")}')">${f}</button>`)
+        .join('');
+
+      row.innerHTML = `
+        <div class="msg-avatar">💜</div>
+        <div class="bubble bot">
+          <div>${formatBold(data.text)}</div>
+          ${data.why ? `<div class="bio-box"><div class="bio-box-title">🧠 WHY YOUR BODY &amp; HORMONES FEEL THIS WAY</div><div class="bio-box-text">${data.why}</div></div>` : ''}
+          ${stepsHtml ? `<div class="steps-box"><div class="steps-title">🧭 GENTLE COUNSELLOR STEPS FOR RIGHT NOW</div>${stepsHtml}</div>` : ''}
+          ${data.affirmation ? `<div class="affirmation-box">✨ "${data.affirmation}"</div>` : ''}
+          ${followupsHtml ? `<div class="followups">${followupsHtml}</div>` : ''}
+          <div class="timestamp">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+        </div>
+      `;
+      messagesList.appendChild(row);
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    function appendUserMessage(text) {
+      const row = document.createElement('div');
+      row.className = 'msg-row user';
+      row.innerHTML = `
+        <div class="bubble user">
+          <div>${text}</div>
+          <div class="timestamp">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+        </div>
+      `;
+      messagesList.appendChild(row);
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    function selectMode(mode, btn) {
+      activeMode = mode;
+      document.querySelectorAll('.mode-chip').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    function getCounsellorResponse(input) {
+      const q = input.toLowerCase();
+      if (/focus|concentrat|fog|study|work|distract|memory|scatter/.test(q)) {
+        return {
+          text: "I hear you so clearly, Maya. Trying to concentrate when your brain feels like it's wading through thick fog is deeply frustrating—especially when you have responsibilities waiting on you.\n\nFirst, please release any self-judgment: **menstrual and cycle-related brain fog is a real neurobiological shift, not a lack of discipline.** Instead of fighting your biology with harsh 4-hour focus marathons, let's counsel your mind into **Low-Friction Focus**.",
+          why: "Estrogen directly modulates acetylcholine and dopamine in your prefrontal cortex (working memory and sharp focus). When estrogen fluctuates or progesterone rises alongside elevated cortisol (26.8 µg/dL), neural transmission naturally slows to conserve metabolic energy.",
+          steps: [
+            'Use the "12-Minute Gentle Sprint": Set a timer for 12 minutes on ONE tiny, concrete task, then take a 5-minute eyes-closed rest.',
+            'Externalize Working Memory: Write a Brain Dump of just 3 must-do items on paper and hide everything else.',
+            'Sensory Awakening Reset: Sip cold water with electrolytes or peppermint tea and do 60 seconds of box breathing (4s inhale, 4s hold, 4s exhale).'
+          ],
+          affirmation: "My mind moves in natural seasons; I honor my pace and trust my clarity to return.",
+          followUps: [
+            "Can you help me break down one overwhelming task?",
+            "What foods help clear menstrual brain fog?",
+            "How do I stop feeling guilty about low productivity?"
+          ]
+        };
+      }
+      if (/motivat|lazy|guilt|tired|exhaust|burnout|energy|slump|behind|drive/.test(q)) {
+        return {
+          text: "Oh Maya, take a deep breath and let your shoulders drop. 💜 That heavy voice calling you 'lazy' or 'behind' is lying to you—what you are experiencing is a **physiological conservation state**, not a character flaw.\n\nExpecting yourself to have linear, high-octane motivation every single day is built around a 24-hour male hormone clock, not a feminine infradian rhythm. Trade **discipline through shame** for **compassionate pacing**.",
+          why: "Shifts in estrogen and progesterone alter baseline dopamine receptor sensitivity in your brain's mesolimbic reward pathway, temporarily lowering 'hustle drive' so your body can prioritize cellular and endocrine recovery.",
+          steps: [
+            'Do the "Minimum Viable Day" Exercise: Pick ONLY 1 essential task today and consciously postpone the rest without apology.',
+            'Use the "5-Minute Cozy Entry": Pair a tiny task with physical comfort—a warm blanket, herbal tea, and permission to stop after 5 minutes.',
+            'Replenish Dopamine Gently: Get 3 minutes of natural sunlight and eat a protein + complex-carb snack.'
+          ],
+          affirmation: "Rest is a productive biological necessity. I am allowed to move gently today.",
+          followUps: [
+            "Help me plan a Minimum Viable Day for today",
+            "Why do I feel so exhausted before and during my period?",
+            "I also have brain fog and cannot focus"
+          ]
+        };
+      }
+      if (/irregular|late|missed|delay|pcos|spotting|heavy|clot|disturbance|unpredictable/.test(q)) {
+        return {
+          text: "I'm right here with you, Maya. Dealing with menstrual disturbances—whether irregular cycles, delayed periods, PCOS fluctuations, spotting, or heavy flow—can feel so unsettling. 🌸\n\nYour menstrual cycle is your body's **fifth vital sign**. When ovulation is delayed or flow changes, your ovaries and brain are communicating along the **HPA-HPO axis** in response to stress, cortisol, sleep debt, or insulin signaling.",
+          why: "High allostatic strain (74%) or elevated cortisol/insulin can shift GnRH pulsatility in the hypothalamus, delaying follicle maturation and altering endometrial shedding.",
+          steps: [
+            'Stabilize Blood Sugar & Cortisol: Eat balanced meals with 25-30g protein, fiber, and healthy fats every 3–4 hours.',
+            'Log Flow & Symptoms in SheSync: Keep tracking in the Home tab so your 90-Day Doctor Co-Pilot Report captures exact patterns.',
+            'Soothe Your HPA Axis Tonight: Practice 15 minutes of legs-up-the-wall or diaphragmatic breathing before sleep.'
+          ],
+          affirmation: "I listen to my body's signals with curiosity and care instead of fear.",
+          followUps: [
+            "How does stress or PCOS delay ovulation?",
+            "What natural habits help regulate irregular cycles?",
+            "When should I see a gynecologist about cycle disturbances?"
+          ]
+        };
+      }
+      if (/cramp|pain|period|bleed|pelvic|back|bloat|nausea|headache/.test(q)) {
+        return {
+          text: "I'm sending you so much warmth right now, Maya. 🫖 Menstrual cramps, pelvic heaviness, and lower back aches are exhausting—and women are far too often told to just 'push through' pain that deserves real relief and tenderness.\n\nLet's focus on calming inflammation and releasing pelvic floor guarding right now.",
+          why: "During menstruation, endometrial cells release prostaglandins (PGF2α and PGE2), triggering uterine smooth muscle contractions. High prostaglandins plus cortisol temporarily restrict local blood flow, causing cramping spasms.",
+          steps: [
+            'Continuous Heat Therapy (40°C): Place a heating pad over your lower abdomen or lower back for 20 minutes to vasodilate uterine vessels.',
+            'Pelvic Floor Decompression: Rest in Reclined Butterfly or Child’s Pose and breathe deeply into your lower belly.',
+            'Anti-Inflammatory Support: Sip warm ginger or chamomile tea and consider magnesium glycinate (200–300mg).'
+          ],
+          affirmation: "I soften around my discomfort and give my body the warmth and rest it asks for.",
+          followUps: [
+            "Why do periods cause lower back pain and bloating?",
+            "What foods reduce menstrual cramps?",
+            "I also feel emotionally overwhelmed"
+          ]
+        };
+      }
+      return {
+        text: "Oh Maya, I'm wrapping you in the biggest virtual hug right now. 💜 Please hear me when I say this: **you are not 'too sensitive,' and you are not broken.**\n\nWhether you're navigating pre-menstrual emotional waves, cycle disturbances, low motivation, or brain fog, you don't have to carry it alone. We just need to help your nervous system feel safe for the next hour.",
+        why: "Fluctuating allopregnanolone and estrogen interact directly with GABA-A and serotonin receptors in your limbic system, making your emotional alarm center biologically more sensitive during cycle shifts.",
+        steps: [
+          'Do 3 "Physiological Sighs" Right Now: Two quick inhales through the nose, followed by one long, slow audible sigh through the mouth.',
+          'Practice the "Hormonal Weather" Rule: Postpone harsh self-judgments or major life conclusions for 48–72 hours.',
+          'Sensory Comfort: Wrap up in soft clothes, dim harsh lights, and sip a warm drink.'
+        ],
+        affirmation: "These heavy feelings are a temporary biological wave, and I can ride this wave with self-compassion.",
+        followUps: [
+          "I have zero motivation today and feel guilty",
+          "I cannot focus because of menstrual brain fog",
+          "My periods have been irregular and unpredictable"
+        ]
+      };
+    }
+
+    function sendQuick(text) {
+      appendUserMessage(text);
+      setTimeout(() => {
+        appendBotMessage(getCounsellorResponse(text));
+      }, 350);
+    }
+
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('chatInput');
+      const val = input.value.trim();
+      if (!val) return;
+      input.value = '';
+      sendQuick(val);
+    }
+
+    function resetChat() {
+      messagesList.innerHTML = '';
+      appendBotMessage({
+        text: "Hi Maya, I'm **YourGoGirl** — your personal women's health & emotional counsellor. 💜\n\nI'm synced with your bio-adaptive profile on **Day 14 (Ovulatory/Luteal Phase)** with a daily strain score of **74%**. Whether you're navigating period pain, cycle disturbances, a sudden loss of motivation, brain fog, or heavy emotions, this is your safe, judgment-free space.\n\nTake a gentle breath. What is weighing on your body or mind today?",
+        why: "Your body is synced with PCOS/PMDD awareness. With HRV at 34 ms and elevated cortisol, your nervous system deserves gentleness rather than pressure today.",
+        steps: [
+          "Tap any quick topic above or type freely about your period, cycle irregularities, focus, motivation, or mood.",
+          "Switch my counselling lens anytime at the top (Warm Counsellor, Focus & Drive Coach, Cycle & Hormone Guide, or Somatic & CBT Reset)."
+        ],
+        affirmation: "My worth is not measured by my productivity across every phase of my cycle.",
+        followUps: [
+          "Why have I lost all motivation lately?",
+          "Help me focus through severe brain fog",
+          "Why is my period irregular or delayed?",
+          "How do I soothe painful cramps naturally?"
+        ]
+      });
+    }
+
+    resetChat();
+  </script>
+</body>
+</html>

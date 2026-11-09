@@ -1,18 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Image,
-  Dimensions,
   ScrollView,
   Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
+import { useAppStore } from '@/store/useAppStore';
+import { useStoresHydrated } from '@/store/hydration';
 import { Theme } from '@/constants/theme';
-import { Heart, ArrowRight, UserCheck, Quote as QuoteIcon } from 'lucide-react-native';
+import { ArrowRight, UserCheck, Quote as QuoteIcon } from 'lucide-react-native';
 
 const SLIDES = [
   {
@@ -47,10 +48,14 @@ const SLIDES = [
 
 export default function WelcomeScreen() {
   const [activeSlide, setActiveSlide] = useState(0);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-  const slideAnim = useRef(new Animated.Value(0)).current;
+  // useState (not useRef().current) so the React Compiler never reads a ref during render.
+  const [fadeAnim] = useState(() => new Animated.Value(1));
+  const [slideAnim] = useState(() => new Animated.Value(0));
+  const hydrated = useStoresHydrated();
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const isAssessmentCompleted = useAppStore((s) => s.isAssessmentCompleted);
 
-  const transitionToSlide = (newIndex: number) => {
+  const transitionToSlide = useCallback((newIndex: number) => {
     // Fade out and slight shift
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -79,7 +84,7 @@ export default function WelcomeScreen() {
         }),
       ]).start();
     });
-  };
+  }, [fadeAnim, slideAnim]);
 
   // Auto-sliding quotes timer: automatically advances every 3.8 seconds
   useEffect(() => {
@@ -88,18 +93,20 @@ export default function WelcomeScreen() {
     }, 3800);
 
     return () => clearInterval(timer);
-  }, [activeSlide]);
+  }, [activeSlide, transitionToSlide]);
 
   const handleManualSlide = (index: number) => {
     if (index === activeSlide) return;
     transitionToSlide(index);
   };
 
-  const handleHeartPress = () => {
-    transitionToSlide((activeSlide + 1) % SLIDES.length);
-  };
-
   const currentContent = SLIDES[activeSlide] || SLIDES[0];
+
+  // Wait for saved data, then skip the welcome screen for signed-in users.
+  if (!hydrated) return null;
+  if (isAuthenticated) {
+    return <Redirect href={isAssessmentCompleted ? '/(tabs)' : '/assessment'} />;
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>

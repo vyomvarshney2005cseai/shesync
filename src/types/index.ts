@@ -17,8 +17,14 @@ export interface SleepData {
   minutesSlept: number;
   deficit: boolean;
   severity: 'mild' | 'moderate' | 'severe';
-  label: string;            // e.g. "4h 12m (Severe Deficit)"
+  label: string;            // e.g. "6h 30m (1h short)" or "Not logged"
   quality: number;          // 0-100
+  logged: boolean;          // false until the user logs last night's sleep
+}
+
+export interface SleepLog {
+  date: string;             // local "YYYY-MM-DD" of the morning after
+  hours: number;
 }
 
 export interface CortisolData {
@@ -28,12 +34,19 @@ export interface CortisolData {
   timestamp: string;
 }
 
+/**
+ * Daily body snapshot. Everything here is DERIVED from what the user logs
+ * (pain, flow, mood, energy, sleep, assessment). SheSync has no wearable or
+ * lab connection, so `hrv` and `cortisol` are internal model estimates and
+ * must never be shown as measurements.
+ */
 export interface BiometricSnapshot {
   hrv: HRVData;
   sleep: SleepData;
   cortisol: CortisolData;
   strainScore: number;      // 0-100 daily strain
   strainLevel: 'low' | 'moderate' | 'high' | 'severe';
+  recoveryScore: number;    // 0-100 readiness, the inverse view of strain
 }
 
 // ─── Cycle Tracking ─────────────────────────────────────────
@@ -54,7 +67,8 @@ export interface CycleData {
   lastPeriodDate: string;   // ISO date
   label: string;            // "Day 45 (Irregular Phase)"
   progesteroneStatus: 'rising' | 'peak' | 'dropping' | 'low';
-  conditions: string[];     // e.g. ["PCOS", "PMDD"]
+  conditions: string[];     // user-chosen focus areas, never auto-diagnosed
+  hasCycleData?: boolean;   // false until the user has saved period dates
 }
 
 export interface PastCycleRecord {
@@ -154,6 +168,7 @@ export interface AdaptiveWorkout {
   overriddenFrom?: string;   // what was originally scheduled
   reason?: string;           // biological reasoning
   tags: string[];
+  libraryWorkoutId?: string; // session the in-app player runs
 }
 
 export interface WorkoutHistory {
@@ -199,19 +214,49 @@ export interface CBTPrompt {
   userResponse?: string;
 }
 
+// ─── YourGoGirl counsellor (used by src/lib/yourGoGirlEngine.ts) ───
+
+export type CounsellorMode =
+  | 'empathetic_counsellor'
+  | 'focus_motivation'
+  | 'cycle_disturbances'
+  | 'somatic_cbt';
+
+export type CounsellorTopic =
+  | 'general'
+  | 'focus'
+  | 'motivation'
+  | 'disturbances'
+  | 'menstruation'
+  | 'emotional';
+
+export interface YourGoGirlMessage {
+  id: string;
+  sender: 'user' | 'bot';
+  text: string;
+  timestamp: string;
+  category?: CounsellorTopic;
+  mode?: CounsellorMode;
+  biologicalWhy?: string;
+  gentleActionSteps?: string[];
+  affirmation?: string;
+  followUpSuggestions?: string[];
+}
+
 // ─── Clinical Report ─────────────────────────────────────────
 
 export interface DailyDataPoint {
-  day: number;               // 1-90
-  painSeverity: number;      // 0-10
-  cycleDay: number | null;   // null = anovulatory gap
+  day: number;               // 1-90 (90 = today)
+  dateKey: string;           // local "YYYY-MM-DD"
+  painSeverity: number | null; // highest pain logged that day, null = not logged
+  cycleDay: number | null;   // null = before the first saved period
   isMenstrual: boolean;
-  isAnovulatory: boolean;
+  isAnovulatory: boolean;    // inside a cycle longer than 35 days
 }
 
 export interface ClinicalAnomaly {
   id: string;
-  type: 'anovulatory_gap' | 'pain_cluster' | 'hrv_drop' | 'sleep_deficit';
+  type: 'anovulatory_gap' | 'pain_cluster' | 'hrv_drop' | 'sleep_deficit' | 'flow_heavy' | 'mood_pattern';
   severity: 'moderate' | 'severe' | 'critical';
   title: string;
   description: string;
@@ -246,6 +291,8 @@ export interface AppState {
   userEmail?: string;
   userPhoto?: string;
   isAuthenticated: boolean;
+  isOfflineAccount: boolean;   // true when signed in on this device only
+  focusAreas: string[];        // chosen at sign-up
 
   // Assessment & Fine-Tuning
   isAssessmentCompleted: boolean;
@@ -261,9 +308,11 @@ export interface AppState {
   pastCycles: PastCycleRecord[];
   cyclePrediction: CyclePrediction;
 
-  // Symptom logs
+  // Symptom & sleep logs
   symptomLogs: SymptomLog[];
-  
+  sleepLogs: SleepLog[];
+  patternFlags: string[];      // non-diagnostic patterns from the user's logs
+
   // Move / Adaptive workouts
   todayWorkout: AdaptiveWorkout;
   workoutHistory: WorkoutHistory[];
@@ -274,12 +323,17 @@ export interface AppState {
   cbtPrompt: CBTPrompt;
   sosActive: boolean;
 
+  // YourGoGirl AI Counsellor
+  yourGoGirlMessages: YourGoGirlMessage[];
+  yourGoGirlMode: CounsellorMode;
+
   // Clinical report
   clinicalReport: ClinicalReport;
 
   // Actions
-  login: (email?: string, name?: string) => void;
-  signup: (name: string, email: string) => void;
+  login: (email?: string, name?: string, options?: { offline?: boolean }) => void;
+  signup: (name: string, email: string, focusAreas?: string[], options?: { offline?: boolean }) => void;
+  logSleep: (hours: number) => void;
   logout: () => Promise<void> | void;
   updateUserPhoto: (uri: string) => void;
   completeAssessment: (answers: Record<string, string>) => void;
@@ -295,4 +349,7 @@ export interface AppState {
   logSymptom: (log: Partial<SymptomLog>) => void;
   setStrainScore: (score: number) => void;
   fineTuneAllAnalytics: () => void;
+  addYourGoGirlMessage: (msg: YourGoGirlMessage) => void;
+  setYourGoGirlMode: (mode: CounsellorMode) => void;
+  clearYourGoGirlChat: () => void;
 }
