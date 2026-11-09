@@ -23,9 +23,8 @@ export default function ReportScreen() {
         >
           <View style={styles.centeredWrapper}>
             <Header
-              title="Doctor Co-Pilot"
-              subtitle="90-Day Clinical Irregularity Intelligence"
-              badge="Clinical Export"
+              title="Doctor Report"
+              subtitle="Your last 90 days, ready to share"
             />
             <View style={styles.mainContent}>
               <CalibratedScorecard />

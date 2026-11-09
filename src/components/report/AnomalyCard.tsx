@@ -27,14 +27,6 @@ const getIcon = (type: ClinicalAnomaly['type']) => {
   }
 };
 
-const TYPE_LABELS: Partial<Record<ClinicalAnomaly['type'], string>> = {
-  anovulatory_gap: 'cycle pattern',
-  pain_cluster: 'pain',
-  flow_heavy: 'bleeding',
-  mood_pattern: 'mood',
-  sleep_deficit: 'sleep',
-};
-
 const getSeverityColor = (severity: ClinicalAnomaly['severity']) => {
   switch (severity) {
     case 'critical':
@@ -52,7 +44,7 @@ export const AnomalyCard: React.FC<AnomalyCardProps> = ({ anomalies }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>Patterns to Discuss</Text>
-      <Text style={styles.sectionSubtitle}>From your last 30 days of logs — observations, not a diagnosis</Text>
+      <Text style={styles.sectionSubtitle}>From the last 30 days — observations, not a diagnosis</Text>
       {anomalies.length === 0 ? (
         <View style={[styles.card, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
           <Text style={[styles.title, { color: '#047857' }]}>Nothing flagged yet</Text>
@@ -71,7 +63,7 @@ export const AnomalyCard: React.FC<AnomalyCardProps> = ({ anomalies }) => {
             <View style={styles.headerRow}>
               {getIcon(anomaly.type)}
               <Text style={[styles.title, { color: colors.text }]}>
-                {anomaly.icon} {anomaly.title}
+                {anomaly.title}
               </Text>
             </View>
             <Text style={styles.description}>{anomaly.description}</Text>
@@ -81,9 +73,6 @@ export const AnomalyCard: React.FC<AnomalyCardProps> = ({ anomalies }) => {
                   {anomaly.severity === 'critical' ? 'SEE A DOCTOR' : anomaly.severity === 'severe' ? 'WORTH ASKING' : 'KEEP AN EYE'}
                 </Text>
               </View>
-              <Text style={[styles.typeText, { color: colors.text }]}>
-                {TYPE_LABELS[anomaly.type] ?? anomaly.type.replace(/_/g, ' ')}
-              </Text>
             </View>
           </View>
         );
@@ -144,7 +133,7 @@ const styles = StyleSheet.create({
   },
   severityText: {
     fontSize: 9,
-    fontWeight: '900',
+    fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 0.8,
   },

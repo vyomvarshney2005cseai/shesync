@@ -129,5 +129,5 @@ const styles = StyleSheet.create({
   },
   found: { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' },
   wrong: { backgroundColor: '#FFE4E6', borderColor: Theme.colors.strainHigh },
-  num: { fontSize: 24, fontWeight: '900', color: Theme.colors.textPrimary },
+  num: { fontSize: 24, fontWeight: '800', color: Theme.colors.textPrimary },
 });

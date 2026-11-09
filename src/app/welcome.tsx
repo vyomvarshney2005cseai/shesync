@@ -21,28 +21,28 @@ const SLIDES = [
     headline: 'I am a woman!\nAnd what’s your\nsuper power?',
     quote: 'Feminism isn’t about making women stronger. Women are already strong. It’s about changing the way the world perceives that strength.',
     author: 'G.D. Anderson',
-    image: require('@/../assets/images/slide1.png'),
+    image: require('@/../assets/images/slide1.jpg'),
   },
   {
     tag: 'Empowerment',
     headline: 'Limitless Power\nWithin You.',
     quote: 'There is no limit to what we, as women, can accomplish together.',
     author: 'Michelle Obama',
-    image: require('@/../assets/images/slide2.png'),
+    image: require('@/../assets/images/slide2.jpg'),
   },
   {
     tag: 'Sisterhood & Voice',
     headline: 'Stand for Yourself,\nStand for All Women.',
     quote: 'Each time a woman stands up for herself, without knowing it possibly, without claiming it, she stands up for all women.',
     author: 'Maya Angelou',
-    image: require('@/../assets/images/slide3.png'),
+    image: require('@/../assets/images/slide3.jpg'),
   },
   {
     tag: 'Sovereign Health',
     headline: 'Deliberate and\nAfraid of Nothing.',
     quote: 'Caring for myself is not self-indulgence, it is self-preservation, and that is an act of political warfare.',
     author: 'Audre Lorde',
-    image: require('@/../assets/images/slide4.png'),
+    image: require('@/../assets/images/slide4.jpg'),
   },
 ];
 
@@ -121,13 +121,13 @@ export default function WelcomeScreen() {
           <View style={styles.brandBar}>
             <View style={styles.brandLogoRow}>
               <Image
-                source={require('@/../assets/images/shesync-logo.png')}
+                source={require('@/../assets/images/logo.png')}
                 style={styles.logoImage}
                 resizeMode="contain"
               />
               <View>
                 <Text style={styles.brandTitle}>SheSync</Text>
-                <Text style={styles.brandSubtitle}>Bio-Adaptive Feminine Health</Text>
+                <Text style={styles.brandSubtitle}>Period & wellbeing companion</Text>
               </View>
             </View>
           </View>
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   indicatorInactive: {
     width: 7,
     borderWidth: 1.5,
-    borderColor: '#111827',
+    borderColor: '#46375A',
     backgroundColor: 'transparent',
   },
   heartButton: {

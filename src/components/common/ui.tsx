@@ -42,7 +42,7 @@ export function Card({
 
 const toneStyles = StyleSheet.create({
   default: { backgroundColor: Theme.colors.card, borderColor: Theme.colors.cardBorder },
-  rose: { backgroundColor: '#FFF1F5', borderColor: 'rgba(255, 77, 141, 0.25)' },
+  rose: { backgroundColor: '#FFF1F5', borderColor: 'rgba(201, 87, 140, 0.25)' },
   lilac: { backgroundColor: Theme.colors.secondaryLight, borderColor: Theme.colors.secondaryBorder },
   dark: { backgroundColor: Theme.colors.obsidian, borderColor: 'rgba(255,255,255,0.08)' },
   mint: { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' },
@@ -85,7 +85,7 @@ export function Chip({
 export function ProgressBar({
   value,
   color = Theme.colors.primary,
-  track = 'rgba(255, 77, 141, 0.12)',
+  track = 'rgba(201, 87, 140, 0.12)',
   height = 8,
 }: {
   value: number; // 0..1
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   },
   statIcon: { marginBottom: 6 },
   statLabel: { fontSize: 10, fontWeight: '700', color: Theme.colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.6 },
-  statValue: { fontSize: 20, fontWeight: '900', marginTop: 2, letterSpacing: -0.4 },
+  statValue: { fontSize: 20, fontWeight: '800', marginTop: 2, letterSpacing: -0.4 },
   statHint: { fontSize: 11, color: Theme.colors.textSecondary, marginTop: 2, lineHeight: 15 },
   barsRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 110, paddingTop: 4 },
   barCol: { flex: 1, alignItems: 'center', height: '100%' },
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     width: '70%',
     maxWidth: 26,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(255, 77, 141, 0.06)',
+    backgroundColor: 'rgba(201, 87, 140, 0.06)',
     borderRadius: 6,
   },
   barLabel: { fontSize: 10, fontWeight: '600', color: Theme.colors.textTertiary, marginTop: 4 },

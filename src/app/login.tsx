@@ -12,18 +12,17 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Theme } from '@/constants/theme';
-import { FeministQuoteCard } from '@/components/common/FeministQuoteCard';
 import { useAppStore } from '@/store/useAppStore';
 import { isOfflineAuthError, signInWithSupabase } from '@/lib/supabaseService';
+import { pullCloudData } from '@/lib/sync';
 import {
   ArrowLeft,
   Mail,
   Lock,
   Eye,
   EyeOff,
-  LogIn as LogInIcon,
   CheckCircle2,
 } from 'lucide-react-native';
 
@@ -31,7 +30,9 @@ export default function LoginScreen() {
   const login = useAppStore((s) => s.login);
   const currentUserName = useAppStore((s) => s.userName);
 
-  const [email, setEmail] = useState('');
+  // Profile's "Sign in to back up" passes her email along.
+  const params = useLocalSearchParams<{ email?: string }>();
+  const [email, setEmail] = useState(typeof params.email === 'string' ? params.email : '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -54,14 +55,16 @@ export default function LoginScreen() {
     setErrorMsg('');
 
     const goNext = () => {
-      // Read after login(): a different account starts with a fresh profile.
-      router.replace(useAppStore.getState().isAssessmentCompleted ? '/(tabs)' : '/assessment');
+      // Always land on Home: unfinished "Details for Sync" are shown there.
+      router.replace('/(tabs)');
     };
 
     try {
       const res = await signInWithSupabase(cleanEmail, password);
       const name = res.user?.user_metadata?.full_name || currentUserName || cleanEmail.split('@')[0];
       login(cleanEmail, name);
+      // Bring back her saved data on this phone (waits a few seconds at most).
+      await pullCloudData();
       goNext();
     } catch (err: any) {
       if (isOfflineAuthError(err)) {
@@ -109,7 +112,7 @@ export default function LoginScreen() {
 
             <View style={styles.brandRow}>
               <Image
-                source={require('@/../assets/images/shesync-logo.png')}
+                source={require('@/../assets/images/logo.png')}
                 style={styles.logoImage}
                 resizeMode="contain"
               />
@@ -119,20 +122,10 @@ export default function LoginScreen() {
             <View style={{ width: 36 }} />
           </View>
 
-          {/* Inspiring Feminism Quote Card */}
-          <FeministQuoteCard
-            initialQuoteId="1"
-            category="feminism"
-            variant="rose"
-            showNewQuoteButton={false}
-          />
-
           {/* Heading */}
           <View style={styles.headerBlock}>
             <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>
-              Reconnect with your cycle, biometrics, and inner sanctuary.
-            </Text>
+            <Text style={styles.subtitle}>Log in to continue.</Text>
           </View>
 
           {/* Form Fields */}
@@ -145,7 +138,7 @@ export default function LoginScreen() {
 
             {/* Email Field */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>EMAIL OR USERNAME</Text>
+              <Text style={styles.inputLabel}>EMAIL</Text>
               <View style={styles.inputWrapper}>
                 <Mail size={18} color={Theme.colors.textTertiary} style={styles.inputIcon} />
                 <TextInput
@@ -217,7 +210,7 @@ export default function LoginScreen() {
               <View style={[styles.checkbox, rememberMe && styles.checkboxActive]}>
                 {rememberMe && <CheckCircle2 size={16} color="#FFFFFF" />}
               </View>
-              <Text style={styles.rememberText}>Keep me logged in securely</Text>
+              <Text style={styles.rememberText}>Keep me logged in</Text>
             </TouchableOpacity>
 
             {/* Log In Button */}
@@ -227,12 +220,8 @@ export default function LoginScreen() {
               onPress={handleLogin}
               disabled={loading}
             >
-              {loading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />
-              ) : (
-                <LogInIcon size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-              )}
-              <Text style={styles.submitButtonText}>{loading ? 'Logging in...' : 'Log In'}</Text>
+              {loading ? <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} /> : null}
+              <Text style={styles.submitButtonText}>{loading ? 'Logging in…' : 'Log In'}</Text>
             </TouchableOpacity>
           </View>
 
@@ -411,7 +400,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   submitButton: {
-    backgroundColor: '#111827',
+    backgroundColor: '#46375A',
     borderRadius: Theme.radius.md,
     paddingVertical: 16,
     paddingHorizontal: 16,

@@ -106,7 +106,7 @@ export default function ForgotPasswordScreen() {
 
               <View style={styles.brandRow}>
                 <Image
-                  source={require('@/../assets/images/shesync-logo.png')}
+                  source={require('@/../assets/images/logo.png')}
                   style={styles.logoImage}
                   resizeMode="contain"
                 />
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   submitButton: {
-    backgroundColor: '#111827',
+    backgroundColor: '#46375A',
     borderRadius: Theme.radius.md,
     paddingVertical: 16,
     paddingHorizontal: 16,

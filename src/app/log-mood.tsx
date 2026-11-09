@@ -21,6 +21,7 @@ import {
 } from 'lucide-react-native';
 import { Theme } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
+import { nextSyncHref, syncStepBadge } from '@/lib/syncDetails';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
 import type { MoodLevel } from '@/types';
 
@@ -124,7 +125,7 @@ export default function LogMoodScreen() {
     setIsSaved(true);
 
     if (isOnboarding) {
-      router.push('/assessment?reveal=true');
+      router.push(nextSyncHref(useAppStore.getState()));
     } else {
       const msg = 'Mood entry logged successfully!';
       if (Platform.OS === 'web') {
@@ -152,7 +153,6 @@ export default function LogMoodScreen() {
         </TouchableOpacity>
         <View style={styles.navCenter}>
           <Text style={styles.navTitle}>Log Mood</Text>
-          <Text style={styles.navSubtitle}>Emotional & Somatic Wellbeing</Text>
         </View>
         <View style={{ width: 40 }} />
       </View>
@@ -167,20 +167,18 @@ export default function LogMoodScreen() {
           <View style={styles.onboardingBanner}>
             <View style={styles.onboardingBadge}>
               <Sparkles size={13} color={Theme.colors.primary} />
-              <Text style={styles.onboardingBadgeText}>BASELINE CALIBRATION (STEP 4 OF 4)</Text>
+              <Text style={styles.onboardingBadgeText}>{syncStepBadge('mood')}</Text>
             </View>
-            <Text style={styles.onboardingTitle}>Log Your Mood & Vitality</Text>
+            <Text style={styles.onboardingTitle}>Mood today</Text>
             <Text style={styles.onboardingDesc}>
-              Calibrate your baseline emotional state and nervous energy. This finalizes your
-              fine-tuned clinical analytics and personalized Doctor Co-Pilot profile.
+              How are you feeling today?
             </Text>
           </View>
         )}
 
         {/* Section: Mood Selection */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>How are you feeling right now?</Text>
-          <Text style={styles.sectionSubtext}>Select the state closest to your present emotion</Text>
+          <Text style={styles.sectionHeader}>How are you feeling?</Text>
 
           <View style={styles.moodGrid}>
             {MOODS.map((m) => {
@@ -219,7 +217,7 @@ export default function LogMoodScreen() {
         <View style={styles.section}>
           <View style={styles.sectionRow}>
             <BatteryCharging size={18} color={Theme.colors.primary} />
-            <Text style={styles.sectionHeaderInline}>Vitality & Energy Level</Text>
+            <Text style={styles.sectionHeaderInline}>Energy</Text>
           </View>
           <View style={styles.chipsRow}>
             {ENERGY_LEVELS.map((energy) => {
@@ -252,9 +250,8 @@ export default function LogMoodScreen() {
         <View style={styles.section}>
           <View style={styles.sectionRow}>
             <Tag size={18} color={Theme.colors.secondary} />
-            <Text style={styles.sectionHeaderInline}>Emotional Qualities</Text>
+            <Text style={styles.sectionHeaderInline}>Feelings</Text>
           </View>
-          <Text style={styles.sectionSubtext}>Select any tags that resonate with you today</Text>
           <View style={styles.tagsContainer}>
             {EMOTIONAL_TAGS.map((tag) => {
               const isSelected = selectedTags.includes(tag);
@@ -276,8 +273,7 @@ export default function LogMoodScreen() {
 
         {/* Section: Reflection Notes */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Somatic Reflection Notes</Text>
-          <Text style={styles.sectionSubtext}>Optional: What triggered or supported this feeling?</Text>
+          <Text style={styles.sectionHeader}>Notes</Text>
           <TextInput
             style={styles.notesInput}
             multiline
@@ -298,7 +294,7 @@ export default function LogMoodScreen() {
         >
           {isOnboarding ? (
             <>
-              <Text style={styles.saveButtonText}>Save & Reveal Calibrated Archetype & Analytics</Text>
+              <Text style={styles.saveButtonText}>Save & continue</Text>
               <ArrowRight size={20} color="#FFFFFF" style={{ marginLeft: 8 }} />
             </>
           ) : (

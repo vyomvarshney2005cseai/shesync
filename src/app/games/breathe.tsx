@@ -185,6 +185,6 @@ const styles = StyleSheet.create({
     ...Theme.shadows.glowing,
   },
   center: { alignItems: 'center' },
-  stepLabel: { fontSize: 24, fontWeight: '900', color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.2)', textShadowRadius: 4 },
-  stepCount: { fontSize: 44, fontWeight: '900', color: '#FFFFFF', fontVariant: ['tabular-nums'] },
+  stepLabel: { fontSize: 24, fontWeight: '800', color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.2)', textShadowRadius: 4 },
+  stepCount: { fontSize: 44, fontWeight: '800', color: '#FFFFFF', fontVariant: ['tabular-nums'] },
 });

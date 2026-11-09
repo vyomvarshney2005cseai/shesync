@@ -231,10 +231,10 @@ export function calculateArchetype(answers: Record<string, string>): ArchetypeRe
   ) {
     return {
       id: 'pcos_strain_adaptive',
-      name: 'PCOS Bio-Adaptive Synchronizer',
-      tagline: 'Metabolic Stability & Cycle Harmony',
-      description: 'Your body thrives with steady insulin modulation, low-cortisol strength sessions, and adaptive anovulatory cycle tracking.',
-      primaryCondition: 'PCOS & Metabolic Health',
+      name: 'Cycle Balance',
+      tagline: 'Steady energy and a more regular rhythm',
+      description: 'Your answers point to irregular or long cycles. SheSync favours steady meals, regular movement and gentle strength work, and keeps an eye on your cycle length.',
+      primaryCondition: 'Irregular cycles',
       recommendedStrainSensitivity: 'gentle',
       defaultTherapy: 'somatic',
       cortisolOverrideDefault: true,
@@ -246,10 +246,10 @@ export function calculateArchetype(answers: Record<string, string>): ArchetypeRe
   if (pmddScore >= 4 || primaryGoal === 'q10_opt2' || pmsSeverity === 'q7_opt4') {
     return {
       id: 'pmdd_luteal_shield',
-      name: 'Somatic Luteal-Resilient Archetype',
-      tagline: 'Neuro-Hormonal Protection & Emotional Ease',
-      description: 'You experience heightened luteal sensitivity. SheSync will deploy early PMDD YouTube somatic sequences and dial back physical strain 7 days before menses.',
-      primaryCondition: 'PMDD & Luteal Sensitivity',
+      name: 'Pre-period Care',
+      tagline: 'Extra support before your period',
+      description: 'Your mood and energy dip before your period. SheSync plans lighter days and more calming suggestions in that week.',
+      primaryCondition: 'Pre-period mood',
       recommendedStrainSensitivity: 'gentle',
       defaultTherapy: 'somatic',
       cortisolOverrideDefault: true,
@@ -261,10 +261,10 @@ export function calculateArchetype(answers: Record<string, string>): ArchetypeRe
   if (cortisolScore >= 4 || strainScore >= 4 || primaryGoal === 'q10_opt3') {
     return {
       id: 'high_cortisol_restorative',
-      name: 'Vagal Restorative Archetype',
-      tagline: 'Adrenal Recovery & Parasympathetic Tone',
-      description: 'Your nervous system carries high allostatic load. Priority is placed on YouTube vagus nerve stimulation, restorative flows, and deep sleep recovery.',
-      primaryCondition: 'Adrenal / Cortisol Sensitivity',
+      name: 'Rest & Recover',
+      tagline: 'A calmer body and better sleep',
+      description: 'Your answers show strain, pain or poor sleep. SheSync puts recovery, sleep and calming practices first.',
+      primaryCondition: 'Stress & recovery',
       recommendedStrainSensitivity: 'gentle',
       defaultTherapy: 'somatic',
       cortisolOverrideDefault: true,
@@ -276,10 +276,10 @@ export function calculateArchetype(answers: Record<string, string>): ArchetypeRe
   // Default balanced / athletic archetype
   return {
     id: 'empowered_cycle_optimizer',
-    name: 'Empowered Cyclical Optimizer',
-    tagline: 'Dynamic Vitality & Natural Alignment',
-    description: 'You have a resilient foundation. SheSync will maximize your follicular energy windows while ensuring restorative somatic balance throughout the luteal phase.',
-    primaryCondition: 'Cycle Optimization',
+    name: 'Cycle in Sync',
+    tagline: 'Energy that follows your cycle',
+    description: 'You have a steady base. SheSync suggests harder workouts after your period and gentler days before it.',
+    primaryCondition: 'General wellbeing',
     recommendedStrainSensitivity: 'dynamic',
     defaultTherapy: 'somatic',
     cortisolOverrideDefault: true,

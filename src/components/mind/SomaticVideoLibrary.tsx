@@ -13,9 +13,7 @@ import {
 import {
   Play,
   ExternalLink,
-  Sparkles,
   Clock,
-  Activity,
 } from 'lucide-react-native';
 import { Theme } from '@/constants/theme';
 import type { YouTubeVideoSession } from '@/types';
@@ -24,15 +22,15 @@ export const SOMATIC_YOUTUBE_VIDEOS: YouTubeVideoSession[] = [
   {
     id: 'yt-vagus-reset',
     title: 'Vagus Nerve Exercises To Rewire Brain From Anxiety',
-    channel: 'Sukie Baxter — Polyvagal Somatics',
+    channel: 'Sukie Baxter',
     youtubeId: 'eFV0FfMc_uo',
     youtubeUrl: 'https://www.youtube.com/watch?v=eFV0FfMc_uo',
     duration: '09:45 min',
     category: 'vagus',
-    tag: 'Vagus Nerve Reset',
-    targetFocus: 'Calms acute sympathetic overdrive & restores parasympathetic tone',
+    tag: 'Calm',
+    targetFocus: '',
     description:
-      'A widely recommended guided practice stimulating the cranial vagus nerve with gentle suboccipital releases and eye-resting movements.',
+      'A gentle guided practice to slow your breathing and settle anxiety.',
   },
   {
     id: 'yt-cramps-pms',
@@ -42,36 +40,36 @@ export const SOMATIC_YOUTUBE_VIDEOS: YouTubeVideoSession[] = [
     youtubeUrl: 'https://www.youtube.com/watch?v=FXPGuNU-BYA',
     duration: '20:30 min',
     category: 'pelvic',
-    tag: 'Pelvic & Cramp Relief',
-    targetFocus: 'Decompresses uterine spasming, lower-back ache & pelvic floor tension',
+    tag: 'Cramps',
+    targetFocus: '',
     description:
-      'Adriene guides a gentle, restorative sequence using supportive household props to ease acute menstrual cramps and lower back ache.',
+      'Gentle yoga for cramps, PMS and lower-back ache.',
   },
   {
     id: 'yt-vagus-trauma',
     title: 'Vagus Nerve Reset To Release Trauma In The Body',
-    channel: 'Sukie Baxter — Polyvagal Somatics',
+    channel: 'Sukie Baxter',
     youtubeId: 'wILdKJ44kZY',
     youtubeUrl: 'https://www.youtube.com/watch?v=wILdKJ44kZY',
     duration: '11:28 min',
     category: 'pmdd',
-    tag: 'Neuro-Calm & Release',
-    targetFocus: 'Rapid emotional grounding for sudden luteal progesterone drops',
+    tag: 'Mood',
+    targetFocus: '',
     description:
-      'Polyvagal somatic exercises aimed at helping your nervous system decompress stored stress and alleviate high PMS/PMDD sensitivity.',
+      'Slow exercises to release tension when emotions run high.',
   },
   {
     id: 'yt-vagus-massage',
     title: 'Vagus Nerve Massage For Stress & Anxiety Relief',
-    channel: 'Sukie Baxter — Polyvagal Somatics',
+    channel: 'Sukie Baxter',
     youtubeId: 'ZakhFYR1NVU',
     youtubeUrl: 'https://www.youtube.com/watch?v=ZakhFYR1NVU',
     duration: '10:15 min',
     category: 'stress',
-    tag: 'Cortisol Rescue',
-    targetFocus: 'Hands-on somatic massage when morning cortisol or anxiety surges',
+    tag: 'Stress',
+    targetFocus: '',
     description:
-      'Immediate neck, sternocleidomastoid, and auricular branch somatic touch to quickly lower heart rate and reduce cortisol.',
+      'A short self-massage for neck and shoulders to ease stress.',
   },
   {
     id: 'yt-restorative-care',
@@ -81,10 +79,10 @@ export const SOMATIC_YOUTUBE_VIDEOS: YouTubeVideoSession[] = [
     youtubeUrl: 'https://www.youtube.com/watch?v=mQ6c6T58-vI',
     duration: '10:48 min',
     category: 'pelvic',
-    tag: 'Restorative Care',
-    targetFocus: 'Gentle cyclical pacing during low energy follicular or late luteal days',
+    tag: 'Rest',
+    targetFocus: '',
     description:
-      'Calming restorative floor session designed to nourish the nervous system when high-strain workouts are contraindicated.',
+      'A calm, restorative yoga session for low-energy days.',
   },
 ];
 
@@ -136,22 +134,8 @@ export const SomaticVideoLibrary: React.FC<SomaticVideoLibraryProps> = ({
     <View style={styles.container}>
       {/* Header Badge */}
       <View style={styles.sectionHeader}>
-        <View style={styles.badgeRow}>
-          <View style={styles.ytBadge}>
-            <View style={styles.ytPlayIconTriangle} />
-            <Text style={styles.ytBadgeText}>YouTube Somatic Therapy</Text>
-          </View>
-          <View style={styles.liveTag}>
-            <Sparkles size={12} color={Theme.colors.secondary} />
-            <Text style={styles.liveTagText}>Cycle Calibrated</Text>
-          </View>
-        </View>
-
-        <Text style={styles.sectionTitle}>Somatic & Vagus Video Sessions</Text>
-        <Text style={styles.sectionSubtitle}>
-          Evidence-based polyvagal exercises and somatic flows on YouTube to downregulate
-          strain and calm acute cycle symptoms.
-        </Text>
+        <Text style={styles.sectionTitle}>Calming videos</Text>
+        <Text style={styles.sectionSubtitle}>Short guided sessions on YouTube.</Text>
       </View>
 
       {/* Featured Video Player Card */}
@@ -200,14 +184,6 @@ export const SomaticVideoLibrary: React.FC<SomaticVideoLibraryProps> = ({
           <Text style={styles.featuredTitle}>{selectedVideo.title}</Text>
           <Text style={styles.featuredDescription}>{selectedVideo.description}</Text>
 
-          {/* Biological Target Cue */}
-          <View style={styles.targetCallout}>
-            <Activity size={14} color={Theme.colors.secondary} />
-            <Text style={styles.targetCalloutText}>
-              Target: {selectedVideo.targetFocus}
-            </Text>
-          </View>
-
           {/* Big Action CTA: Watch on YouTube */}
           <TouchableOpacity
             style={styles.watchButton}
@@ -220,7 +196,7 @@ export const SomaticVideoLibrary: React.FC<SomaticVideoLibraryProps> = ({
               <View style={styles.redYtPill}>
                 <View style={styles.smallTriangle} />
               </View>
-              <Text style={styles.watchButtonText}>Watch Guided Video on YouTube</Text>
+              <Text style={styles.watchButtonText}>Watch on YouTube</Text>
               <ExternalLink size={16} color="#FFFFFF" style={{ marginLeft: 6 }} />
             </View>
           </TouchableOpacity>
@@ -235,11 +211,11 @@ export const SomaticVideoLibrary: React.FC<SomaticVideoLibraryProps> = ({
           contentContainerStyle={styles.filterScroll}
         >
           {[
-            { id: 'all', label: 'All Sessions' },
-            { id: 'vagus', label: 'Vagus Nerve' },
-            { id: 'pelvic', label: 'Pelvic & Cramps' },
-            { id: 'pmdd', label: 'PMDD Neuro-Calm' },
-            { id: 'stress', label: 'Cortisol Rescue' },
+            { id: 'all', label: 'All' },
+            { id: 'vagus', label: 'Calm' },
+            { id: 'pelvic', label: 'Cramps' },
+            { id: 'pmdd', label: 'Mood' },
+            { id: 'stress', label: 'Stress' },
           ].map((tab) => {
             const isActive = activeFilter === tab.id;
             return (
@@ -268,7 +244,7 @@ export const SomaticVideoLibrary: React.FC<SomaticVideoLibraryProps> = ({
 
       {/* Curated Video Playlist Cards */}
       <View style={styles.playlistWrapper}>
-        <Text style={styles.playlistHeader}>Explore Curated Somatic Sessions:</Text>
+        <Text style={styles.playlistHeader}>More sessions</Text>
         {filteredVideos.map((video) => {
           const isCurrent = video.id === selectedVideo.id;
           return (
@@ -334,55 +310,6 @@ const styles = StyleSheet.create({
   sectionHeader: {
     marginBottom: 14,
   },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
-  },
-  ytBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FF0000',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 6,
-  },
-  ytPlayIconTriangle: {
-    width: 0,
-    height: 0,
-    backgroundColor: 'transparent',
-    borderStyle: 'solid',
-    borderLeftWidth: 6,
-    borderRightWidth: 0,
-    borderBottomWidth: 4,
-    borderTopWidth: 4,
-    borderLeftColor: '#FFFFFF',
-    borderRightColor: 'transparent',
-    borderBottomColor: 'transparent',
-    borderTopColor: 'transparent',
-  },
-  ytBadgeText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 0.2,
-  },
-  liveTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: Theme.colors.secondaryLight,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  liveTagText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Theme.colors.secondaryDark,
-  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '800',
@@ -400,7 +327,7 @@ const styles = StyleSheet.create({
     borderRadius: Theme.radius.xl,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 77, 141, 0.2)',
+    borderColor: 'rgba(201, 87, 140, 0.2)',
     ...Theme.shadows.card,
     marginBottom: 16,
   },
@@ -491,23 +418,6 @@ const styles = StyleSheet.create({
     color: Theme.colors.textSecondary,
     lineHeight: 18,
     marginBottom: 12,
-  },
-  targetCallout: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-    padding: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: Theme.colors.secondary,
-    marginBottom: 16,
-  },
-  targetCalloutText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Theme.colors.textPrimary,
-    flex: 1,
   },
   watchButton: {
     backgroundColor: '#FF0000',

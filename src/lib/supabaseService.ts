@@ -24,51 +24,6 @@ export function isOfflineAuthError(err: unknown): boolean {
   return msg.includes('network request failed') || msg.includes('failed to fetch');
 }
 
-export interface SupabaseProfile {
-  id: string;
-  first_name?: string | null;
-  last_name?: string | null;
-  created_at?: string;
-}
-
-export interface SupabaseCycle {
-  id?: string;
-  user_id?: string;
-  start_date: string;
-  end_date?: string | null;
-  cycle_length?: number | null;
-  created_at?: string;
-}
-
-export interface SupabaseDailyLog {
-  id?: string;
-  user_id?: string;
-  log_date: string;
-  pain_level?: number | null;
-  mood?: string | null;
-  symptoms?: string[] | null;
-  notes?: string | null;
-  created_at?: string;
-}
-
-/**
- * Diagnostic function to test connectivity to the Supabase project
- */
-export async function testSupabaseConnection(): Promise<{ success: boolean; message: string }> {
-  if (!isSupabaseConfigured) {
-    return { success: false, message: 'Supabase is not configured (on-device mode).' };
-  }
-  try {
-    const { error } = await supabase.from('profiles').select('id').limit(1);
-    if (error) {
-      return { success: false, message: error.message };
-    }
-    return { success: true, message: 'Successfully connected to Supabase database!' };
-  } catch (err: any) {
-    return { success: false, message: err?.message || 'Unknown network error' };
-  }
-}
-
 // ─── AUTH SERVICES ──────────────────────────────────────────────
 
 export async function signUpWithSupabase(email: string, password: string, name?: string) {
@@ -83,29 +38,8 @@ export async function signUpWithSupabase(email: string, password: string, name?:
     },
   });
 
+  // The database trigger creates her profile row from `full_name`.
   if (error) throw error;
-
-  if (data.user) {
-    // Attempt creating or updating profile record safely
-    try {
-      const names = (name || '').trim().split(' ');
-      const firstName = names[0] || '';
-      const lastName = names.slice(1).join(' ') || '';
-
-      await supabase.from('profiles').upsert(
-        {
-          id: data.user.id,
-          first_name: firstName,
-          last_name: lastName,
-        },
-        { onConflict: 'id' }
-      );
-    } catch (profileErr) {
-      // If email confirmation is required or RLS blocks unconfirmed user, ignore non-fatal profile error
-      console.warn('[Supabase] Profile creation deferred until confirmation:', profileErr);
-    }
-  }
-
   return data;
 }
 
@@ -129,17 +63,6 @@ export async function signOutSupabase() {
     }
   } catch (err: any) {
     console.warn('[Supabase] signOut exception:', err?.message || err);
-  }
-}
-
-export async function getCurrentSupabaseUser() {
-  if (!isSupabaseConfigured) return null;
-  try {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error) return null;
-    return user;
-  } catch {
-    return null;
   }
 }
 
@@ -169,127 +92,16 @@ export async function updateUserPassword(newPassword: string) {
   return data;
 }
 
-// ─── CYCLE SERVICES ─────────────────────────────────────────────
+// ─── ACCOUNT ────────────────────────────────────────────────────
 
-export async function saveCycleToSupabase(cycle: {
-  start_date: string;
-  end_date?: string | null;
-  cycle_length?: number | null;
-}) {
-  const user = await getCurrentSupabaseUser();
-  if (!user) return null; // on-device mode or signed out: nothing to sync
-
-  const { data, error } = await supabase
-    .from('cycles')
-    .upsert(
-      {
-        user_id: user.id,
-        start_date: cycle.start_date,
-        end_date: cycle.end_date,
-        cycle_length: cycle.cycle_length,
-      },
-      { onConflict: 'user_id,start_date' }
-    )
-    .select()
-    .single();
-
-  if (error) {
-    // If table doesn't have unique constraint for onConflict, fallback to insert
-    const insertRes = await supabase
-      .from('cycles')
-      .insert({
-        user_id: user.id,
-        start_date: cycle.start_date,
-        end_date: cycle.end_date,
-        cycle_length: cycle.cycle_length,
-      })
-      .select()
-      .maybeSingle();
-
-    if (insertRes.error) {
-      // Duplicate entry or conflict already logged
-      return null;
-    }
-    return insertRes.data;
-  }
-  return data;
-}
-
-export async function fetchCyclesFromSupabase(): Promise<SupabaseCycle[]> {
-  const user = await getCurrentSupabaseUser();
-  if (!user) return [];
-
-  const { data, error } = await supabase
-    .from('cycles')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('start_date', { ascending: false });
-
+/**
+ * Permanently deletes the signed-in account and every row of her data on the
+ * server (see delete_my_account() in supabase/migrations), then ends the session.
+ */
+export async function deleteCloudAccount() {
+  if (!isSupabaseConfigured) throw new OfflineModeError();
+  const { error } = await supabase.rpc('delete_my_account');
   if (error) throw error;
-  return data || [];
-}
-
-// ─── DAILY LOG SERVICES ─────────────────────────────────────────
-
-export async function saveDailyLogToSupabase(log: {
-  log_date: string;
-  pain_level?: number | null;
-  mood?: string | null;
-  symptoms?: string[] | null;
-  notes?: string | null;
-}) {
-  const user = await getCurrentSupabaseUser();
-  if (!user) return null; // on-device mode or signed out: nothing to sync
-
-  const { data, error } = await supabase
-    .from('daily_logs')
-    .upsert(
-      {
-        user_id: user.id,
-        log_date: log.log_date,
-        pain_level: log.pain_level,
-        mood: log.mood,
-        symptoms: log.symptoms,
-        notes: log.notes,
-      },
-      { onConflict: 'user_id,log_date' }
-    )
-    .select()
-    .single();
-
-  if (error) {
-    // If unique constraint on (user_id, log_date) is missing or differs
-    const insertRes = await supabase
-      .from('daily_logs')
-      .insert({
-        user_id: user.id,
-        log_date: log.log_date,
-        pain_level: log.pain_level,
-        mood: log.mood,
-        symptoms: log.symptoms,
-        notes: log.notes,
-      })
-      .select()
-      .maybeSingle();
-
-    if (insertRes.error) {
-      return null;
-    }
-    return insertRes.data;
-  }
-  return data;
-}
-
-export async function fetchDailyLogsFromSupabase(): Promise<SupabaseDailyLog[]> {
-  const user = await getCurrentSupabaseUser();
-  if (!user) return [];
-
-  const { data, error } = await supabase
-    .from('daily_logs')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('log_date', { ascending: false });
-
-  if (error) throw error;
-  return data || [];
+  // The account no longer exists, so only clear the session on this device.
+  await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
 }

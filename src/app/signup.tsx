@@ -14,7 +14,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Theme } from '@/constants/theme';
-import { FeministQuoteCard } from '@/components/common/FeministQuoteCard';
 import { useAppStore } from '@/store/useAppStore';
 import { isOfflineAuthError, signUpWithSupabase } from '@/lib/supabaseService';
 import {
@@ -26,14 +25,13 @@ import {
   EyeOff,
   Check,
   CheckCircle2,
-  Sparkles,
 } from 'lucide-react-native';
 
 const FOCUS_TAGS = [
   'Cycle Syncing',
   'Hormonal Balance',
   'PCOS & PMDD Support',
-  'Somatic Calm',
+  'Stress & Calm',
   'Sleep & Recovery',
   'Fitness & Weight',
   'Study Focus',
@@ -88,12 +86,12 @@ export default function SignUpScreen() {
     try {
       await signUpWithSupabase(email.trim(), password, name.trim());
       signup(name.trim(), email.trim(), selectedFocus);
-      router.replace('/assessment');
+      router.replace('/(tabs)');
     } catch (err: any) {
       if (isOfflineAuthError(err)) {
         // No server reachable (or none configured): create the account on this device.
         signup(name.trim(), email.trim(), selectedFocus, { offline: true });
-        router.replace('/assessment');
+        router.replace('/(tabs)');
       } else {
         // The server answered (e.g. "User already registered"): show it instead of faking success.
         const msg = String(err?.message || '');
@@ -133,7 +131,7 @@ export default function SignUpScreen() {
 
             <View style={styles.brandRow}>
               <Image
-                source={require('@/../assets/images/shesync-logo.png')}
+                source={require('@/../assets/images/logo.png')}
                 style={styles.logoImage}
                 resizeMode="contain"
               />
@@ -143,19 +141,10 @@ export default function SignUpScreen() {
             <View style={{ width: 36 }} />
           </View>
 
-          {/* Inspiring Feminism Quote Card */}
-          <FeministQuoteCard
-            initialQuoteId="4"
-            category="empowerment"
-            variant="rose"
-          />
-
           {/* Heading */}
           <View style={styles.headerBlock}>
             <Text style={styles.title}>Join SheSync</Text>
-            <Text style={styles.subtitle}>
-              Take charge of your hormonal health, somatic therapy, and daily empowerment.
-            </Text>
+            <Text style={styles.subtitle}>Create your account.</Text>
           </View>
 
           {/* Form Container */}
@@ -298,7 +287,7 @@ export default function SignUpScreen() {
                 {agreedToTerms && <CheckCircle2 size={16} color="#FFFFFF" />}
               </View>
               <Text style={styles.agreeText}>
-                I agree to the Terms of Service & Privacy Policy. My health data remains encrypted.
+                I agree to the Terms of Service & Privacy Policy.
               </Text>
             </TouchableOpacity>
 
@@ -309,14 +298,8 @@ export default function SignUpScreen() {
               onPress={handleSignUp}
               disabled={loading}
             >
-              {loading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />
-              ) : (
-                <Sparkles size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-              )}
-              <Text style={styles.submitButtonText}>
-                {loading ? 'Creating Account...' : 'Sign Up & Begin My Journey'}
-              </Text>
+              {loading ? <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} /> : null}
+              <Text style={styles.submitButtonText}>{loading ? 'Creating account…' : 'Create account'}</Text>
             </TouchableOpacity>
           </View>
 
@@ -522,7 +505,7 @@ const styles = StyleSheet.create({
     color: Theme.colors.textSecondary,
   },
   submitButton: {
-    backgroundColor: '#111827',
+    backgroundColor: '#46375A',
     borderRadius: Theme.radius.md,
     paddingVertical: 16,
     paddingHorizontal: 16,

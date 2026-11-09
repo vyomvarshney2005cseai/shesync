@@ -21,6 +21,7 @@ import {
 } from 'lucide-react-native';
 import { Theme } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
+import { nextSyncHref, syncStepBadge } from '@/lib/syncDetails';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
 import type { FlowIntensity } from '@/types';
 
@@ -98,7 +99,7 @@ export default function LogFlowScreen() {
   const isOnboarding = onboarding === 'true';
   const logSymptom = useAppStore((s) => s.logSymptom);
 
-  const [selectedFlow, setSelectedFlow] = useState<FlowIntensity>('moderate');
+  const [selectedFlow, setSelectedFlow] = useState<FlowIntensity>('none');
   const [selectedShade, setSelectedShade] = useState<string>('Bright Crimson');
   const [notes, setNotes] = useState('');
   const [isSaved, setIsSaved] = useState(false);
@@ -117,7 +118,7 @@ export default function LogFlowScreen() {
     setIsSaved(true);
 
     if (isOnboarding) {
-      router.push('/log-mood?onboarding=true');
+      router.push(nextSyncHref(useAppStore.getState()));
     } else {
       const msg = 'Flow entry logged in cycle history.';
       if (Platform.OS === 'web') {
@@ -143,7 +144,6 @@ export default function LogFlowScreen() {
         </TouchableOpacity>
         <View style={styles.navCenter}>
           <Text style={styles.navTitle}>Log Flow</Text>
-          <Text style={styles.navSubtitle}>Cycle Volume & Texture</Text>
         </View>
         <View style={{ width: 40 }} />
       </View>
@@ -158,12 +158,11 @@ export default function LogFlowScreen() {
           <View style={styles.onboardingBanner}>
             <View style={styles.onboardingBadge}>
               <Sparkles size={13} color={Theme.colors.primary} />
-              <Text style={styles.onboardingBadgeText}>BASELINE CALIBRATION (STEP 3 OF 4)</Text>
+              <Text style={styles.onboardingBadgeText}>{syncStepBadge('flow')}</Text>
             </View>
-            <Text style={styles.onboardingTitle}>Log Your Flow & Cycle Status</Text>
+            <Text style={styles.onboardingTitle}>Flow today</Text>
             <Text style={styles.onboardingDesc}>
-              Calibrate your current menstrual bleeding intensity, texture, and product count to sync
-              your real-time cycle phase and clinical menorrhagia markers.
+              How heavy is your flow today? Pick “None” if you’re not bleeding.
             </Text>
           </View>
         )}
@@ -172,9 +171,8 @@ export default function LogFlowScreen() {
         <View style={styles.section}>
           <View style={styles.sectionRow}>
             <Droplets size={20} color={currentFlow.color} />
-            <Text style={styles.sectionHeader}>Flow Intensity</Text>
+            <Text style={styles.sectionHeader}>How heavy?</Text>
           </View>
-          <Text style={styles.sectionSubtext}>Select the volume that best reflects your flow today</Text>
 
           <View style={styles.flowGrid}>
             {FLOW_LEVELS.map((flow) => {
@@ -218,9 +216,8 @@ export default function LogFlowScreen() {
         <View style={styles.section}>
           <View style={styles.sectionRow}>
             <Palette size={18} color={Theme.colors.secondary} />
-            <Text style={styles.sectionHeaderInline}>Fluid Color & Texture</Text>
+            <Text style={styles.sectionHeaderInline}>Colour</Text>
           </View>
-          <Text style={styles.sectionSubtext}>Useful biomarker indicator for hormone & oxygenation phase</Text>
 
           <View style={styles.chipsContainer}>
             {SHADES_AND_TEXTURES.map((shade) => {
@@ -244,8 +241,7 @@ export default function LogFlowScreen() {
 
         {/* Notes */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Cycle Notes & Anomalies</Text>
-          <Text style={styles.sectionSubtext}>Note clot sizes, odor, unexpected spotting or timeline</Text>
+          <Text style={styles.sectionHeader}>Notes</Text>
           <TextInput
             style={styles.notesInput}
             multiline
@@ -266,7 +262,7 @@ export default function LogFlowScreen() {
         >
           {isOnboarding ? (
             <>
-              <Text style={styles.saveButtonText}>Save & Continue to Mood (Step 4/4)</Text>
+              <Text style={styles.saveButtonText}>Save & continue</Text>
               <ArrowRight size={20} color="#FFFFFF" style={{ marginLeft: 8 }} />
             </>
           ) : (

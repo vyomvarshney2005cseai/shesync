@@ -138,7 +138,6 @@ export default function VoiceJournalScreen() {
         </TouchableOpacity>
         <View style={styles.navCenter}>
           <Text style={styles.navTitle}>Voice Journal</Text>
-          <Text style={styles.navSubtitle}>Speak it out, write it down</Text>
         </View>
         <View style={{ width: 40 }} />
       </View>
@@ -157,7 +156,7 @@ export default function VoiceJournalScreen() {
                 ? 'SPEAK-IT-OUT TIMER RUNNING'
                 : hasRecorded
                 ? 'NICE — NOW WRITE DOWN WHAT CAME UP'
-                : 'TAP THE MIC, THEN TALK IT THROUGH OUT LOUD'}
+                : 'Tap the mic and talk it through'}
             </Text>
           </View>
 
@@ -195,7 +194,7 @@ export default function VoiceJournalScreen() {
                 styles.pulseHalo,
                 isRecording && {
                   transform: [{ scale: pulseAnim }],
-                  backgroundColor: 'rgba(255, 77, 141, 0.2)',
+                  backgroundColor: 'rgba(201, 87, 140, 0.2)',
                 },
               ]}
             >
@@ -382,7 +381,7 @@ const styles = StyleSheet.create({
   },
   timerText: {
     fontSize: 48,
-    fontWeight: '900',
+    fontWeight: '800',
     color: Theme.colors.textPrimary,
     letterSpacing: -1,
     marginVertical: 4,

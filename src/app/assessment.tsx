@@ -17,32 +17,24 @@ import {
   ArchetypeResult,
 } from '@/constants/assessment';
 import { useAppStore } from '@/store/useAppStore';
+import { nextSyncHref } from '@/lib/syncDetails';
 import {
   ArrowLeft,
   ArrowRight,
   Check,
-  Sparkles,
-  Shield,
-  Activity,
-  Heart,
-  Moon,
   Compass,
-  BarChart2,
-  Calendar,
-  ShieldAlert,
 } from 'lucide-react-native';
 
 export default function AssessmentScreen() {
   const { reveal } = useLocalSearchParams<{ reveal?: string }>();
   const completeAssessment = useAppStore((s) => s.completeAssessment);
   const savedAnswers = useAppStore((s) => s.assessmentAnswers);
-  const biometrics = useAppStore((s) => s.biometrics);
   const cycleLabel = useAppStore((s) => s.cycle.label);
   const isAssessmentCompleted = useAppStore((s) => s.isAssessmentCompleted);
-  const cyclePrediction = useAppStore((s) => s.cyclePrediction);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>(savedAnswers || {});
+  const [retaking, setRetaking] = useState(false);
   const isCompleted = reveal === 'true' || isAssessmentCompleted;
   const [calculatedResult, setCalculatedResult] = useState<ArchetypeResult | null>(() => {
     return calculateArchetype(savedAnswers || {});
@@ -59,34 +51,42 @@ export default function AssessmentScreen() {
   };
 
   const handleNext = () => {
+    if (!selectedOptionId) return;
     if (currentIndex < ASSESSMENT_QUESTIONS.length - 1) {
       setCurrentIndex((prev) => prev + 1);
     } else {
-      // Finished all 10 questions!
-      // Save answers and immediately transition to Step 1/4: Past Cycles & Prediction
+      // Finished all 10 questions: save, then continue "Details for Sync"
+      // with the next unfinished step (period dates on a first run).
       const archetype = calculateArchetype(answers);
       setCalculatedResult(archetype);
       completeAssessment(answers);
-      router.push('/log-cycle?onboarding=true');
+      router.push(nextSyncHref(useAppStore.getState()));
     }
   };
 
   const handlePrev = () => {
     if (currentIndex > 0) {
       setCurrentIndex((prev) => prev - 1);
+    } else if (router.canGoBack()) {
+      // Question 1: "Back" returns to Home; progress on later steps is kept.
+      router.back();
+    } else {
+      router.replace('/(tabs)');
     }
   };
 
-  const handleFinishAndEnterApp = () => {
-    router.replace('/(tabs)');
+  const handleDone = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/(tabs)');
   };
 
-  const handleGoToReport = () => {
-    router.replace('/(tabs)/report');
+  const handleRetake = () => {
+    setCurrentIndex(0);
+    setRetaking(true);
   };
 
-  // ─── Completion Archetype Reveal View ─────────────────────
-  if (isCompleted && calculatedResult) {
+  // ─── Saved profile view ─────────────────────────────────
+  if (isCompleted && !retaking && calculatedResult) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <View style={styles.outerCenterWrapper}>
@@ -95,171 +95,19 @@ export default function AssessmentScreen() {
             contentContainerStyle={styles.completionScroll}
             showsVerticalScrollIndicator={false}
           >
-            {/* Header Badge */}
-            <View style={styles.archetypeBadge}>
-              <Sparkles size={16} color={Theme.colors.feminismAccent} />
-              <Text style={styles.archetypeBadgeText}>CALIBRATION COMPLETE</Text>
-            </View>
-
-            <Text style={styles.completionTitle}>
-              Your SheSync Archetype
-            </Text>
-            <Text style={styles.archetypeName}>
-              {calculatedResult.name}
-            </Text>
-            <Text style={styles.archetypeTagline}>
-              {calculatedResult.tagline}
-            </Text>
-
-            {/* Description Card */}
+            <Text style={styles.completionTitle}>Your SheSync profile</Text>
+            <Text style={styles.archetypeName}>{calculatedResult.name}</Text>
+            <Text style={styles.archetypeTagline}>{calculatedResult.tagline}</Text>
             <View style={styles.archetypeCard}>
-              <Text style={styles.archetypeDesc}>
-                {calculatedResult.description}
-              </Text>
+              <Text style={styles.archetypeDesc}>{calculatedResult.description}</Text>
             </View>
+            {cycleLabel ? <Text style={styles.cycleLine}>Today: {cycleLabel}</Text> : null}
 
-            {/* Fine-Tuning Calibration Highlights */}
-            <Text style={styles.calibrationsHeader}>
-              Bio-Adaptive Customizations Applied:
-            </Text>
-
-            <View style={styles.calibrationsGrid}>
-              <View style={styles.calibItem}>
-                <View style={[styles.calibIconWrap, { backgroundColor: '#FFF1F2' }]}>
-                  <Activity size={18} color={Theme.colors.primary} />
-                </View>
-                <View style={styles.calibTextWrap}>
-                  <Text style={styles.calibLabel}>Strain Override</Text>
-                  <Text style={styles.calibValue}>
-                    {calculatedResult.recommendedStrainSensitivity.toUpperCase()} SENSITIVITY
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.calibItem}>
-                <View style={[styles.calibIconWrap, { backgroundColor: Theme.colors.secondaryLight }]}>
-                  <Heart size={18} color={Theme.colors.secondary} />
-                </View>
-                <View style={styles.calibTextWrap}>
-                  <Text style={styles.calibLabel}>Primary Therapy</Text>
-                  <Text style={styles.calibValue}>
-                    {calculatedResult.defaultTherapy.toUpperCase()} MODALITY
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.calibItem}>
-                <View style={[styles.calibIconWrap, { backgroundColor: '#EEF2FF' }]}>
-                  <Moon size={18} color="#6366F1" />
-                </View>
-                <View style={styles.calibTextWrap}>
-                  <Text style={styles.calibLabel}>Sleep Window</Text>
-                  <Text style={styles.calibValue}>
-                    {calculatedResult.sleepTargetHours} HOURS RESTORATIVE
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.calibItem}>
-                <View style={[styles.calibIconWrap, { backgroundColor: '#ECFDF5' }]}>
-                  <Shield size={18} color={Theme.colors.strainOptimal} />
-                </View>
-                <View style={styles.calibTextWrap}>
-                  <Text style={styles.calibLabel}>Focus</Text>
-                  <Text style={styles.calibValue}>
-                    {calculatedResult.primaryCondition}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Live Calibrated Metrics Snapshot Card */}
-            <View style={styles.metricsSummaryCard}>
-              <View style={styles.metricRow}>
-                <View style={styles.metricRowLeft}>
-                  <Activity size={15} color={Theme.colors.primary} />
-                  <Text style={styles.metricRowLabel}>Calibrated Strain Score:</Text>
-                </View>
-                <Text style={styles.metricRowVal}>{biometrics.strainScore}/100 ({biometrics.strainLevel.toUpperCase()})</Text>
-              </View>
-              <View style={styles.metricRow}>
-                <View style={styles.metricRowLeft}>
-                  <Heart size={15} color={Theme.colors.secondary} />
-                  <Text style={styles.metricRowLabel}>Readiness today:</Text>
-                </View>
-                <Text style={styles.metricRowVal}>{biometrics.recoveryScore}%</Text>
-              </View>
-              <View style={styles.metricRow}>
-                <View style={styles.metricRowLeft}>
-                  <Moon size={15} color="#6366F1" />
-                  <Text style={styles.metricRowLabel}>Cycle today:</Text>
-                </View>
-                <Text style={styles.metricRowVal} numberOfLines={1}>
-                  {cycleLabel}
-                </Text>
-              </View>
-            </View>
-
-            {/* Next Cycle Prediction Snapshot Card */}
-            {cyclePrediction && (
-              <View style={styles.predictionSummaryCard}>
-                <View style={styles.predictionCardTop}>
-                  <View style={styles.predictionBadge}>
-                    <Calendar size={13} color="#FFFFFF" />
-                    <Text style={styles.predictionBadgeText}>PREDICTED NEXT PERIOD</Text>
-                  </View>
-                  <Text style={styles.confidenceLabel}>
-                    {cyclePrediction.confidencePercentage}% Confidence
-                  </Text>
-                </View>
-
-                <Text style={styles.predDateTitle}>{cyclePrediction.nextPeriodDate}</Text>
-                <Text style={styles.predSubtitle}>
-                  {cyclePrediction.daysUntilNextPeriod === 0
-                    ? `Due today (${cyclePrediction.predictedCycleLength}d rhythm)`
-                    : cyclePrediction.daysUntilNextPeriod < 0
-                    ? `~${Math.abs(cyclePrediction.daysUntilNextPeriod)}d overdue (${cyclePrediction.predictedCycleLength}d rhythm)`
-                    : `Starts in ~${cyclePrediction.daysUntilNextPeriod} days (${cyclePrediction.predictedCycleLength}d rhythm)`}
-                </Text>
-
-                <View style={styles.predInfoRow}>
-                  <Text style={styles.predInfoLabel}>Ovulation Window:</Text>
-                  <Text style={styles.predInfoVal}>{cyclePrediction.ovulationWindow}</Text>
-                </View>
-
-                {cyclePrediction.precautionMeasures?.length > 0 && (
-                  <View style={styles.precautionHighlightBox}>
-                    <ShieldAlert size={14} color="#DC2626" />
-                    <Text style={styles.precautionHighlightText} numberOfLines={2}>
-                      Precaution: {cyclePrediction.precautionMeasures[0].title}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            )}
-
-            {/* Primary CTA: Doctor Co-Pilot Analytics */}
-            <TouchableOpacity
-              style={styles.analyticsButton}
-              activeOpacity={0.88}
-              onPress={handleGoToReport}
-            >
-              <BarChart2 size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-              <Text style={styles.enterButtonText} numberOfLines={1}>
-                View Doctor Co-Pilot & Clinical Report
-              </Text>
-              <ArrowRight size={18} color="#FFFFFF" />
+            <TouchableOpacity style={styles.enterButton} onPress={handleDone} activeOpacity={0.88}>
+              <Text style={styles.enterButtonText}>Done</Text>
             </TouchableOpacity>
-
-            {/* Secondary CTA: Home Dashboard */}
-            <TouchableOpacity
-              style={styles.enterButton}
-              activeOpacity={0.88}
-              onPress={handleFinishAndEnterApp}
-            >
-              <Text style={styles.secondaryButtonText} numberOfLines={1}>
-                Enter My SheSync Experience &rarr;
-              </Text>
+            <TouchableOpacity style={styles.retakeLink} onPress={handleRetake} activeOpacity={0.7}>
+              <Text style={styles.retakeLinkText}>Retake the {ASSESSMENT_QUESTIONS.length} questions</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -275,12 +123,12 @@ export default function AssessmentScreen() {
         <View style={styles.topBar}>
           <View style={styles.topBrandRow}>
             <Image
-              source={require('@/../assets/images/shesync-logo.png')}
+              source={require('@/../assets/images/logo.png')}
               style={styles.topLogo}
               resizeMode="contain"
             />
             <View>
-              <Text style={styles.topBrandTitle}>SheSync Health Assessment</Text>
+              <Text style={styles.topBrandTitle}>Details for Sync · Step 1 of 6</Text>
               <Text style={styles.topChapterSubtitle}>
                 Chapter {currentQ.chapterNumber}/5: {currentChapter?.title}
               </Text>
@@ -370,19 +218,13 @@ export default function AssessmentScreen() {
         {/* Bottom Navigation Buttons */}
         <View style={styles.bottomNavRow}>
           <TouchableOpacity
-            style={[styles.navBtn, currentIndex === 0 && styles.navBtnDisabled]}
+            style={styles.navBtn}
             onPress={handlePrev}
-            disabled={currentIndex === 0}
             activeOpacity={0.7}
           >
-            <ArrowLeft size={18} color={currentIndex === 0 ? '#9CA3AF' : Theme.colors.textPrimary} />
-            <Text
-              style={[
-                styles.navBtnText,
-                currentIndex === 0 && styles.navBtnTextDisabled,
-              ]}
-            >
-              Previous
+            <ArrowLeft size={18} color={Theme.colors.textPrimary} />
+            <Text style={styles.navBtnText}>
+              {currentIndex === 0 ? 'Home' : 'Previous'}
             </Text>
           </TouchableOpacity>
 
@@ -396,7 +238,7 @@ export default function AssessmentScreen() {
           >
             <Text style={styles.nextBtnText} numberOfLines={1}>
               {currentIndex === ASSESSMENT_QUESTIONS.length - 1
-                ? 'Next: Past Cycles (Step 1/4) →'
+                ? 'Save & continue →'
                 : 'Next Question'}
             </Text>
             {currentIndex !== ASSESSMENT_QUESTIONS.length - 1 && (
@@ -410,6 +252,9 @@ export default function AssessmentScreen() {
 }
 
 const styles = StyleSheet.create({
+  cycleLine: { fontSize: 13, color: Theme.colors.textSecondary, textAlign: 'center', marginTop: 14 },
+  retakeLink: { alignSelf: 'center', paddingVertical: 14 },
+  retakeLinkText: { fontSize: 14, fontWeight: '700', color: Theme.colors.primary },
   safeArea: {
     flex: 1,
     backgroundColor: '#FFF4F7',
@@ -638,7 +483,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 12,
     borderRadius: Theme.radius.md,
-    backgroundColor: '#111827',
+    backgroundColor: '#46375A',
     ...Theme.shadows.card,
   },
   nextBtnDisabled: {
@@ -815,7 +660,7 @@ const styles = StyleSheet.create({
   },
   enterButton: {
     alignSelf: 'stretch',
-    backgroundColor: '#111827',
+    backgroundColor: '#46375A',
     paddingVertical: 14,
     paddingHorizontal: 12,
     borderRadius: Theme.radius.md,
@@ -857,7 +702,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255, 77, 141, 0.25)',
+    backgroundColor: 'rgba(201, 87, 140, 0.25)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -875,7 +720,7 @@ const styles = StyleSheet.create({
   },
   predDateTitle: {
     fontSize: 22,
-    fontWeight: '900',
+    fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: -0.4,
   },

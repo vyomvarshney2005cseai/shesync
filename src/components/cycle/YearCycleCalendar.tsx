@@ -14,7 +14,6 @@ import {
   Plus,
   Trash2,
   Info,
-  Layers,
 } from 'lucide-react-native';
 import { addDaysToKey, daysAgoKey, shortDateLabel } from '@/lib/dates';
 import { Theme } from '@/constants/theme';
@@ -329,7 +328,7 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
       <View style={styles.headerBar}>
         <View style={styles.headerLeft}>
           <CalendarIcon size={18} color={Theme.colors.primary} />
-          <Text style={styles.headerTitle}>12-Month Cycle Calendar</Text>
+          <Text style={styles.headerTitle}>Calendar</Text>
         </View>
 
         {/* Year Stepper */}
@@ -368,7 +367,7 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
               viewMode === 'detail' && styles.viewModeBtnTextActive,
             ]}
           >
-            Month Interactive View
+            Month
           </Text>
         </TouchableOpacity>
 
@@ -386,7 +385,7 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
               viewMode === 'fullYear' && styles.viewModeBtnTextActive,
             ]}
           >
-            Full Year Overview (12 Mo)
+            Year
           </Text>
         </TouchableOpacity>
       </View>
@@ -446,7 +445,7 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
                 onPress={() => setSelectionTarget('start')}
                 activeOpacity={0.8}
               >
-                <Text style={styles.datePillLabel}>🩸 PERIOD START</Text>
+                <Text style={styles.datePillLabel}>Start</Text>
                 <Text style={styles.datePillValue}>
                   {activeStart ? shortDateLabel(activeStart) : 'Tap Date'}
                 </Text>
@@ -467,7 +466,7 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
                 onPress={() => setSelectionTarget('end')}
                 activeOpacity={0.8}
               >
-                <Text style={styles.datePillLabel}>✨ PERIOD END</Text>
+                <Text style={styles.datePillLabel}>End</Text>
                 <Text style={styles.datePillValue}>
                   {activeEnd ? shortDateLabel(activeEnd) : 'Tap Date'}
                 </Text>
@@ -479,14 +478,14 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
               <Info size={13} color={Theme.colors.primary} />
               <Text style={styles.instructionText}>
                 {selectionTarget === 'start'
-                  ? 'Tap calendar to set Period Start date 🩸'
-                  : 'Tap calendar to set Period End date ✨'}
+                  ? 'Tap the day your period started'
+                  : 'Tap the day it ended'}
               </Text>
             </View>
 
             {/* Duration Presets */}
             <View style={styles.presetsRow}>
-              <Text style={styles.presetsLabel}>Quick Duration:</Text>
+              <Text style={styles.presetsLabel}>Length:</Text>
               {[3, 4, 5, 6, 7].map((days) => (
                 <TouchableOpacity
                   key={days}
@@ -644,7 +643,7 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
               activeOpacity={0.85}
             >
               <Plus size={15} color={Theme.colors.primary} />
-              <Text style={styles.addPeriodBtnText}>Save As Past Period</Text>
+              <Text style={styles.addPeriodBtnText}>Save period</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -711,10 +710,7 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
       {/* ─── Logged Cycles in Full Year Summary List ─────────── */}
       <View style={styles.historySection}>
         <View style={styles.historyHeaderRow}>
-          <Layers size={16} color={Theme.colors.primary} />
-          <Text style={styles.historyTitle}>
-            Cycles Logged in {selectedYear} ({pastCycles.length} Total)
-          </Text>
+          <Text style={styles.historyTitle}>Saved periods ({pastCycles.length})</Text>
         </View>
 
         {pastCycles.map((cycle, idx) => {
@@ -893,7 +889,7 @@ const styles = StyleSheet.create({
   periodCountBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#BE185D',
+    color: '#A8436F',
   },
   monthDetailCard: {
     backgroundColor: '#FAFAFA',
@@ -1060,7 +1056,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 10,
   },
   dayCellEnd: {
-    backgroundColor: '#BE185D',
+    backgroundColor: '#A8436F',
     borderTopRightRadius: 10,
     borderBottomRightRadius: 10,
   },
@@ -1091,7 +1087,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   dayCellTextLogged: {
-    color: '#BE185D',
+    color: '#A8436F',
     fontWeight: '700',
   },
   dayCellTextToday: {
@@ -1100,7 +1096,7 @@ const styles = StyleSheet.create({
   },
   endpointLabel: {
     fontSize: 7,
-    fontWeight: '900',
+    fontWeight: '800',
     color: '#FFFFFF',
     marginTop: 1,
   },
@@ -1203,7 +1199,7 @@ const styles = StyleSheet.create({
   miniPeriodBadgeText: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#BE185D',
+    color: '#A8436F',
   },
   miniMatrix: {
     flexDirection: 'row',

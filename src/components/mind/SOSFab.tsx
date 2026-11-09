@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   },
   fabText: {
     fontSize: 10,
-    fontWeight: '900',
+    fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 1.2,
     marginTop: 1,

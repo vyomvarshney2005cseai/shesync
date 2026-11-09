@@ -1,84 +1,91 @@
+/**
+ * SheSync "Soft Bloom" palette — calm blush, dusty rose, lavender and sage.
+ * Saturation is kept low so screens feel soothing, while buttons and text
+ * keep readable contrast (white on `primary` ≈ 4:1, body text ≈ 12:1).
+ */
 export const Theme = {
   colors: {
-    // Primary blush background family (from reference images)
-    background: "#FFF4F7",
-    backgroundAlt: "#FFF0F5",
-    backgroundMuted: "#FFE9EE",
-    
-    // Card & Surface
-    card: "rgba(255, 255, 255, 0.88)",
-    cardGlass: "rgba(255, 255, 255, 0.78)",
-    cardBorder: "#FFE2EB",
-    cardBorderLight: "rgba(255, 214, 228, 0.5)",
-    
-    // Primary Brand Accents
-    primary: "#FF4D8D",        // Vibrant Rose
-    primaryDark: "#E11D48",    // Deep Rose
-    primaryLight: "#FFE4E8",   // Soft Rose Pill
-    primaryGlow: "rgba(255, 77, 141, 0.25)",
+    // Blush backgrounds
+    background: "#FFF7F9",
+    backgroundAlt: "#FDF1F5",
+    backgroundMuted: "#FAE8EF",
 
-    // Secondary / Somatic Lavender Accents
-    secondary: "#8B5CF6",      // Soft Lilac / Purple
-    secondaryDark: "#6D28D9",
-    secondaryLight: "#F3E8FF",
-    secondaryBorder: "#DDD6FE",
-    
-    // Text Hierarchy
-    textPrimary: "#1E1B2E",    // Deep rich charcoal ink
-    textSecondary: "#6B7280",  // Muted gray
-    textTertiary: "#9CA3AF",   // Subtle light gray
-    textRose: "#BE123C",       // Rose caption
-    textLilac: "#7C3AED",      // Lilac caption
-    
-    // Clinical States & Bio-Adaptive Statuses
-    strainHigh: "#F43F5E",     // 82% High Strain
-    strainAmber: "#F59E0B",    // Cortisol Warning
-    strainOptimal: "#10B981",  // Optimal / Low strain
-    strainTeal: "#06B6D4",
-    
-    // Brand Identity & Welcome Colors
-    welcomePink: "#FFEBF2",
-    welcomePinkDark: "#FCE0EA",
-    feminismAccent: "#FF3B6B",
+    // Card & Surface
+    card: "rgba(255, 255, 255, 0.9)",
+    cardGlass: "rgba(255, 255, 255, 0.8)",
+    cardBorder: "#F5DCE6",
+    cardBorderLight: "rgba(240, 200, 218, 0.5)",
+
+    // Primary — dusty rose
+    primary: "#C9578C",
+    primaryDark: "#A8436F",
+    primaryLight: "#FBE7F0",
+    primaryGlow: "rgba(201, 87, 140, 0.22)",
+
+    // Secondary — lavender
+    secondary: "#8E74CF",
+    secondaryDark: "#6E55B5",
+    secondaryLight: "#F2EDFB",
+    secondaryBorder: "#DFD5F5",
+
+    // Text — soft plum ink instead of pure black
+    textPrimary: "#3A2E48",
+    textSecondary: "#6E6478",
+    textTertiary: "#A39AAE",
+    textRose: "#A8436F",
+    textLilac: "#6E55B5",
+
+    // Status colours (softened)
+    strainHigh: "#E07088",
+    strainAmber: "#E3A048",
+    strainOptimal: "#3E9E86",
+    strainTeal: "#4FA9BD",
+
+    // Brand
+    welcomePink: "#FFEEF4",
+    welcomePinkDark: "#F9E1EA",
+    feminismAccent: "#D9638F",
     sageTeal: "#6FB4A5",
     sageLight: "#E8F5F1",
     roseGold: "#C68B7E",
     roseGoldLight: "#F8ECE9",
+    peach: "#FDEBDD",
+    peachDark: "#C77B4A",
 
-    // High-Contrast Elements (Dark pills & CTA from Reference 1 & 2)
-    obsidian: "#111827",
-    black: "#000000",
+    // Deep accents (dark pills & CTAs) — plum rather than black
+    obsidian: "#46375A",
+    black: "#2B2236",
     white: "#FFFFFF",
   },
-  
+
   shadows: {
     soft: {
-      shadowColor: "#FF4D8D",
+      shadowColor: "#C9578C",
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.08,
-      shadowRadius: 12,
+      shadowOpacity: 0.07,
+      shadowRadius: 14,
       elevation: 2,
     },
     glowing: {
-      shadowColor: "#FF4D8D",
+      shadowColor: "#C9578C",
       shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.2,
-      shadowRadius: 16,
-      elevation: 6,
+      shadowOpacity: 0.16,
+      shadowRadius: 18,
+      elevation: 5,
     },
     card: {
-      shadowColor: "#1E1B2E",
+      shadowColor: "#3A2E48",
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.04,
-      shadowRadius: 8,
+      shadowRadius: 10,
       elevation: 2,
     },
   },
 
   radius: {
-    sm: 8,
-    md: 14,
-    lg: 20,
+    sm: 10,
+    md: 16,
+    lg: 22,
     xl: 28,
     full: 9999,
   },

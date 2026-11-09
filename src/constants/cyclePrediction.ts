@@ -233,41 +233,41 @@ export function calculateCyclePredictionAndPrecautions(
   ) {
     currentPhase = 'menstrual';
     phaseName = 'Menstrual Phase';
-    phaseDescription = 'Active uterine shedding. Your body is resetting inflammatory signaling. Focus on gentle recovery, warmth, and adequate iron.';
-    hormoneOverview = 'Estrogen: Low • Progesterone: Low • Inflammation: Transiently Elevated';
+    phaseDescription = 'Your period. Rest more, keep warm and eat iron-rich food.';
+    hormoneOverview = '';
     daysRemainingInPhase = Math.max(1, bleedingDuration - currentCycleDay + 1);
   } else if (currentCycleDay < ovulationCycleDay - 2) {
     currentPhase = 'follicular';
     phaseName = 'Follicular Phase';
-    phaseDescription = 'FSH and estradiol are maturing follicles. Energy, mental clarity, and strength tolerance peak during this window.';
-    hormoneOverview = 'Estrogen: High • Progesterone: Low • Recovery Rate: Optimal';
+    phaseDescription = 'After your period. Energy and focus usually rise.';
+    hormoneOverview = '';
     daysRemainingInPhase = Math.max(1, ovulationCycleDay - 2 - currentCycleDay);
   } else if (currentCycleDay <= ovulationCycleDay + 2) {
     currentPhase = 'ovulatory';
     phaseName = 'Ovulatory Window';
-    phaseDescription = 'LH surge triggers egg release. Peak estrogen brings maximum social confidence, libido, and cardiovascular output.';
-    hormoneOverview = 'LH: Surge • Estrogen: Peak • Testosterone: Mild Peak';
+    phaseDescription = 'Around ovulation. Energy and mood are often at their best.';
+    hormoneOverview = '';
     daysRemainingInPhase = Math.max(1, ovulationCycleDay + 2 - currentCycleDay);
   } else if (currentCycleDay <= avgCycleLength - 6) {
     currentPhase = 'luteal';
-    phaseName = 'Early to Mid Luteal Phase';
-    phaseDescription = 'The corpus luteum secretes progesterone. Basal body temperature elevates and metabolic calorie burn increases by ~100-250 kcal/day.';
-    hormoneOverview = 'Progesterone: Dominant • Estrogen: Moderate • Metabolic Rate: +5-10%';
+    phaseName = 'Luteal Phase';
+    phaseDescription = 'After ovulation. You may feel a little warmer and hungrier.';
+    hormoneOverview = '';
     daysRemainingInPhase = Math.max(1, avgCycleLength - 6 - currentCycleDay);
   } else if (currentCycleDay <= avgCycleLength) {
     currentPhase = 'luteal';
-    phaseName = 'Late Luteal / Pre-Menstrual Window';
-    phaseDescription = 'Progesterone levels drop sharply. Allopregnanolone fluctuations can trigger emotional sensitivity, mild water retention, and sleep disruption.';
-    hormoneOverview = 'Progesterone: Dropping • GABA Sensitivity: High • Cortisol: Reactive';
+    phaseName = 'Pre-period Days';
+    phaseDescription = 'The days before your period. PMS — bloating, mood swings, lighter sleep — is common now.';
+    hormoneOverview = '';
     daysRemainingInPhase = Math.max(1, avgCycleLength - currentCycleDay);
   } else {
     currentPhase = regularityStatus === 'irregular_pcos' ? 'irregular' : 'luteal';
-    phaseName = regularityStatus === 'irregular_pcos' ? 'Extended Anovulatory Gap' : 'Delayed / Cycle Completion Due';
+    phaseName = regularityStatus === 'irregular_pcos' ? 'Long Cycle' : 'Period Due';
     phaseDescription =
       regularityStatus === 'irregular_pcos'
-        ? 'Cycle has exceeded standard interval. Progesterone markers remain low, suggesting delayed ovulation typical of metabolic or stress-induced PCOS.'
-        : 'Cycle length has surpassed expected window. Menstrual onset is imminent.';
-    hormoneOverview = 'Progesterone: Low • LH/FSH: Variable • Metabolic Strain: Elevated';
+        ? 'This cycle is longer than usual. Stress, PCOS or thyroid problems can delay ovulation — log your period when it starts.'
+        : 'Your period is due any day now.';
+    hormoneOverview = '';
     daysRemainingInPhase = 1;
   }
 
@@ -314,69 +314,69 @@ export function calculateCyclePredictionAndPrecautions(
     userFriendlyInsights.push({
       id: 'ins-menstrual-rest',
       category: 'movement',
-      headline: 'Downshift to Somatic Pelvic Release',
-      explanation: 'Uterine contractions are elevated today. High-intensity cardio elevates pelvic prostaglandins and prolongs cramps.',
-      actionTip: 'Swap strenuous cardio for 15 minutes of legs-up-the-wall and deep diaphragmatic breathing.',
+      headline: 'Go gentle today',
+      explanation: 'Cramps are common on period days, and gentle movement often eases them.',
+      actionTip: 'Try a short walk, stretching or yoga instead of hard cardio if you feel crampy.',
       icon: '🌸',
     });
     userFriendlyInsights.push({
       id: 'ins-menstrual-iron',
       category: 'nutrition',
-      headline: 'Replenish Iron and Electrolytes',
-      explanation: 'Active bleeding depletes serum ferritin, which can cause sudden afternoon brain fog and fatigue.',
-      actionTip: 'Incorporate dark leafy greens, pumpkin seeds, or lentils paired with vitamin C (lemon water).',
+      headline: 'Top up iron',
+      explanation: 'You lose some iron with every period, and low iron can make you tired.',
+      actionTip: 'Eat dal, leafy greens, pumpkin seeds or eggs with a squeeze of lemon.',
       icon: '🩸',
     });
   } else if (currentPhase === 'follicular') {
     userFriendlyInsights.push({
       id: 'ins-follicular-strength',
       category: 'movement',
-      headline: 'Optimal Strength Building Window',
-      explanation: 'Rising estrogen enhances neuromuscular recruitment, glycogen storage, and joint resilience.',
-      actionTip: 'Excellent day for progressive strength training, compound lifts, or higher-intensity conditioning.',
+      headline: 'Good days for harder workouts',
+      explanation: 'Energy usually rises in the days after your period.',
+      actionTip: 'A good time for strength training or a tougher workout if you feel up to it.',
       icon: '⚡',
     });
     userFriendlyInsights.push({
       id: 'ins-follicular-nutrition',
       category: 'nutrition',
-      headline: 'Metabolic Insulin Sensitivity is High',
-      explanation: 'Your body processes complex carbohydrates with maximum efficiency during this phase.',
-      actionTip: 'Fuel workouts with whole grains, sweet potatoes, and fermented foods for gut microbiome balance.',
+      headline: 'Fuel your day',
+      explanation: 'Regular meals with carbs and protein help you train and study well.',
+      actionTip: 'Pick whole grains, dal, curd and fruit around workouts.',
       icon: '🥗',
     });
   } else if (currentPhase === 'ovulatory') {
     userFriendlyInsights.push({
       id: 'ins-ovulatory-peak',
       category: 'hormone',
-      headline: 'Estrogen Peak & Peak Cognitive Clarity',
-      explanation: 'Testosterone and estradiol peak together, sharpening verbal fluency and executive focus.',
-      actionTip: 'Schedule challenging presentations, collaborative meetings, or personal milestone workouts today.',
+      headline: 'Energy is often high',
+      explanation: 'Many people feel more social and energetic around ovulation.',
+      actionTip: 'A good time for presentations, group study or a harder workout.',
       icon: '✨',
     });
   } else if (currentPhase === 'luteal') {
     userFriendlyInsights.push({
       id: 'ins-luteal-progesterone',
       category: 'nutrition',
-      headline: 'Metabolic Baseline Elevated (+150 kcal/day)',
-      explanation: 'Progesterone production elevates basal body temperature, requiring ~100-250 additional clean calories.',
-      actionTip: 'Do not under-eat. Prioritize complex carbs (oats, quinoa) and healthy fats to stabilize serotonin.',
+      headline: 'You may feel hungrier',
+      explanation: 'After ovulation your body uses a little more energy, so hunger can rise.',
+      actionTip: 'Don’t skip meals — oats, roti, dal and nuts keep energy steady.',
       icon: '🥑',
     });
     userFriendlyInsights.push({
       id: 'ins-luteal-nervous',
       category: 'recovery',
-      headline: 'Vagal Shield Against Cortisol Spikes',
-      explanation: 'Shifting progesterone sensitizes GABA receptors. Minor stressors trigger higher cortisol reactions.',
-      actionTip: 'Use a 5-minute somatic humming or physiological sigh practice before sleep to protect sleep quality.',
+      headline: 'Protect your calm',
+      explanation: 'Small stresses can feel bigger in the days before a period.',
+      actionTip: 'Wind down before bed with 5 minutes of slow breathing.',
       icon: '🧘‍♀️',
     });
   } else {
     userFriendlyInsights.push({
       id: 'ins-pcos-balance',
       category: 'hormone',
-      headline: 'Metabolic Sensitivity Calibrator',
-      explanation: 'Delayed ovulation detected. Insulin stabilization is the most direct pathway to resume regular cyclicity.',
-      actionTip: 'Focus on 30g protein at breakfast and 15-minute gentle post-meal walks to steady glucose response.',
+      headline: 'Long cycle',
+      explanation: 'This cycle is longer than usual, which often means ovulation came late.',
+      actionTip: 'Keep meals and sleep regular. See a gynaecologist if you go 3 months without a period.',
       icon: '🌿',
     });
   }
@@ -393,11 +393,11 @@ export function calculateCyclePredictionAndPrecautions(
     phaseTarget: currentPhase === 'luteal' ? 'Current Luteal Phase' : 'Upcoming Luteal Window',
     urgency: currentPhase === 'luteal' || daysUntilLuteal <= 3 ? 'high' : 'moderate',
     daysUntilActive: currentPhase === 'luteal' ? 0 : daysUntilLuteal,
-    title: 'Pre-Luteal Neuro-Hormonal Shield',
+    title: currentPhase === 'luteal' ? 'PMS days' : 'PMS days ahead',
     advice:
       currentPhase === 'luteal'
-        ? 'Active luteal progesterone drop. Guard your energy by setting boundary buffers, minimizing alcohol, and engaging somatic vagal grounding.'
-        : `Luteal phase starts in ~${daysUntilLuteal} days. Plan ahead: queue 10-minute vagal toning sessions and increase magnesium intake.`,
+        ? 'Your period is getting closer. Keep sleep regular, go easy on caffeine and plan lighter days if you can.'
+        : `PMS days usually start in about ${daysUntilLuteal} days. Plan lighter days and keep your sleep steady.`,
   });
 
   // Precaution 2: Dysmenorrhea / Cramp Preparedness
@@ -407,18 +407,16 @@ export function calculateCyclePredictionAndPrecautions(
     phaseTarget: 'Menstrual Onset (Days 1–2)',
     urgency: countdownToDisplay <= 2 ? 'high' : 'moderate',
     daysUntilActive: countdownToDisplay,
-    title: painLevel >= 6 ? 'Severe Dysmenorrhea Pre-Emptive Protocol' : 'Menstrual Cramp Readiness',
+    title: 'Period coming up',
     advice:
       countdownToDisplay === 0
         ? `Period due today. ${
             painLevel >= 6
-              ? 'Pre-hydrate with electrolytes, prepare heat therapy, and avoid high-impact jumping to minimize uterine spasm.'
-              : 'Keep magnesium glycinate on hand and transition to gentle somatic walking.'
+              ? 'Keep a heat pad ready and take your usual pain relief early, with food.'
+              : 'Keep pads, a heat pad and water handy.'
           }`
-        : `Next period starts in ~${countdownToDisplay} days. ${
-            painLevel >= 6
-              ? 'Pre-hydrate with electrolytes, prepare heating pads, and initiate anti-inflammatory nutrition 48 hours in advance.'
-              : 'Keep magnesium glycinate on hand and transition to gentle somatic walking.'
+        : `Next period in about ${countdownToDisplay} days. ${
+            painLevel >= 6 ? 'Keep a heat pad and your usual pain relief ready.' : 'Keep pads and a heat pad handy.'
           }`,
   });
 
@@ -435,9 +433,9 @@ export function calculateCyclePredictionAndPrecautions(
       phaseTarget: 'Menstrual Flow Window',
       urgency: 'high',
       daysUntilActive: countdownToDisplay,
-      title: 'Menorrhagia & Ferritin Protection Alert',
+      title: 'Heavy flow: protect your iron',
       advice:
-        'Given your heavy flow pattern, prioritize dietary heme iron (lentils, spinach, pasture-raised red meat) and avoid black tea or coffee with meals to optimize iron absorption.',
+        'Eat iron-rich food (dal, rajma, spinach, eggs or meat) with vitamin C, and avoid tea or coffee with meals. If you soak a pad every 1–2 hours, see a gynaecologist.',
     });
   }
 
@@ -448,10 +446,10 @@ export function calculateCyclePredictionAndPrecautions(
     phaseTarget: `${phaseName}`,
     urgency: currentPhase === 'menstrual' || currentPhase === 'luteal' ? 'moderate' : 'low',
     daysUntilActive: 0,
-    title: 'Bio-Adaptive Strain Ceiling',
-    advice: `Predicted cycle length is ${avgCycleLength} days with ±${variance}d variance (${
-      regularityStatus === 'regular' ? 'Consistent Rhythm' : 'High Variance'
-    }). Respect your body's current ${phaseName} needs.`,
+    title: 'Your cycle rhythm',
+    advice: `Your cycles average ${avgCycleLength} days (±${variance} days) — ${
+      regularityStatus === 'regular' ? 'a steady rhythm' : 'quite variable'
+    }.`,
   });
 
   return {

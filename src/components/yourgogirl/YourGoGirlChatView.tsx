@@ -18,20 +18,29 @@ import {
   RotateCcw,
   ArrowLeft,
   CheckCircle2,
-  ShieldCheck,
   Flame,
   Compass,
+  AlertTriangle,
+  Stethoscope,
+  Phone,
+  ChevronRight,
 } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
+import { callNumber, openUrl } from '@/lib/openExternal';
 import { Theme } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import {
-  COUNSELLOR_MODES,
   QUICK_PROMPT_TOPICS,
   generateYourGoGirlResponse,
   createInitialWelcomeMessage,
 } from '@/lib/yourGoGirlEngine';
-import type { CounsellorMode, YourGoGirlMessage } from '@/types';
+import type { CounsellorMode, YourGoGirlAction, YourGoGirlMessage } from '@/types';
+
+function runAction(a: YourGoGirlAction) {
+  if (a.kind === 'call') callNumber(a.value, a.label);
+  else if (a.kind === 'url') openUrl(a.value);
+  else router.push(a.value as Href);
+}
 
 interface YourGoGirlChatViewProps {
   showBackButton?: boolean;
@@ -58,10 +67,11 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
   const biometrics = useAppStore((s) => s.biometrics);
   const symptomLogs = useAppStore((s) => s.symptomLogs);
   const fineTuningSettings = useAppStore((s) => s.fineTuningSettings);
+  const cyclePrediction = useAppStore((s) => s.cyclePrediction);
   const messages = useAppStore((s) => s.yourGoGirlMessages);
-  const mode = useAppStore((s) => s.yourGoGirlMode);
+  // One built-in style: warm and practical (the mode picker was removed).
+  const mode: CounsellorMode = 'empathetic_counsellor';
   const addMessage = useAppStore((s) => s.addYourGoGirlMessage);
-  const setMode = useAppStore((s) => s.setYourGoGirlMode);
   const clearChat = useAppStore((s) => s.clearYourGoGirlChat);
 
   const [inputText, setInputText] = useState('');
@@ -93,6 +103,9 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
     addMessage(userMsg);
     setIsTyping(true);
 
+    // The topic of YourGoGirl's last answer lets "tell me more" continue it.
+    const lastIntentId = [...messages].reverse().find((m) => m.sender === 'bot')?.intentId;
+
     try {
       const botReply = await generateYourGoGirlResponse(trimmed, {
         userName,
@@ -101,6 +114,8 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
         symptomLogs,
         fineTuningSettings,
         mode,
+        cyclePrediction,
+        lastIntentId,
       });
       addMessage(botReply);
     } finally {
@@ -109,10 +124,10 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
   };
 
   // Helper to render bold segments wrapped in **...**
-  const renderFormattedText = (raw: string, isUser: boolean) => {
+  const renderFormattedText = (raw: string, isUser: boolean, textStyle?: object) => {
     const parts = raw.split(/(\*\*.*?\*\*)/g);
     return (
-      <Text style={[styles.messageText, isUser && styles.userMessageText]}>
+      <Text style={[textStyle ?? styles.messageText, isUser && styles.userMessageText]}>
         {parts.map((part, idx) => {
           if (part.startsWith('**') && part.endsWith('**')) {
             return (
@@ -153,17 +168,11 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
               <View style={styles.avatarCore}>
                 <Sparkles size={20} color="#FFFFFF" />
               </View>
-              <View style={styles.onlineDot} />
             </View>
             <View style={styles.titleCol}>
-              <View style={styles.nameRow}>
-                <Text style={styles.botName}>YourGoGirl</Text>
-                <View style={styles.aiPill}>
-                  <Text style={styles.aiPillText}>AI COUNSELLOR</Text>
-                </View>
-              </View>
+              <Text style={styles.botName}>YourGoGirl</Text>
               <Text style={styles.botSubtitle} numberOfLines={1}>
-                Menstruation • Cycle Disturbances • Focus & Motivation
+                {cycle.hasCycleData ? `Day ${cycle.currentDay} · ${cycle.phase} phase` : 'Periods · mood · focus'}
               </Text>
             </View>
           </View>
@@ -177,39 +186,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
           </TouchableOpacity>
         </View>
 
-        {/* Live Bio-Sync Strip */}
-        <View style={styles.bioSyncBar}>
-          <ShieldCheck size={13} color={Theme.colors.primary} />
-          <Text style={styles.bioSyncText} numberOfLines={1}>
-            Synced with {userName || 'you'}: {cycle.hasCycleData ? `Day ${cycle.currentDay} (${cycle.phase})` : cycle.phase} • Strain{' '}
-            {biometrics.strainScore}%{cycle.conditions?.length ? ` • ${cycle.conditions.join(' / ')}` : ''}
-          </Text>
-        </View>
 
-        {/* Counsellor Mode Selector Pills */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.modeScroll}
-        >
-          {COUNSELLOR_MODES.map((m) => {
-            const active = m.id === mode;
-            return (
-              <TouchableOpacity
-                key={m.id}
-                onPress={() => setMode(m.id as CounsellorMode)}
-                style={[styles.modeChip, active && styles.modeChipActive]}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[styles.modeChipText, active && styles.modeChipTextActive]}
-                >
-                  {m.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
       </View>
 
       {/* Main Chat Scroll Area */}
@@ -221,9 +198,6 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
       >
         {/* Quick Topic Starter Cards */}
         <View style={styles.topicsWrapper}>
-          <Text style={styles.topicsHeaderLabel}>
-            ASK YOURGOGIRL ABOUT WHAT YOU&apos;RE FACING TODAY:
-          </Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -266,6 +240,13 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
                   isUser ? styles.userBubble : styles.botBubble,
                 ]}
               >
+                {!isUser && msg.urgent && (
+                  <View style={styles.urgentBanner}>
+                    <AlertTriangle size={14} color="#A33B55" />
+                    <Text style={styles.urgentText}>Please get help now — this needs a real person</Text>
+                  </View>
+                )}
+
                 {renderFormattedText(msg.text, isUser)}
 
                 {/* Biological Why Card (for Bot responses) */}
@@ -274,7 +255,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
                     <View style={styles.bioCardHeader}>
                       <Brain size={14} color={Theme.colors.secondary} />
                       <Text style={styles.bioCardTitle}>
-                        WHY YOUR BODY & HORMONES FEEL THIS WAY
+                        WHY THIS HAPPENS
                       </Text>
                     </View>
                     <Text style={styles.bioCardBody}>{msg.biologicalWhy}</Text>
@@ -289,7 +270,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
                       <View style={styles.stepsHeader}>
                         <Compass size={14} color={Theme.colors.primaryDark} />
                         <Text style={styles.stepsTitle}>
-                          GENTLE COUNSELLOR STEPS FOR RIGHT NOW
+                          WHAT CAN HELP
                         </Text>
                       </View>
                       {msg.gentleActionSteps.map((step, i) => (
@@ -299,11 +280,43 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
                             color={Theme.colors.strainOptimal}
                             style={{ marginTop: 2 }}
                           />
-                          <Text style={styles.stepText}>{step}</Text>
+                          {renderFormattedText(step, false, styles.stepText)}
                         </View>
                       ))}
                     </View>
                   )}
+
+                {/* When to see a doctor */}
+                {!isUser && msg.whenToSeeDoctor && (
+                  <View style={styles.doctorCard}>
+                    <View style={styles.stepsHeader}>
+                      <Stethoscope size={14} color="#9A5A2E" />
+                      <Text style={styles.doctorTitle}>WHEN TO SEE A DOCTOR</Text>
+                    </View>
+                    {renderFormattedText(msg.whenToSeeDoctor, false, styles.doctorText)}
+                  </View>
+                )}
+
+                {/* Action buttons (call a helpline, open a screen) */}
+                {!isUser && msg.actions && msg.actions.length > 0 && (
+                  <View style={styles.actionsRow}>
+                    {msg.actions.map((a) => (
+                      <TouchableOpacity
+                        key={`${a.kind}-${a.value}`}
+                        style={[styles.actionBtn, a.kind === 'call' && styles.actionBtnCall]}
+                        onPress={() => runAction(a)}
+                        activeOpacity={0.8}
+                      >
+                        {a.kind === 'call' ? (
+                          <Phone size={13} color="#FFFFFF" />
+                        ) : (
+                          <ChevronRight size={13} color={Theme.colors.primaryDark} />
+                        )}
+                        <Text style={[styles.actionText, a.kind === 'call' && styles.actionTextCall]}>{a.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
 
                 {/* Empowering Affirmation Banner */}
                 {!isUser && msg.affirmation && (
@@ -321,7 +334,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
                   msg.followUpSuggestions.length > 0 && (
                     <View style={styles.followUpContainer}>
                       <Text style={styles.followUpHeader}>
-                        Continue talking with YourGoGirl:
+                        You could ask:
                       </Text>
                       <View style={styles.followUpList}>
                         {msg.followUpSuggestions.map((sugg, idx) => (
@@ -360,7 +373,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
             <View style={[styles.messageBubble, styles.botBubble, styles.typingBubble]}>
               <ActivityIndicator size="small" color={Theme.colors.primary} />
               <Text style={styles.typingText}>
-                YourGoGirl is tuning into your cycle & preparing counsel...
+                YourGoGirl is typing…
               </Text>
             </View>
           </View>
@@ -373,11 +386,19 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
           style={styles.textInput}
           value={inputText}
           onChangeText={setInputText}
-          placeholder="Ask YourGoGirl about periods, focus, motivation, or mood..."
+          placeholder="Ask anything — periods, pain, mood, focus…"
           placeholderTextColor={Theme.colors.textTertiary}
           multiline
           maxLength={600}
           onSubmitEditing={() => handleSendMessage()}
+          onKeyPress={(e) => {
+            // Web: Enter sends, Shift+Enter adds a new line.
+            const ne = e.nativeEvent as { key?: string; shiftKey?: boolean };
+            if (Platform.OS === 'web' && ne.key === 'Enter' && !ne.shiftKey) {
+              e.preventDefault();
+              handleSendMessage();
+            }
+          }}
         />
         <TouchableOpacity
           style={[
@@ -469,7 +490,7 @@ const styles = StyleSheet.create({
   },
   botName: {
     fontSize: 18,
-    fontWeight: '900',
+    fontWeight: '800',
     color: Theme.colors.textPrimary,
     letterSpacing: -0.4,
   },
@@ -521,30 +542,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Theme.colors.primaryDark,
     flex: 1,
-  },
-  modeScroll: {
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  modeChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: Theme.radius.full,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: Theme.colors.cardBorder,
-  },
-  modeChipActive: {
-    backgroundColor: Theme.colors.primary,
-    borderColor: Theme.colors.primary,
-  },
-  modeChipText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Theme.colors.textSecondary,
-  },
-  modeChipTextActive: {
-    color: '#FFFFFF',
   },
   chatScroll: {
     flex: 1,
@@ -771,6 +768,45 @@ const styles = StyleSheet.create({
     color: Theme.colors.textSecondary,
     fontStyle: 'italic',
   },
+  urgentBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FDECEF',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#F3C4CF',
+  },
+  urgentText: { flex: 1, fontSize: 12, fontWeight: '800', color: '#A33B55' },
+  doctorCard: {
+    marginTop: 10,
+    backgroundColor: '#FFF6EC',
+    borderRadius: Theme.radius.md,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#F6DDBF',
+    gap: 4,
+  },
+  doctorTitle: { fontSize: 10, fontWeight: '800', color: '#9A5A2E', letterSpacing: 0.5 },
+  doctorText: { fontSize: 12.5, lineHeight: 18, color: Theme.colors.textPrimary },
+  actionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12 },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: Theme.radius.full,
+    backgroundColor: Theme.colors.primaryLight,
+    borderWidth: 1,
+    borderColor: 'rgba(201, 87, 140, 0.25)',
+  },
+  actionBtnCall: { backgroundColor: Theme.colors.primary, borderColor: Theme.colors.primary },
+  actionText: { fontSize: 12, fontWeight: '800', color: Theme.colors.primaryDark },
+  actionTextCall: { color: '#FFFFFF' },
   composerBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -793,6 +829,7 @@ const styles = StyleSheet.create({
     maxHeight: 100,
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
+    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {}),
   },
   sendButton: {
     width: 42,

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persist } from 'zustand/middleware';
+import { deviceStorage } from './storage';
 import type {
   AppState,
   FineTuningSettings,
@@ -19,10 +19,12 @@ import type {
   ClinicalReport,
   YourGoGirlMessage,
   CounsellorMode,
+  HealthCheckAnswers,
+  CareContact,
 } from '@/types';
 import { calculateArchetype } from '@/constants/assessment';
 import { calculateCyclePredictionAndPrecautions } from '@/constants/cyclePrediction';
-import { saveDailyLogToSupabase, saveCycleToSupabase, signOutSupabase } from '@/lib/supabaseService';
+import { signOutSupabase } from '@/lib/supabaseService';
 import { daysBetweenKeys, daysSinceKey, lastNDaysKeys, todayKey } from '@/lib/dates';
 import { recommendWorkout } from '@/lib/fitness';
 import { recentLog, recentSignals } from '@/lib/recent';
@@ -41,15 +43,15 @@ import { useGamesStore } from './useGamesStore';
 
 const DEFAULT_SETTINGS: FineTuningSettings = {
   archetypeId: 'empowered_cycle_optimizer',
-  archetypeName: 'Empowered Cyclical Optimizer',
-  archetypeTagline: 'Dynamic Vitality & Natural Alignment',
-  archetypeDescription: 'Complete the health assessment to personalise SheSync for your body.',
+  archetypeName: 'Cycle in Sync',
+  archetypeTagline: 'Energy that follows your cycle',
+  archetypeDescription: 'Answer the 10 questions to personalise SheSync.',
   strainSensitivity: 'balanced',
   preferredTherapy: 'somatic',
   autoCortisolOverride: true,
   pmddEarlyShield: false,
   dailySleepTargetHours: 8,
-  primaryCondition: 'Cycle Optimization',
+  primaryCondition: 'General wellbeing',
 };
 
 const DEFAULT_CBT: CBTPrompt = {
@@ -86,6 +88,10 @@ function freshUserData() {
     isAssessmentCompleted: false,
     assessmentAnswers: {} as Record<string, string>,
     fineTuningSettings: { ...DEFAULT_SETTINGS },
+    healthCheck: {} as HealthCheckAnswers,
+    healthCheckCompleted: false,
+    syncCompletedAt: '',
+    careContacts: [] as CareContact[],
     rememberedCyclesCount: 0,
     pastCycles: [] as PastCycleRecord[],
     symptomLogs: [] as SymptomLog[],
@@ -578,9 +584,6 @@ export const useAppStore = create<AppState>()(
         const fresh = withFreshDaysAgo(cycles);
         set({ rememberedCyclesCount: count, pastCycles: fresh });
         get().fineTuneAllAnalytics();
-        fresh.forEach((c) => {
-          saveCycleToSupabase({ start_date: c.startDate, end_date: c.endDate ?? null, cycle_length: c.lengthDays }).catch(() => {});
-        });
       },
 
       // ─── Audio / CBT / SOS ───────────────────────────
@@ -633,11 +636,7 @@ export const useAppStore = create<AppState>()(
       },
 
       logout: async () => {
-        try {
-          await signOutSupabase();
-        } catch (e) {
-          console.warn('Logout signOutSupabase error', e);
-        }
+        await signOutSupabase();
         // Health data is personal: sign-out removes it from this device.
         resetFeatureStores();
         const fresh = freshUserData();
@@ -709,13 +708,6 @@ export const useAppStore = create<AppState>()(
         };
         set((state) => ({ symptomLogs: [newLog, ...state.symptomLogs].slice(0, 1500) }));
         get().fineTuneAllAnalytics();
-        saveDailyLogToSupabase({
-          log_date: newLog.date,
-          pain_level: newLog.pain ?? null,
-          mood: newLog.mood ? String(newLog.mood) : null,
-          symptoms: newLog.painLocation || newLog.tags || [],
-          notes: newLog.notes || null,
-        }).catch(() => {});
       },
 
       logSleep: (hours: number) => {
@@ -729,8 +721,9 @@ export const useAppStore = create<AppState>()(
 
       // ─── YourGoGirl AI Counsellor ────────────────────
       addYourGoGirlMessage: (msg: YourGoGirlMessage) =>
+        // Keep the chat light on storage: the newest 150 messages are plenty.
         set((state) => ({
-          yourGoGirlMessages: [...state.yourGoGirlMessages, msg],
+          yourGoGirlMessages: [...state.yourGoGirlMessages, msg].slice(-150),
         })),
 
       setYourGoGirlMode: (mode: CounsellorMode) =>
@@ -742,11 +735,66 @@ export const useAppStore = create<AppState>()(
             createInitialWelcomeMessage(state.userName, state.cycle, state.biometrics),
           ],
         })),
+
+      // ─── Details for Sync / referral / care team ─────
+      saveHealthCheck: (answers: HealthCheckAnswers) =>
+        set({ healthCheck: { ...answers }, healthCheckCompleted: true }),
+
+      markSyncComplete: () => {
+        if (!get().syncCompletedAt) set({ syncCompletedAt: new Date().toISOString() });
+      },
+
+      addCareContact: (contact: Omit<CareContact, 'id'>) =>
+        set((state) => ({
+          careContacts: [
+            ...state.careContacts,
+            {
+              ...contact,
+              name: contact.name.trim(),
+              phone: contact.phone.trim(),
+              note: contact.note?.trim() || undefined,
+              id: `care-${Date.now()}`,
+            },
+          ].slice(0, 30),
+        })),
+
+      removeCareContact: (id: string) =>
+        set((state) => ({ careContacts: state.careContacts.filter((c) => c.id !== id) })),
     }),
     {
       name: 'shesync.app',
-      version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      version: 3,
+      // v2 adds the "Details for Sync" setup. Anyone who finished the old
+      // onboarding (questionnaire + period dates) keeps their full dashboard.
+      migrate: (persisted, fromVersion) => {
+        const s = (persisted ?? {}) as Record<string, any>;
+        if (fromVersion < 2) {
+          s.healthCheck = s.healthCheck ?? {};
+          s.healthCheckCompleted = s.healthCheckCompleted ?? false;
+          s.careContacts = s.careContacts ?? [];
+          // YourGoGirl's answers were rebuilt in v2: start the chat fresh.
+          s.yourGoGirlMessages = [];
+          s.syncCompletedAt =
+            s.syncCompletedAt ??
+            (s.isAssessmentCompleted && Array.isArray(s.pastCycles) && s.pastCycles.length > 0
+              ? new Date().toISOString()
+              : '');
+        }
+        if (fromVersion < 3 && s.fineTuningSettings) {
+          // v3 renamed the profile types in plain language; keep her settings.
+          const a = calculateArchetype(s.assessmentAnswers ?? {});
+          s.fineTuningSettings = {
+            ...s.fineTuningSettings,
+            archetypeId: a.id,
+            archetypeName: a.name,
+            archetypeTagline: a.tagline,
+            archetypeDescription: a.description,
+            primaryCondition: a.primaryCondition,
+          };
+        }
+        return s as any;
+      },
+      storage: deviceStorage(),
       // Persist the user's own data; everything derived is recomputed on launch.
       partialize: (s) => ({
         userName: s.userName,
@@ -758,6 +806,10 @@ export const useAppStore = create<AppState>()(
         isAssessmentCompleted: s.isAssessmentCompleted,
         assessmentAnswers: s.assessmentAnswers,
         fineTuningSettings: s.fineTuningSettings,
+        healthCheck: s.healthCheck,
+        healthCheckCompleted: s.healthCheckCompleted,
+        syncCompletedAt: s.syncCompletedAt,
+        careContacts: s.careContacts,
         rememberedCyclesCount: s.rememberedCyclesCount,
         pastCycles: s.pastCycles,
         symptomLogs: s.symptomLogs,

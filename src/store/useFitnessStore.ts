@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persist } from 'zustand/middleware';
+import { deviceStorage } from './storage';
 import type { BodyProfile } from '@/lib/fitness';
 import type { WorkoutCategory } from '@/constants/fitnessLibrary';
 import { todayKey } from '@/lib/dates';
@@ -113,7 +113,7 @@ export const useFitnessStore = create<FitnessState>()(
     {
       name: 'shesync.fitness',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: deviceStorage(),
       partialize: (s) => ({ profile: s.profile, weights: s.weights, sessions: s.sessions, habits: s.habits }),
     }
   )

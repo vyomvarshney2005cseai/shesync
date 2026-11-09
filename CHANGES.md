@@ -1,3 +1,47 @@
+# SheSync — Clean UI, cloud backend, optimisation (9 Nov 2026)
+
+**Cleaner UI** — removed filler text, decorative icons and jargon only; every feature stays.
+- Headers, auth screens, Home cards, Report, Mind, Move, Profile, log screens and the chat header now say one thing each, in plain words (e.g. “Next period”, “Points for your doctor”).
+- Questionnaire result types renamed in plain language: Cycle Balance, Pre-period Care, Rest & Recover, Cycle in Sync (saved answers are kept; names update automatically).
+- iOS app icon is now the SheSync logo (it was the Expo template icon); app name shows as “SheSync”; system dialogs stay light to match the app.
+
+**Backend (Supabase)** — `supabase/migrations/20261109000000_shesync_backend.sql`
+- Tables: `profiles`, `cycles`, `symptom_logs`, `sleep_logs`, `care_contacts`, `app_documents` (Fitness/Study/Games). Row Level Security on every table: each user sees only her own rows; signed-out requests get nothing.
+- Profile row created automatically at sign-up; `delete_my_account()` erases the account and all of its data (also the old `daily_logs` table if present).
+- Safe on existing projects: upgrades the old `profiles`/`cycles` tables, removes duplicate old cycle rows, can be run again.
+- App side (`src/lib/sync/`): offline-first automatic backup. Only changes are uploaded, ~2.5 s after they happen and when the app goes to the background. Signing in on a new phone restores her data; a new/empty phone can never overwrite the cloud copy. Replaces the old per-log uploads, which overwrote earlier logs from the same day and never uploaded sleep, care contacts, settings or Fitness/Study/Games.
+- Profile: backup status (“Backed up · 2 min ago”, “Saved on this device only”, “Backup paused — Retry”, “Sign in”) and **Delete account**.
+- Setup steps are in README.md (`.env.example` added). Without a backend the app still runs fully on-device.
+
+**Optimisation**
+- Release builds use tree shaking (eas.json) — Android bundle 7.8 MB → 5.3 MB, web JS 4.9 MB → 2.6 MB. Modules load on first use (inline requires).
+- Saved data is written to the phone in batches instead of rewriting everything on every tap (flushed immediately when the app goes to the background).
+- Background redraws only when its colour mood changes; the hidden duplicate background behind every screen and the web blur filter are gone.
+- Images: welcome slides as JPEG (790 KB → 160 KB, visually identical), small logo file for the 28–36 pt logos, other PNGs recompressed; assets folder 3.0 MB → 0.8 MB.
+- Removed unused code (GlassCard, VagusAudioPlayer, FeministQuoteCard + quotes, colour-scheme hooks, Expo `reset-project` script) and unused packages (@expo/ui, expo-device, expo-glass-effect, expo-image, expo-symbols, expo-web-browser, expo-sharing, nativewind, tailwindcss) — 58 fewer packages installed.
+- Chat keeps the latest 150 messages. Metro, TypeScript, ESLint and EAS uploads skip the old copies in `sheshync/` and `YourGoGirl/`.
+
+**Tested**: `tsc` + ESLint clean; 447 YourGoGirl checks; referral checks; database test in real Postgres (RLS isolation, sign-up trigger, upgrade of old tables, account deletion); 10 sync-engine tests (new phone restore, offline retry, deletes, batching, account switch); supabase-js request test; web + Android/iOS release bundles build; web run-through with no console errors.
+
+**After pulling this**: run `npm install`. To turn on the backend, follow README → Backend.
+
+---
+
+# SheSync — Details for Sync update (9 Nov 2026)
+
+**What changed**
+- **Login / sign-up go straight to Home.** Until setup is finished, Home shows *Good afternoon, <name>*, one big **Details for Sync** card (all six forms/logs with live ticks and a Start/Continue button) and **six feature squares**: YourGoGirl, Fitness & Weight, Care Connect, Study Focus, Mind Games, Breathe.
+- **Details for Sync** = 10 questions → period dates → pain → flow → mood → **new Health safety check** (11 yes/no red-flag questions). Each step hands over to the next unfinished one (`src/lib/syncDetails.ts`).
+- **Referable / not referable window** (`/sync-result`) at the end. Rules in `src/lib/referral.ts` follow NHS “see a doctor if…” signs and FIGO normal-cycle limits (24–38 days, ≤ 8 days bleeding): levels *urgent today / within 1–2 weeks / next check-up*, separate counsellor suggestion, crisis lines if self-harm is mentioned, pregnancy-test-first note. After it, Home switches to the full dashboard (as before) plus a sync-result card.
+- **Care Connect** (`/care`): eSanjeevani (free govt video OPD), gynaecologists near me (Google Maps), visit checklist + doctor PDF, counsellors (Tele-MANAS 14416, iCALL 9152987821, Vandrevala +91 9999 666 555 with WhatsApp), women’s safety (181, NCW 14490, 112), and **My care team** (save your own doctor/counsellor).
+- **YourGoGirl rebuilt (built-in, offline).** `src/lib/yourGoGirlKnowledge.ts` has 60+ answer topics (cramps, late/irregular periods, PCOS, heavy flow, discharge, UTI, hygiene, myths, PMS/PMDD, anxiety, low mood, focus, exams, …) with “When to see a doctor” and action buttons. Safety first: self-harm, abuse, heavy bleeding with fainting, pregnancy + pain, fever with tampon/cup, sudden severe pain. Understands typos and common Hinglish. No more invented HRV/cortisol numbers. Old chats are cleared once on update.
+- **Softer, soothing UI**: “Soft Bloom” palette (dusty rose, lavender, sage, peach), plum text instead of black, calm lavender background on hard days (no more crimson), lighter font weights.
+- Fixes: flow log defaulted to “moderate” (made every user “bleeding today”) → now “none”; Enter sends in the web chat; tab bar full width on web; can’t save period setup with no dates.
+
+**Tested**: `tsc` + `expo lint` clean; 447 YourGoGirl matching checks + held-out phrasing set; referral/sync unit checks; full web run-through (sign-up → Details for Sync → result → dashboard → Care Connect → chat) with no console errors.
+
+---
+
 # SheSync — November 2026 update
 
 Run `npm install` once after pulling these changes (adds `expo-keep-awake`, plus `eslint` and `eslint-config-expo` for `npx expo lint`).

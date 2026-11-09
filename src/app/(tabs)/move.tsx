@@ -31,9 +31,8 @@ export default function MoveScreen() {
         >
           <View style={styles.centeredWrapper}>
             <Header
-              title="Adaptive Movement"
-              subtitle="Workouts that adapt to your cycle and strain"
-              badge="Movement Engine"
+              title="Move"
+              subtitle="Workouts for your cycle"
             />
             <InterventionBanner
               isOverride={plan.isOverride}
@@ -47,7 +46,7 @@ export default function MoveScreen() {
               onViewReasoning={toggleBiologicalReasoning}
             />
             <View style={styles.hubWrap}>
-              <WellnessHub only={['fitness']} title="Full fitness & weight dashboard" />
+              <WellnessHub only={['fitness']} title="More workouts" />
             </View>
             <AdaptationHistory history={workoutHistory} />
           </View>
@@ -62,7 +61,7 @@ export default function MoveScreen() {
         >
           <SafeAreaView style={styles.modalSafe}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Biological Reasoning</Text>
+              <Text style={styles.modalTitle}>Why this session</Text>
               <Pressable onPress={toggleBiologicalReasoning} style={styles.closeBtn}>
                 <X size={20} color={Theme.colors.textPrimary} />
               </Pressable>

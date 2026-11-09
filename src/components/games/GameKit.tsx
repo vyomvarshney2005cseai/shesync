@@ -122,9 +122,9 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   stripItem: { flex: 1, alignItems: 'center' },
-  stripValue: { fontSize: 18, fontWeight: '900', color: Theme.colors.textPrimary, fontVariant: ['tabular-nums'] },
+  stripValue: { fontSize: 18, fontWeight: '800', color: Theme.colors.textPrimary, fontVariant: ['tabular-nums'] },
   stripLabel: { fontSize: 10, fontWeight: '700', color: Theme.colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.6 },
-  resultTitle: { fontSize: 20, fontWeight: '900', color: '#065F46' },
+  resultTitle: { fontSize: 20, fontWeight: '800', color: '#065F46' },
   best: { fontSize: 13, fontWeight: '800', color: '#B45309', marginVertical: 4 },
 });
 

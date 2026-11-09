@@ -12,18 +12,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   ArrowLeft,
-  Calendar as CalendarIcon,
-  Clock,
   Sparkles,
-  ShieldAlert,
-  CheckCircle2,
   Plus,
   Minus,
-  Layers,
-  Zap,
 } from 'lucide-react-native';
 import { Theme } from '@/constants/theme';
 import { useAppStore, withFreshDaysAgo } from '@/store/useAppStore';
+import { nextSyncHref, syncStepBadge } from '@/lib/syncDetails';
 import { daysAgoKey } from '@/lib/dates';
 import { calculateCyclePredictionAndPrecautions } from '@/constants/cyclePrediction';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
@@ -192,13 +187,19 @@ export default function LogCycleScreen() {
   }, [rememberedCount, cyclesList, assessmentAnswers, latestPain, latestFlow]);
 
   const handleSaveAndProceed = () => {
+    if (cyclesList.length === 0) {
+      const msg = 'Tick the start date of at least your last period on the calendar.';
+      if (Platform.OS === 'web') window.alert(msg);
+      else Alert.alert('Add your last period', msg);
+      return;
+    }
     const effectiveCount = rememberedCount === -1 ? 1 : Math.max(1, rememberedCount);
     savePastCycles(effectiveCount, cyclesList.slice(0, effectiveCount));
 
     if (isOnboarding) {
-      router.push('/log-pain?onboarding=true');
+      router.push(nextSyncHref(useAppStore.getState()));
     } else {
-      const msg = 'Period dates and full-year cycle rhythm saved. Analytics calibrated!';
+      const msg = 'Period dates saved.';
       if (Platform.OS === 'web') {
         window.alert(msg);
         router.back();
@@ -222,7 +223,6 @@ export default function LogCycleScreen() {
           </TouchableOpacity>
           <View style={styles.navCenter}>
             <Text style={styles.navTitle}>Period Cycle & Calendar</Text>
-            <Text style={styles.navSubtitle}>Full-Year Rhythm & Analytics</Text>
           </View>
           <View style={{ width: 40 }} />
         </View>
@@ -238,16 +238,14 @@ export default function LogCycleScreen() {
               <View style={styles.onboardingBadge}>
                 <Sparkles size={13} color={Theme.colors.primary} />
                 <Text style={styles.onboardingBadgeText}>
-                  BASELINE CALIBRATION (STEP 1 OF 4)
+                  {syncStepBadge('period')}
                 </Text>
               </View>
               <Text style={styles.onboardingTitle}>
-                Tick Your Period Start & End Dates
+                Your period dates
               </Text>
               <Text style={styles.onboardingDesc}>
-                Use the full-year calendar to tick when your period starts and ends.
-                SheSync calculates variance across the year to predict upcoming cycles and
-                deploy tailored precautions.
+                Tap the start and end of your last periods on the calendar.
               </Text>
             </View>
           )}
@@ -263,14 +261,8 @@ export default function LogCycleScreen() {
           {/* Section: Question - How many cycles do you remember? */}
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeaderRow}>
-              <Layers size={18} color={Theme.colors.primary} />
-              <Text style={styles.sectionTitle}>
-                How Many Past Cycles Do You Recall?
-              </Text>
+              <Text style={styles.sectionTitle}>How many past cycles do you remember?</Text>
             </View>
-            <Text style={styles.sectionSubtitle}>
-              Even recalling 1 or 2 past cycles sharpens prediction confidence.
-            </Text>
 
             <View style={styles.optionsGrid}>
               {REMEMBERED_OPTIONS.map((opt) => {
@@ -320,12 +312,8 @@ export default function LogCycleScreen() {
           {/* Section: Fine-Tune Steppers for Most Recent Cycle */}
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeaderRow}>
-              <Clock size={18} color={Theme.colors.secondary} />
-              <Text style={styles.sectionTitle}>Fine-Tune Cycle Parameters</Text>
+              <Text style={styles.sectionTitle}>Adjust cycle length</Text>
             </View>
-            <Text style={styles.sectionSubtitle}>
-              Adjust cycle length or bleeding duration directly or rely on your calendar selections.
-            </Text>
 
             {/* Cycle Length Stepper */}
             <View style={styles.controlBox}>
@@ -418,29 +406,16 @@ export default function LogCycleScreen() {
             </View>
           </View>
 
-          {/* Section: Real-Time Precision Prediction Card */}
+          {/* Section: Prediction */}
           <View style={styles.predictionCard}>
-            <View style={styles.predictionHeader}>
-              <View style={styles.predictionBadge}>
-                <CalendarIcon size={13} color="#FFFFFF" />
-                <Text style={styles.predictionBadgeText}>NEXT CYCLE PREDICTION</Text>
-              </View>
-              <View style={styles.confidencePill}>
-                <CheckCircle2 size={12} color="#10B981" />
-                <Text style={styles.confidenceText}>
-                  {prediction.confidencePercentage}% Precision
-                </Text>
-              </View>
-            </View>
-
-            <Text style={styles.predictionDateLabel}>Predicted Next Period Start</Text>
+            <Text style={styles.predictionDateLabel}>Next period</Text>
             <Text style={styles.predictionDateValue}>{prediction.nextPeriodDate}</Text>
             <Text style={styles.predictionCountdown}>
               {prediction.daysUntilNextPeriod === 0
-                ? 'Cycle complete • Due today'
+                ? 'Due today'
                 : prediction.daysUntilNextPeriod < 0
-                ? `Cycle delayed • ~${Math.abs(prediction.daysUntilNextPeriod)} days past estimated onset`
-                : `Starts in approximately ~${prediction.daysUntilNextPeriod} days`}
+                ? `${Math.abs(prediction.daysUntilNextPeriod)} days late`
+                : `In about ${prediction.daysUntilNextPeriod} days`}
             </Text>
 
             {/* Phase Breakdown Card */}
@@ -459,61 +434,31 @@ export default function LogCycleScreen() {
                 <Text style={styles.phaseDescText}>
                   {prediction.cyclePhaseBreakdown.phaseDescription}
                 </Text>
-                <View style={styles.hormoneTag}>
-                  <Text style={styles.hormoneTagText}>
-                    🧬 {prediction.cyclePhaseBreakdown.hormoneOverview}
-                  </Text>
-                </View>
               </View>
             )}
 
-            {/* Health Scores Triad */}
-            {prediction.healthScores && (
-              <View style={styles.healthScoresRow}>
-                <View style={styles.healthScoreItem}>
-                  <Text style={styles.healthScoreVal}>
-                    {prediction.healthScores.hormonalHarmony}%
-                  </Text>
-                  <Text style={styles.healthScoreLabel}>Hormone Harmony</Text>
-                </View>
-                <View style={styles.healthScoreDivider} />
-                <View style={styles.healthScoreItem}>
-                  <Text style={styles.healthScoreVal}>
-                    {prediction.healthScores.autonomicRecovery}%
-                  </Text>
-                  <Text style={styles.healthScoreLabel}>Autonomic Recovery</Text>
-                </View>
-                <View style={styles.healthScoreDivider} />
-                <View style={styles.healthScoreItem}>
-                  <Text style={styles.healthScoreVal}>
-                    {prediction.healthScores.cycleStability}%
-                  </Text>
-                  <Text style={styles.healthScoreLabel}>Cycle Stability</Text>
-                </View>
-              </View>
-            )}
 
             {/* Timeline Breakdown */}
             <View style={styles.timelineBox}>
               <View style={styles.timelineRow}>
                 <View style={styles.timelineDot} />
-                <Text style={styles.timelineLabel}>Predicted Ovulation Window:</Text>
+                <Text style={styles.timelineLabel}>Ovulation:</Text>
                 <Text style={styles.timelineVal}>{prediction.ovulationWindow}</Text>
               </View>
               <View style={styles.timelineRow}>
                 <View style={[styles.timelineDot, { backgroundColor: '#F59E0B' }]} />
-                <Text style={styles.timelineLabel}>Luteal Phase (PMS Window):</Text>
+                <Text style={styles.timelineLabel}>PMS days:</Text>
                 <Text style={styles.timelineVal}>{prediction.lutealPhaseWindow}</Text>
               </View>
               <View style={styles.timelineRow}>
                 <View style={[styles.timelineDot, { backgroundColor: Theme.colors.primary }]} />
-                <Text style={styles.timelineLabel}>Cycle Regularity Index:</Text>
+                <Text style={styles.timelineLabel}>Regularity:</Text>
                 <Text style={styles.timelineVal}>
                   {prediction.regularityStatus === 'regular'
-                    ? 'Regular Rhythm (±1-2 days)'
+                    ? 'Regular'
                     : prediction.regularityStatus === 'moderate_variance'
-                    ? 'Moderate Variance (±3-4 days)'
-                    : 'Irregular / PCOS Rhythm'}
+                    ? 'Varies a little'
+                    : 'Irregular'}
                 </Text>
               </View>
             </View>
@@ -523,29 +468,14 @@ export default function LogCycleScreen() {
           {prediction.userFriendlyInsights && prediction.userFriendlyInsights.length > 0 && (
             <View style={styles.insightsSection}>
               <View style={styles.sectionHeaderRow}>
-                <Zap size={18} color="#F59E0B" />
-                <Text style={styles.sectionTitle}>What Your Body Needs Today</Text>
+                <Text style={styles.sectionTitle}>Tips for today</Text>
               </View>
-              <Text style={styles.sectionSubtitle}>
-                Plain-English physiological guidance calibrated to your current cycle phase.
-              </Text>
 
               {prediction.userFriendlyInsights.map((insight) => (
                 <View key={insight.id} style={styles.insightCard}>
-                  <View style={styles.insightHeaderRow}>
-                    <Text style={styles.insightIcon}>{insight.icon}</Text>
-                    <View style={styles.insightTitleBox}>
-                      <Text style={styles.insightCategory}>
-                        {insight.category.toUpperCase()} GUIDANCE
-                      </Text>
-                      <Text style={styles.insightHeadline}>{insight.headline}</Text>
-                    </View>
-                  </View>
+                  <Text style={styles.insightHeadline}>{insight.headline}</Text>
                   <Text style={styles.insightExplanation}>{insight.explanation}</Text>
-                  <View style={styles.actionTipBox}>
-                    <Text style={styles.actionTipLabel}>💡 Action Step:</Text>
-                    <Text style={styles.actionTipText}>{insight.actionTip}</Text>
-                  </View>
+                  <Text style={styles.actionTipText}>{insight.actionTip}</Text>
                 </View>
               ))}
             </View>
@@ -554,12 +484,8 @@ export default function LogCycleScreen() {
           {/* Section: Tailored Precaution Measures */}
           <View style={styles.precautionsSection}>
             <View style={styles.sectionHeaderRow}>
-              <ShieldAlert size={18} color={Theme.colors.strainHigh} />
-              <Text style={styles.sectionTitle}>Tailored Precaution Measures</Text>
+              <Text style={styles.sectionTitle}>Coming up</Text>
             </View>
-            <Text style={styles.sectionSubtitle}>
-              Actionable clinical precautions generated based on your past cycles and symptom profile.
-            </Text>
 
             {prediction.precautionMeasures.map((measure) => {
               const isHigh = measure.urgency === 'high';
@@ -571,25 +497,6 @@ export default function LogCycleScreen() {
                     isHigh && styles.precautionCardHigh,
                   ]}
                 >
-                  <View style={styles.precautionTopRow}>
-                    <View
-                      style={[
-                        styles.urgencyBadge,
-                        isHigh ? styles.urgencyHigh : styles.urgencyModerate,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.urgencyText,
-                          isHigh ? styles.urgencyTextHigh : styles.urgencyTextModerate,
-                        ]}
-                      >
-                        {measure.urgency.toUpperCase()} URGENCY
-                      </Text>
-                    </View>
-                    <Text style={styles.phaseTargetText}>{measure.phaseTarget}</Text>
-                  </View>
-
                   <Text style={styles.precautionTitle}>{measure.title}</Text>
                   <Text style={styles.precautionAdvice}>{measure.advice}</Text>
                 </View>
@@ -605,8 +512,8 @@ export default function LogCycleScreen() {
           >
             <Text style={styles.saveButtonText}>
               {isOnboarding
-                ? 'Save Calendar & Continue to Pain Check-in (Step 2/4) →'
-                : 'Save Cycle Dates & Sync Analytics'}
+                ? 'Save dates & continue →'
+                : 'Save dates'}
             </Text>
           </TouchableOpacity>
         </ScrollView>

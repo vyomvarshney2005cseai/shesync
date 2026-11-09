@@ -228,7 +228,16 @@ export type CounsellorTopic =
   | 'motivation'
   | 'disturbances'
   | 'menstruation'
-  | 'emotional';
+  | 'emotional'
+  | 'body'
+  | 'safety';
+
+/** A tappable action under a YourGoGirl reply (call a helpline, open a screen). */
+export interface YourGoGirlAction {
+  label: string;
+  kind: 'call' | 'route' | 'url';
+  value: string;              // phone number, app route or web link
+}
 
 export interface YourGoGirlMessage {
   id: string;
@@ -237,10 +246,54 @@ export interface YourGoGirlMessage {
   timestamp: string;
   category?: CounsellorTopic;
   mode?: CounsellorMode;
+  /** Which answer in the built-in knowledge base produced this reply. */
+  intentId?: string;
+  /** Red-flag reply: shown with an urgent banner. */
+  urgent?: boolean;
   biologicalWhy?: string;
   gentleActionSteps?: string[];
+  /** When this needs a doctor rather than self-care. */
+  whenToSeeDoctor?: string;
   affirmation?: string;
   followUpSuggestions?: string[];
+  actions?: YourGoGirlAction[];
+}
+
+// ─── Details for Sync, referral and care contacts ───────────
+
+/** Answers to the quick yes/no safety check (question id → yes). */
+export type HealthCheckAnswers = Record<string, boolean>;
+
+export type ReferralLevel = 'urgent' | 'soon' | 'routine' | 'none';
+
+export interface ReferralReason {
+  id: string;
+  title: string;
+  detail: string;
+  level: Exclude<ReferralLevel, 'none'>;
+  specialist: 'gynaecologist' | 'counsellor' | 'doctor';
+}
+
+export interface ReferralResult {
+  /** True when at least one answer means she should see a gynaecologist/doctor. */
+  referable: boolean;
+  level: ReferralLevel;
+  reasons: ReferralReason[];
+  counsellorSuggested: boolean;
+  counsellorReasons: ReferralReason[];
+  /** She said she has had thoughts of harming herself: show crisis lines first. */
+  crisis: boolean;
+  /** Take a pregnancy test before anything else. */
+  pregnancyTestFirst: boolean;
+  watchFor: string[];
+}
+
+export interface CareContact {
+  id: string;
+  name: string;
+  role: 'gynaecologist' | 'counsellor' | 'other';
+  phone: string;
+  note?: string;
 }
 
 // ─── Clinical Report ─────────────────────────────────────────
@@ -299,6 +352,13 @@ export interface AppState {
   assessmentAnswers: Record<string, string>;
   fineTuningSettings: FineTuningSettings;
 
+  // Details for Sync (first-run setup) and doctor referral
+  healthCheck: HealthCheckAnswers;
+  healthCheckCompleted: boolean;
+  /** ISO time the whole "Details for Sync" setup was finished; empty until then. */
+  syncCompletedAt: string;
+  careContacts: CareContact[];
+
   // Biometrics
   biometrics: BiometricSnapshot;
 
@@ -352,4 +412,8 @@ export interface AppState {
   addYourGoGirlMessage: (msg: YourGoGirlMessage) => void;
   setYourGoGirlMode: (mode: CounsellorMode) => void;
   clearYourGoGirlChat: () => void;
+  saveHealthCheck: (answers: HealthCheckAnswers) => void;
+  markSyncComplete: () => void;
+  addCareContact: (contact: Omit<CareContact, 'id'>) => void;
+  removeCareContact: (id: string) => void;
 }

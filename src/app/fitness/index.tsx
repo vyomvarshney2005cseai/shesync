@@ -112,8 +112,7 @@ export default function FitnessDashboard() {
     <Screen>
       <ScreenHeader
         title="Fitness & Weight"
-        subtitle="Gym, home workouts & yoga — tuned to your cycle and strain"
-        badge="Movement Engine"
+        subtitle="Workouts, weight and daily habits"
       />
 
       {/* ── Today's plan ─────────────────────────────── */}
@@ -431,7 +430,7 @@ export default function FitnessDashboard() {
 const styles = StyleSheet.create({
   todayCard: { marginTop: 4 },
   todayLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1, color: '#FDA4AF' },
-  todayTitle: { fontSize: 22, fontWeight: '900', color: '#FFFFFF', marginTop: 6, letterSpacing: -0.4 },
+  todayTitle: { fontSize: 22, fontWeight: '800', color: '#FFFFFF', marginTop: 6, letterSpacing: -0.4 },
   todayMeta: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 4, fontWeight: '600' },
   overridePill: {
     flexDirection: 'row',
@@ -465,7 +464,7 @@ const styles = StyleSheet.create({
   editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, backgroundColor: Theme.colors.primaryLight },
   editText: { fontSize: 12, fontWeight: '800', color: Theme.colors.primary },
   bmiRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  bmiValue: { fontSize: 34, fontWeight: '900', letterSpacing: -1 },
+  bmiValue: { fontSize: 34, fontWeight: '800', letterSpacing: -1 },
   bandLabel: { fontSize: 15, fontWeight: '800', marginBottom: 2 },
   divider: { height: 1, backgroundColor: Theme.colors.cardBorder, marginVertical: 14 },
   notice: {
@@ -485,7 +484,7 @@ const styles = StyleSheet.create({
   habitRow: { flexDirection: 'row', gap: 10 },
   habitCard: { flex: 1, padding: 14 },
   habitTitle: { fontSize: 13, fontWeight: '800', color: Theme.colors.textPrimary, marginLeft: 6 },
-  habitValue: { fontSize: 22, fontWeight: '900', color: Theme.colors.textPrimary, marginVertical: 8 },
+  habitValue: { fontSize: 22, fontWeight: '800', color: Theme.colors.textPrimary, marginVertical: 8 },
   habitGoal: { fontSize: 12, fontWeight: '600', color: Theme.colors.textTertiary },
   recentRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
   recentBorder: { borderTopWidth: 1, borderTopColor: Theme.colors.cardBorder },

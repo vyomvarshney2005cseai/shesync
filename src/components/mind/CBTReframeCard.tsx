@@ -25,8 +25,7 @@ export const CBTReframeCard: React.FC<CBTReframeCardProps> = ({
           <Brain size={20} color={Theme.colors.primary} />
         </View>
         <View style={styles.headerText}>
-          <Text style={styles.typeLabel}>CBT REFRAMING</Text>
-          <Text style={styles.trigger}>Triggered by: {prompt.trigger}</Text>
+          <Text style={styles.typeLabel}>Reframe a thought</Text>
         </View>
       </View>
 

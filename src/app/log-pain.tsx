@@ -14,6 +14,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Check, Flame, MapPin, Shield, HeartPulse, Sparkles, ArrowRight } from 'lucide-react-native';
 import { Theme } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
+import { nextSyncHref, syncStepBadge } from '@/lib/syncDetails';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
 import type { PainLevel } from '@/types';
 
@@ -93,9 +94,9 @@ export default function LogPainScreen() {
     setIsSaved(true);
 
     if (isOnboarding) {
-      router.push('/log-flow?onboarding=true');
+      router.push(nextSyncHref(useAppStore.getState()));
     } else {
-      const msg = 'Pain entry logged in clinical history.';
+      const msg = 'Pain logged.';
       if (Platform.OS === 'web') {
         window.alert(msg);
         router.back();
@@ -119,7 +120,6 @@ export default function LogPainScreen() {
         </TouchableOpacity>
         <View style={styles.navCenter}>
           <Text style={styles.navTitle}>Log Pain</Text>
-          <Text style={styles.navSubtitle}>Somatic Symptoms & Strain</Text>
         </View>
         <View style={{ width: 40 }} />
       </View>
@@ -134,12 +134,11 @@ export default function LogPainScreen() {
           <View style={styles.onboardingBanner}>
             <View style={styles.onboardingBadge}>
               <Sparkles size={13} color={Theme.colors.primary} />
-              <Text style={styles.onboardingBadgeText}>BASELINE CALIBRATION (STEP 2 OF 4)</Text>
+              <Text style={styles.onboardingBadgeText}>{syncStepBadge('pain')}</Text>
             </View>
-            <Text style={styles.onboardingTitle}>Log Your Pain Baseline</Text>
+            <Text style={styles.onboardingTitle}>Pain today</Text>
             <Text style={styles.onboardingDesc}>
-              Calibrate your current pelvic and somatic discomfort. This configures your daily strain
-              limit and unlocks personalized doctor co-pilot reports.
+              How much pain do you have today? Pick 0 if none.
             </Text>
           </View>
         )}
@@ -149,7 +148,7 @@ export default function LogPainScreen() {
           <View style={styles.severityHeaderRow}>
             <View style={styles.sectionRow}>
               <Flame size={20} color={severity.color} />
-              <Text style={styles.sectionHeader}>Pain Intensity</Text>
+              <Text style={styles.sectionHeader}>How strong?</Text>
             </View>
             <View style={[styles.severityBadge, { backgroundColor: `${severity.color}20` }]}>
               <Text style={[styles.severityBadgeText, { color: severity.color }]}>
@@ -196,9 +195,8 @@ export default function LogPainScreen() {
         <View style={styles.section}>
           <View style={styles.sectionRow}>
             <MapPin size={18} color={Theme.colors.primary} />
-            <Text style={styles.sectionHeaderInline}>Location of Discomfort</Text>
+            <Text style={styles.sectionHeaderInline}>Where does it hurt?</Text>
           </View>
-          <Text style={styles.sectionSubtext}>Select all areas experiencing pain or tension</Text>
           <View style={styles.chipsContainer}>
             {PAIN_LOCATIONS.map((loc) => {
               const isSelected = selectedLocations.includes(loc);
@@ -222,9 +220,8 @@ export default function LogPainScreen() {
         <View style={styles.section}>
           <View style={styles.sectionRow}>
             <HeartPulse size={18} color={Theme.colors.secondary} />
-            <Text style={styles.sectionHeaderInline}>Nature of Sensation</Text>
+            <Text style={styles.sectionHeaderInline}>What does it feel like?</Text>
           </View>
-          <Text style={styles.sectionSubtext}>How does the pain feel somatic-wise?</Text>
           <View style={styles.chipsContainer}>
             {SENSATIONS.map((sens) => {
               const isSelected = selectedSensation === sens;
@@ -248,9 +245,8 @@ export default function LogPainScreen() {
         <View style={styles.section}>
           <View style={styles.sectionRow}>
             <Shield size={18} color={Theme.colors.strainOptimal} />
-            <Text style={styles.sectionHeaderInline}>Relief Measures Applied</Text>
+            <Text style={styles.sectionHeaderInline}>What helped?</Text>
           </View>
-          <Text style={styles.sectionSubtext}>What interventions have helped or were tried?</Text>
           <View style={styles.chipsContainer}>
             {RELIEF_METHODS.map((rel) => {
               const isSelected = selectedRelief.includes(rel);
@@ -272,8 +268,7 @@ export default function LogPainScreen() {
 
         {/* Specific Notes */}
         <View style={styles.section}>
-          <Text style={styles.sectionHeader}>Clinical Symptom Notes</Text>
-          <Text style={styles.sectionSubtext}>Any additional sensations, timing, or context?</Text>
+          <Text style={styles.sectionHeader}>Notes</Text>
           <TextInput
             style={styles.notesInput}
             multiline
@@ -294,7 +289,7 @@ export default function LogPainScreen() {
         >
           {isOnboarding ? (
             <>
-              <Text style={styles.saveButtonText}>Save & Continue to Flow (Step 3/4)</Text>
+              <Text style={styles.saveButtonText}>Save & continue</Text>
               <ArrowRight size={20} color="#FFFFFF" style={{ marginLeft: 8 }} />
             </>
           ) : (

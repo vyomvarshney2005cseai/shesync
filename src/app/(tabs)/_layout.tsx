@@ -27,6 +27,7 @@ export default function TabLayout() {
           paddingBottom: Platform.OS === 'ios' ? insets.bottom : 8,
           ...(Platform.OS === 'web'
             ? ({
+                width: '100%',
                 maxWidth: 500,
                 alignSelf: 'center',
                 marginHorizontal: 'auto',
@@ -59,7 +60,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="your-go-girl"
         options={{
-          title: 'YourGoGirl',
+          title: 'GoGirl',
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && styles.activeIconBg]}>
               <Sparkles size={20} color={color} strokeWidth={focused ? 2.4 : 1.8} />

@@ -1,46 +1,36 @@
 import React from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/components/common/Header';
 import { StrainGauge } from '@/components/home/StrainGauge';
 import { BiometricScroll } from '@/components/home/BiometricScroll';
-import { QuickActionGrid } from '@/components/home/QuickActionGrid';
+import { QuickActionGrid, type QuickActionId } from '@/components/home/QuickActionGrid';
 import { CyclePredictionBanner } from '@/components/home/CyclePredictionBanner';
-import { YourGoGirlHomeCard } from '@/components/yourgogirl/YourGoGirlHomeCard';
+import { SyncDetailsCard } from '@/components/home/SyncDetailsCard';
+import { FeatureSquares } from '@/components/home/FeatureSquares';
+import { ReferralStatusCard } from '@/components/home/ReferralStatusCard';
 import { router } from 'expo-router';
 import { useAppStore } from '@/store/useAppStore';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
-import { WellnessHub } from '@/components/common/WellnessHub';
 import { timeOfDayGreeting } from '@/lib/dates';
+import { Theme } from '@/constants/theme';
+
+const QUICK_ROUTES = {
+  mood: '/log-mood',
+  pain: '/log-pain',
+  flow: '/log-flow',
+  cycle: '/log-cycle',
+  voice: '/voice-journal',
+} as const;
 
 export default function HomeScreen() {
   const biometrics = useAppStore((s) => s.biometrics);
   const cycle = useAppStore((s) => s.cycle);
   const userName = useAppStore((s) => s.userName);
+  const isSynced = useAppStore((s) => !!s.syncCompletedAt);
   const firstName = (userName || 'there').trim().split(' ')[0];
 
-  const handleQuickAction = (id: string) => {
-    switch (id) {
-      case 'mood':
-        router.push('/log-mood');
-        break;
-      case 'pain':
-        router.push('/log-pain');
-        break;
-      case 'flow':
-        router.push('/log-flow');
-        break;
-      case 'voice':
-        router.push('/voice-journal');
-        break;
-      case 'yourgogirl':
-        router.push('/your-go-girl' as any);
-        break;
-      case 'cycle':
-        router.push('/log-cycle');
-        break;
-    }
-  };
+  const handleQuickAction = (id: QuickActionId) => router.push(QUICK_ROUTES[id]);
 
   return (
     <AdaptiveBackground>
@@ -53,20 +43,32 @@ export default function HomeScreen() {
           <View style={styles.centeredWrapper}>
             <Header
               title={`${timeOfDayGreeting()}, ${firstName}`}
-              subtitle={cycle.label}
-              badge="SheSync Engine"
+              subtitle={isSynced ? cycle.label : 'Let’s set up SheSync for you'}
             />
-            <StrainGauge
-              score={biometrics.strainScore}
-              level={biometrics.strainLevel}
-            />
-            <BiometricScroll biometrics={biometrics} cycle={cycle} />
-            <YourGoGirlHomeCard />
-            <CyclePredictionBanner />
-            <QuickActionGrid onAction={handleQuickAction} />
-            <View style={styles.hubWrap}>
-              <WellnessHub />
-            </View>
+
+            {isSynced ? (
+              // ─── Synced: the full dashboard ───
+              <>
+                <StrainGauge score={biometrics.strainScore} level={biometrics.strainLevel} />
+                <BiometricScroll biometrics={biometrics} cycle={cycle} />
+                <ReferralStatusCard />
+                <CyclePredictionBanner />
+                <QuickActionGrid onAction={handleQuickAction} />
+                <View style={styles.sectionHead}>
+                  <Text style={styles.sectionTitle}>Explore SheSync</Text>
+                </View>
+                <FeatureSquares />
+              </>
+            ) : (
+              // ─── First run: Details for Sync + feature squares ───
+              <>
+                <SyncDetailsCard />
+                <View style={styles.sectionHead}>
+                  <Text style={styles.sectionTitle}>Explore SheSync</Text>
+                </View>
+                <FeatureSquares />
+              </>
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -92,8 +94,15 @@ const styles = StyleSheet.create({
     maxWidth: 520,
     alignSelf: 'center',
   },
-  hubWrap: {
+  sectionHead: {
     paddingHorizontal: 20,
-    marginTop: 12,
+    marginTop: 22,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: Theme.colors.textPrimary,
+    letterSpacing: -0.3,
   },
 });

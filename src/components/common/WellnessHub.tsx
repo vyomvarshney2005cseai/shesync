@@ -33,7 +33,6 @@ export function WellnessHub({ only, title = 'Your wellness dashboards' }: Wellne
   const cards: {
     id: HubId;
     title: string;
-    sub: string;
     stat: string;
     icon: React.ReactNode;
     color: string;
@@ -43,7 +42,6 @@ export function WellnessHub({ only, title = 'Your wellness dashboards' }: Wellne
     {
       id: 'fitness',
       title: 'Fitness & Weight',
-      sub: 'Gym, home workouts & yoga that adapt to your cycle',
       stat: `${stats.moveMinutes}/150 active min this week`,
       icon: <Dumbbell size={22} color="#0F766E" />,
       color: '#0F766E',
@@ -53,7 +51,6 @@ export function WellnessHub({ only, title = 'Your wellness dashboards' }: Wellne
     {
       id: 'study',
       title: 'Study Focus',
-      sub: 'Period-aware focus timer, confidence & motivation',
       stat: `${stats.focusToday} focus min today`,
       icon: <GraduationCap size={22} color={Theme.colors.secondaryDark} />,
       color: Theme.colors.secondaryDark,
@@ -63,7 +60,6 @@ export function WellnessHub({ only, title = 'Your wellness dashboards' }: Wellne
     {
       id: 'games',
       title: 'Mind Games',
-      sub: 'Puzzles, maths & breathing to reset your brain',
       stat: `${stats.gamesWeek} games this week`,
       icon: <Puzzle size={22} color={Theme.colors.primaryDark} />,
       color: Theme.colors.primaryDark,
@@ -88,9 +84,6 @@ export function WellnessHub({ only, title = 'Your wellness dashboards' }: Wellne
           <View style={[styles.iconWrap, { backgroundColor: c.bg }]}>{c.icon}</View>
           <View style={styles.textCol}>
             <Text style={styles.cardTitle}>{c.title}</Text>
-            <Text style={styles.cardSub} numberOfLines={2}>
-              {c.sub}
-            </Text>
             <View style={[styles.statPill, { backgroundColor: c.bg }]}>
               <Text style={[styles.statText, { color: c.color }]}>{c.stat}</Text>
             </View>
@@ -121,7 +114,6 @@ const styles = StyleSheet.create({
   iconWrap: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   textCol: { flex: 1 },
   cardTitle: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary, letterSpacing: -0.2 },
-  cardSub: { fontSize: 12, color: Theme.colors.textSecondary, marginTop: 2, lineHeight: 17 },
   statPill: { alignSelf: 'flex-start', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3, marginTop: 8 },
   statText: { fontSize: 11, fontWeight: '800' },
 });

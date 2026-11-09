@@ -1,13 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
-import { Calendar, ChevronRight, ShieldAlert, Sparkles } from 'lucide-react-native';
+import { ChevronRight } from 'lucide-react-native';
 import { Theme } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 
 export const CyclePredictionBanner: React.FC = () => {
   const cyclePrediction = useAppStore((s) => s.cyclePrediction);
-  const rememberedCyclesCount = useAppStore((s) => s.rememberedCyclesCount);
 
   if (!cyclePrediction) return null;
 
@@ -22,36 +21,21 @@ export const CyclePredictionBanner: React.FC = () => {
       >
         {/* Top Header */}
         <View style={styles.topRow}>
-          <View style={styles.badgeRow}>
-            <View style={styles.calendarBadge}>
-              <Calendar size={12} color="#FFFFFF" />
-              <Text style={styles.calendarBadgeText}>CYCLE PREDICTION</Text>
-            </View>
-            {cyclePrediction.cyclePhaseBreakdown && (
-              <View style={styles.phaseBadge}>
-                <Sparkles size={11} color="#F472B6" />
-                <Text style={styles.phaseBadgeText} numberOfLines={1}>
-                  {cyclePrediction.cyclePhaseBreakdown.phaseName}
-                </Text>
-              </View>
-            )}
-          </View>
-
+          <Text style={styles.cardTitle}>Next period</Text>
           <View style={styles.chevronWrap}>
-            <Text style={styles.adjustText} numberOfLines={1}>Manage Cycles</Text>
+            <Text style={styles.adjustText} numberOfLines={1}>Edit dates</Text>
             <ChevronRight size={14} color={Theme.colors.primary} />
           </View>
         </View>
 
         {/* Prediction Main Date */}
         <View style={styles.dateBlock}>
-          <Text style={styles.label}>Predicted Next Period Start</Text>
           <View style={styles.dateRow}>
             <Text style={styles.dateValue}>{cyclePrediction.nextPeriodDate}</Text>
             <View style={styles.countdownPill}>
               <Text style={styles.countdownText}>
                 {cyclePrediction.daysUntilNextPeriod === 0
-                  ? 'Due Today'
+                  ? 'Due today'
                   : cyclePrediction.daysUntilNextPeriod < 0
                   ? `${Math.abs(cyclePrediction.daysUntilNextPeriod)}d overdue`
                   : `~${cyclePrediction.daysUntilNextPeriod}d left`}
@@ -63,20 +47,13 @@ export const CyclePredictionBanner: React.FC = () => {
         {/* Windows & Regularity */}
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Ovulation Window</Text>
+            <Text style={styles.statLabel}>Ovulation</Text>
             <Text style={styles.statValue}>{cyclePrediction.ovulationWindow}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Confidence</Text>
-            <Text style={styles.statValue}>{cyclePrediction.confidencePercentage}%</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Cycle Base</Text>
-            <Text style={styles.statValue}>
-              {rememberedCyclesCount > 0 ? `${rememberedCyclesCount} Tracked` : 'Calibrated'}
-            </Text>
+            <Text style={styles.statLabel}>Cycle length</Text>
+            <Text style={styles.statValue}>{cyclePrediction.predictedCycleLength} days</Text>
           </View>
         </View>
 
@@ -88,10 +65,6 @@ export const CyclePredictionBanner: React.FC = () => {
               topPrecaution.urgency === 'high' && styles.precautionBannerHigh,
             ]}
           >
-            <ShieldAlert
-              size={15}
-              color={topPrecaution.urgency === 'high' ? '#EF4444' : Theme.colors.secondary}
-            />
             <View style={styles.precautionContent}>
               <Text style={styles.precautionTitle} numberOfLines={1}>
                 {topPrecaution.title}
@@ -108,169 +81,50 @@ export const CyclePredictionBanner: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 20,
-    marginTop: 16,
-  },
+  container: { paddingHorizontal: 20, marginTop: 16 },
   card: {
-    backgroundColor: '#1E1B2E',
+    backgroundColor: 'rgba(255,255,255,0.92)',
     borderRadius: Theme.radius.xl,
     padding: 18,
-    ...Theme.shadows.glowing,
     borderWidth: 1,
-    borderColor: 'rgba(255, 77, 141, 0.25)',
+    borderColor: Theme.colors.cardBorder,
+    ...Theme.shadows.card,
   },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  calendarBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: Theme.colors.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  calendarBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 0.4,
-  },
-  phaseBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(236, 72, 153, 0.22)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    maxWidth: 160,
-  },
-  phaseBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#F472B6',
-  },
-  memoryPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  memoryText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.85)',
-  },
-  chevronWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  adjustText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Theme.colors.primary,
-  },
-  dateBlock: {
-    marginBottom: 14,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.65)',
-    marginBottom: 4,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  dateValue: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: -0.4,
-  },
+  cardTitle: { fontSize: 15, fontWeight: '800', color: Theme.colors.textPrimary },
+  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  chevronWrap: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  adjustText: { fontSize: 12, fontWeight: '700', color: Theme.colors.primary },
+  dateBlock: { marginBottom: 12 },
+  dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  dateValue: { fontSize: 24, fontWeight: '800', color: Theme.colors.textPrimary, letterSpacing: -0.4 },
   countdownPill: {
-    backgroundColor: 'rgba(255, 77, 141, 0.2)',
+    backgroundColor: Theme.colors.primaryLight,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 77, 141, 0.4)',
   },
-  countdownText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: Theme.colors.primary,
-  },
+  countdownText: { fontSize: 12, fontWeight: '800', color: Theme.colors.primaryDark },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: Theme.colors.backgroundAlt,
     borderRadius: Theme.radius.md,
     padding: 10,
     marginBottom: 12,
   },
-  statItem: {
-    flex: 1,
-  },
-  divider: {
-    width: 1,
-    height: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    marginHorizontal: 10,
-  },
-  statLabel: {
-    fontSize: 10,
-    color: 'rgba(255, 255, 255, 0.6)',
-    marginBottom: 2,
-  },
-  statValue: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
+  statItem: { flex: 1 },
+  divider: { width: 1, height: 24, backgroundColor: Theme.colors.cardBorder, marginHorizontal: 10 },
+  statLabel: { fontSize: 11, color: Theme.colors.textSecondary, marginBottom: 2 },
+  statValue: { fontSize: 13, fontWeight: '700', color: Theme.colors.textPrimary },
   precautionBanner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: Theme.colors.secondaryLight,
     borderRadius: Theme.radius.md,
     padding: 10,
     borderLeftWidth: 3,
     borderLeftColor: Theme.colors.secondary,
   },
-  precautionBannerHigh: {
-    borderLeftColor: '#EF4444',
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-  },
-  precautionContent: {
-    flex: 1,
-  },
-  precautionTitle: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginBottom: 2,
-  },
-  precautionDesc: {
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.75)',
-    lineHeight: 15,
-  },
+  precautionBannerHigh: { borderLeftColor: Theme.colors.primary, backgroundColor: Theme.colors.primaryLight },
+  precautionContent: { flex: 1 },
+  precautionTitle: { fontSize: 12.5, fontWeight: '800', color: Theme.colors.textPrimary, marginBottom: 2 },
+  precautionDesc: { fontSize: 12, lineHeight: 17, color: Theme.colors.textSecondary },
 });

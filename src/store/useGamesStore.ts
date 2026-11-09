@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persist } from 'zustand/middleware';
+import { deviceStorage } from './storage';
 import { todayKey } from '@/lib/dates';
 
 export type GameId = 'memory' | 'maths' | 'slide' | 'sudoku' | 'schulte' | 'breathe';
@@ -77,7 +77,7 @@ export const useGamesStore = create<GamesState>()(
     {
       name: 'shesync.games',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: deviceStorage(),
       partialize: (s) => ({ records: s.records, best: s.best }),
     }
   )

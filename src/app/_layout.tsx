@@ -6,8 +6,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, StyleSheet, Platform } from 'react-native';
 import { Theme } from '@/constants/theme';
-import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
 import { useStoresHydrated } from '@/store/hydration';
+import { startCloudSync } from '@/lib/sync';
 
 // Keep the splash visible until saved data has loaded from the device.
 // The navigator always renders (expo-router requires it on first render);
@@ -24,9 +24,12 @@ export default function RootLayout() {
     if (hydrated) SplashScreen.hideAsync().catch(() => {});
   }, [hydrated]);
 
+  // Automatic cloud backup for online accounts (no-op in on-device mode).
+  useEffect(() => startCloudSync(), []);
+
   return (
     <SafeAreaProvider>
-      <AdaptiveBackground>
+      <View style={styles.page}>
         <View style={styles.container}>
           <StatusBar style="dark" />
           <Stack
@@ -51,14 +54,23 @@ export default function RootLayout() {
               <Stack.Screen name="study" options={push} />
               <Stack.Screen name="games" options={push} />
               <Stack.Screen name="your-go-girl" options={sheet} />
+              <Stack.Screen name="health-check" options={push} />
+              <Stack.Screen name="sync-result" options={sheet} />
+              <Stack.Screen name="care" options={push} />
             </Stack>
         </View>
-      </AdaptiveBackground>
+      </View>
     </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
+  // Each screen paints its own background; this only shows beside the
+  // centred column on wide web windows.
+  page: {
+    flex: 1,
+    backgroundColor: Theme.colors.background,
+  },
   container: {
     flex: 1,
     backgroundColor: 'transparent',

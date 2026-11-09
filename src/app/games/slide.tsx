@@ -117,5 +117,5 @@ const styles = StyleSheet.create({
     ...Theme.shadows.soft,
   },
   tileDone: { backgroundColor: '#10B981' },
-  tileText: { fontSize: 28, fontWeight: '900', color: '#FFFFFF' },
+  tileText: { fontSize: 28, fontWeight: '800', color: '#FFFFFF' },
 });

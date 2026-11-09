@@ -171,7 +171,7 @@ export default function MathsGame() {
 
 const styles = StyleSheet.create({
   qCard: { alignItems: 'center', paddingVertical: 28 },
-  question: { fontSize: 40, fontWeight: '900', color: Theme.colors.textPrimary, fontVariant: ['tabular-nums'] },
+  question: { fontSize: 40, fontWeight: '800', color: Theme.colors.textPrimary, fontVariant: ['tabular-nums'] },
   feedback: { fontSize: 14, fontWeight: '800', marginTop: 8, minHeight: 20 },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 14 },
   option: {
@@ -185,5 +185,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...Theme.shadows.card,
   },
-  optionText: { fontSize: 24, fontWeight: '900', color: Theme.colors.textPrimary, fontVariant: ['tabular-nums'] },
+  optionText: { fontSize: 24, fontWeight: '800', color: Theme.colors.textPrimary, fontVariant: ['tabular-nums'] },
 });

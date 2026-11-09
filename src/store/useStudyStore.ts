@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persist } from 'zustand/middleware';
+import { deviceStorage } from './storage';
 import { todayKey } from '@/lib/dates';
 
 export interface FocusPreset {
@@ -219,7 +219,7 @@ export const useStudyStore = create<StudyState>()(
     {
       name: 'shesync.study',
       version: 1,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: deviceStorage(),
       partialize: (s) => ({
         preset: s.preset,
         timer: s.timer,

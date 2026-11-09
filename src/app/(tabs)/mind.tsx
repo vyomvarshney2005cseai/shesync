@@ -1,10 +1,11 @@
 import React from 'react';
-import { ScrollView, View, Text, StyleSheet, Modal, Pressable, TouchableOpacity } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, Modal, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { X, Heart, Phone, MessageCircle, Wind, Siren, Sparkles, ChevronRight } from 'lucide-react-native';
+import { X, Heart, Phone, MessageCircle, Wind, Siren, Sparkles } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { Theme } from '@/constants/theme';
 import { Header } from '@/components/common/Header';
+import { YourGoGirlHomeCard } from '@/components/yourgogirl/YourGoGirlHomeCard';
 import { SomaticVideoLibrary } from '@/components/mind/SomaticVideoLibrary';
 import { CBTReframeCard } from '@/components/mind/CBTReframeCard';
 import { SOSFab } from '@/components/mind/SOSFab';
@@ -32,48 +33,23 @@ export default function MindScreen() {
         >
           <View style={styles.centeredWrapper}>
             <Header
-              title="Mind & Grounding"
-              subtitle="Cycle-Aware Somatic & Cognitive Support"
-              badge="YouTube Somatics"
+              title="Mind"
+              subtitle="Calm your body and mind"
             />
 
-            {/* YourGoGirl Counsellor Quick Launch Banner */}
-            <TouchableOpacity
-              style={styles.counsellorBanner}
-              activeOpacity={0.85}
-              onPress={() => router.push('/your-go-girl' as any)}
-            >
-              <View style={styles.counsellorIconWrap}>
-                <Sparkles size={20} color="#FFFFFF" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.counsellorTitle}>
-                  Need to talk through brain fog, low motivation, or period stress?
-                </Text>
-                <Text style={styles.counsellorSub}>
-                  Chat with YourGoGirl — your 24/7 AI Women&apos;s Health Counsellor
+            <YourGoGirlHomeCard />
+
+            {biometrics.strainLevel === 'high' || biometrics.strainLevel === 'severe' ? (
+              <View style={styles.introCard}>
+                <Text style={styles.introTitle}>A heavy day</Text>
+                <Text style={styles.introDesc}>
+                  Your strain is {biometrics.strainScore}/100 from today’s logs. Try a short calming video below — even five
+                  minutes helps.
                 </Text>
               </View>
-              <ChevronRight size={18} color={Theme.colors.primaryDark} />
-            </TouchableOpacity>
+            ) : null}
 
-            {/* Strain-aware therapy intro (from the user's own logs) */}
-            <View style={styles.introCard}>
-              <Text style={styles.introTitle}>
-                {biometrics.strainLevel === 'high' || biometrics.strainLevel === 'severe'
-                  ? 'A heavy day, by your logs'
-                  : biometrics.strainLevel === 'moderate'
-                  ? 'A moderate-strain day'
-                  : 'A steadier day'}
-              </Text>
-              <Text style={styles.introDesc}>
-                {biometrics.strainLevel === 'high' || biometrics.strainLevel === 'severe'
-                  ? `Your strain score is ${biometrics.strainScore}/100 from what you logged today. Start with a short calming session below — even five minutes helps.`
-                  : 'Keep your nervous system steady with a short somatic session, a reframing note, or a calming game.'}
-              </Text>
-            </View>
-
-            <WellnessHub only={['games', 'study']} title="Calm your mind & focus" />
+            <WellnessHub only={['games', 'study']} title="Focus & games" />
 
             {/* Curated YouTube Somatic Therapy Library */}
             <SomaticVideoLibrary />
@@ -113,7 +89,7 @@ export default function MindScreen() {
             </Text>
             <View style={styles.sosActions}>
               <PrimaryButton
-                title="Chat with YourGoGirl Counsellor"
+                title="Talk to YourGoGirl"
                 variant="rose"
                 icon={<Sparkles size={16} color="#FFFFFF" />}
                 onPress={() => {
@@ -188,44 +164,13 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: 16,
   },
-  counsellorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: Theme.radius.xl,
-    padding: 14,
-    marginBottom: 14,
-    borderWidth: 1.5,
-    borderColor: '#FFB8D0',
-    ...Theme.shadows.soft,
-  },
-  counsellorIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: Theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  counsellorTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: Theme.colors.textPrimary,
-    marginBottom: 2,
-  },
-  counsellorSub: {
-    fontSize: 11.5,
-    color: Theme.colors.primaryDark,
-    fontWeight: '600',
-  },
   introCard: {
     backgroundColor: Theme.colors.primaryLight,
     borderRadius: Theme.radius.xl,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 77, 141, 0.15)',
+    borderColor: 'rgba(201, 87, 140, 0.15)',
   },
   introTitle: {
     fontSize: 14,
@@ -279,7 +224,7 @@ const styles = StyleSheet.create({
   },
   sosTitle: {
     fontSize: 22,
-    fontWeight: '900',
+    fontWeight: '800',
     color: Theme.colors.textPrimary,
     marginBottom: 8,
     letterSpacing: -0.5,

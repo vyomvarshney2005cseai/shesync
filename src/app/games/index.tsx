@@ -64,7 +64,7 @@ const GAMES: GameTile[] = [
     id: 'schulte',
     name: 'Focus Grid',
     benefit: 'Tap 1→25 in order to train attention',
-    icon: <Brain size={22} color="#BE185D" />,
+    icon: <Brain size={22} color="#A8436F" />,
     bg: '#FCE7F3',
     best: (b) => (b?.bestSeconds != null ? `Best: ${formatClock(b.bestSeconds)}` : 'Not played yet'),
   },
@@ -101,7 +101,7 @@ export default function GamesDashboard() {
 
   return (
     <Screen>
-      <ScreenHeader title="Mind Games" subtitle="Puzzles, maths and breathing to relax and reset your brain" badge="Mind Reset" />
+      <ScreenHeader title="Mind Games" subtitle="Short games to reset your mind" />
 
       <View style={styles.tiles}>
         <StatTile label="This week" value={`${stats.games}`} hint="games played" color={Theme.colors.primary} />

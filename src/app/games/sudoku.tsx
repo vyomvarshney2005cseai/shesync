@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   selected: { backgroundColor: Theme.colors.primaryLight },
   bad: { backgroundColor: '#FFF1F2' },
   cellText: { fontSize: 26, fontWeight: '700', color: Theme.colors.secondary },
-  givenText: { color: Theme.colors.textPrimary, fontWeight: '900' },
+  givenText: { color: Theme.colors.textPrimary, fontWeight: '800' },
   pad: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginTop: 16 },
   padBtn: {
     width: 52,
@@ -201,5 +201,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  padText: { fontSize: 20, fontWeight: '900', color: Theme.colors.textPrimary },
+  padText: { fontSize: 20, fontWeight: '800', color: Theme.colors.textPrimary },
 });

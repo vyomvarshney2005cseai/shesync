@@ -8,14 +8,12 @@ import { useAppStore } from '@/store/useAppStore';
 interface HeaderProps {
   title?: string;
   subtitle?: string;
-  badge?: string;
   onNotificationPress?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   title = "SheSync",
   subtitle = "",
-  badge = "SheSync",
   onNotificationPress,
 }) => {
   const userName = useAppStore((s) => s.userName);
@@ -48,18 +46,8 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.leftCol}>
-        <View style={styles.badgeRow}>
-          <View style={styles.badge}>
-            <Image
-              source={require('@/../assets/images/shesync-logo.png')}
-              style={styles.badgeLogo}
-              resizeMode="contain"
-            />
-            <Text style={styles.badgeText}>{badge}</Text>
-          </View>
-        </View>
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
 
       <View style={styles.rightCol}>
@@ -100,34 +88,6 @@ const styles = StyleSheet.create({
   leftCol: {
     flex: 1,
     marginRight: 8,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    marginBottom: 6,
-  },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Theme.colors.primaryLight,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: Theme.radius.full,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 77, 141, 0.2)',
-  },
-  badgeLogo: {
-    width: 14,
-    height: 14,
-    borderRadius: 3,
-    marginRight: 4,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Theme.colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   title: {
     fontSize: 22,
@@ -172,7 +132,7 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     padding: 2.5,
-    backgroundColor: 'rgba(255, 77, 141, 0.15)',
+    backgroundColor: 'rgba(201, 87, 140, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },

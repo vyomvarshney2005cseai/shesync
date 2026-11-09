@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   },
   scoreText: {
     fontSize: 42,
-    fontWeight: '900',
+    fontWeight: '800',
     letterSpacing: -1,
   },
   levelText: {

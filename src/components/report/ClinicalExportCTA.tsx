@@ -41,10 +41,10 @@ export const ClinicalExportCTA: React.FC<ClinicalExportCTAProps> = ({
       <PrimaryButton
         title={
           isGenerating
-            ? 'Generating Clinical Report...'
+            ? 'Preparing report…'
             : generatedAt
-            ? 'Clinical PDF Generated ✓'
-            : 'Generate Clinical PDF for Doctor'
+            ? 'Report ready'
+            : 'Download doctor report (PDF)'
         }
         variant={generatedAt ? 'lilac' : 'dark'}
         icon={
@@ -67,10 +67,9 @@ export const ClinicalExportCTA: React.FC<ClinicalExportCTAProps> = ({
         <Animated.View style={[styles.successBanner, successStyle]}>
           <Check size={16} color={Theme.colors.strainOptimal} />
           <View style={styles.successText}>
-            <Text style={styles.successTitle}>Report Ready for Export</Text>
+            <Text style={styles.successTitle}>Report ready</Text>
             <Text style={styles.successSubtitle}>
-              Contains 90-day cycle trend, anomaly correlation, and biometric timeline.
-              Share with your OB/GYN or endocrinologist.
+              Includes your 90-day cycle and pain trend and the patterns above. Share it with your gynaecologist.
             </Text>
           </View>
         </Animated.View>
@@ -78,9 +77,8 @@ export const ClinicalExportCTA: React.FC<ClinicalExportCTAProps> = ({
 
       {/* Footer disclaimer */}
       <Text style={styles.disclaimer}>
-        This report is generated from self-reported data and wearable biometrics. It is
-        intended to supplement — not replace — clinical evaluation by a licensed
-        physician.
+        Made from what you logged in SheSync. It supports — but does not replace — a doctor’s
+        assessment.
       </Text>
     </View>
   );

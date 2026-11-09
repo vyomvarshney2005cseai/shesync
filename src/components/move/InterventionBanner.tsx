@@ -72,7 +72,6 @@ export const InterventionBanner: React.FC<InterventionBannerProps> = ({ isOverri
           {phaseLabel}
         </Text>
       </View>
-      <Text style={[styles.source, { color: tone.text }]}>Based on the pain, flow, mood and sleep you logged.</Text>
     </Animated.View>
   );
 };

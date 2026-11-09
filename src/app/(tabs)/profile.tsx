@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -14,13 +14,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Theme } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
+import { ASSESSMENT_QUESTIONS } from '@/constants/assessment';
+import { isSupabaseConfigured } from '@/lib/supabase';
+import { deleteAccountAndData, flushCloudSync, signOutAndClear, useSyncStatus } from '@/lib/sync';
 import {
-  Sparkles,
-  Activity,
   ChevronRight,
   RefreshCw,
   LogOut,
   FileText,
+  Cloud,
+  CloudOff,
+  Trash2,
   Sliders,
   CheckCircle2,
 } from 'lucide-react-native';
@@ -33,11 +37,12 @@ export default function ProfileScreen() {
   const userEmail = useAppStore((s) => s.userEmail);
   const userPhoto = useAppStore((s) => s.userPhoto);
   const updateUserPhoto = useAppStore((s) => s.updateUserPhoto);
-  const isAssessmentCompleted = useAppStore((s) => s.isAssessmentCompleted);
   const assessmentAnswers = useAppStore((s) => s.assessmentAnswers);
   const fineTuningSettings = useAppStore((s) => s.fineTuningSettings);
   const updateFineTuningSettings = useAppStore((s) => s.updateFineTuningSettings);
-  const logout = useAppStore((s) => s.logout);
+  const isOfflineAccount = useAppStore((s) => s.isOfflineAccount);
+  const sync = useSyncStatus();
+  const [busy, setBusy] = useState<'signout' | 'delete' | null>(null);
   const generateClinicalPDF = useAppStore((s) => s.generateClinicalPDF);
 
   const answeredCount = Object.keys(assessmentAnswers).length;
@@ -60,30 +65,57 @@ export default function ProfileScreen() {
     router.push('/assessment' as any);
   };
 
-  const confirmLogout = () => {
-    const title = 'Sign out of SheSync?';
-    const msg =
-      'For your privacy, signing out removes your logs, cycles and dashboard data from this device.';
+  /** Native Alert on phones, window.confirm on web. */
+  const confirm = (title: string, msg: string, action: string, onYes: () => void) => {
     if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined' && window.confirm(`${title}\n\n${msg}`)) handleLogout();
+      if (typeof window !== 'undefined' && window.confirm(`${title}\n\n${msg}`)) onYes();
       return;
     }
     Alert.alert(title, msg, [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: () => handleLogout() },
+      { text: action, style: 'destructive', onPress: onYes },
     ]);
   };
 
-  const handleLogout = async () => {
-    try {
-      // Clearing the session is enough: the signed-in area's AuthGate sends
-      // the user to the welcome screen. Navigating here as well raced with it
-      // and caused a "Maximum update depth exceeded" loop on web.
-      await logout();
-    } catch (err) {
-      console.warn('Logout error', err);
-    }
+  const notify = (title: string, msg: string) => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined') window.alert(`${title}\n\n${msg}`);
+    } else Alert.alert(title, msg);
   };
+
+  const backedUp = sync.state === 'idle' && !!sync.lastSyncedAt;
+
+  // Clearing the session is enough: the signed-in area's AuthGate sends the
+  // user to the welcome screen. (Navigating here too raced with it on web.)
+  const confirmLogout = () =>
+    confirm(
+      'Sign out of SheSync?',
+      backedUp || sync.state === 'syncing'
+        ? 'Your data is backed up and comes back when you sign in again. It is removed from this device.'
+        : 'For your privacy, signing out removes your logs, cycles and dashboard data from this device.',
+      'Sign out',
+      () => {
+        setBusy('signout');
+        signOutAndClear()
+          .catch((err) => console.warn('Sign out error', err))
+          .finally(() => setBusy(null));
+      }
+    );
+
+  const confirmDelete = () =>
+    confirm(
+      'Delete your account?',
+      'This permanently deletes your account and all your SheSync data' +
+        (isOfflineAccount || !isSupabaseConfigured ? ' on this device.' : ', on this device and in the cloud.') +
+        ' This cannot be undone.',
+      'Delete',
+      () => {
+        setBusy('delete');
+        deleteAccountAndData()
+          .catch(() => notify('Could not delete', 'Check your internet connection and try again. Nothing was deleted.'))
+          .finally(() => setBusy(null));
+      }
+    );
 
   const handleExportPDF = () => {
     generateClinicalPDF();
@@ -102,16 +134,7 @@ export default function ProfileScreen() {
         {/* Header */}
         <View style={styles.headerRow}>
           <View>
-            <View style={styles.badgeRow}>
-              <Image
-                source={require('@/../assets/images/shesync-logo.png')}
-                style={styles.headerLogo}
-                resizeMode="contain"
-              />
-              <Text style={styles.headerBadgeText}>SHESYNC CALIBRATION</Text>
-            </View>
-            <Text style={styles.headerTitle}>Health Profile</Text>
-            <Text style={styles.headerSubtitle}>Bio-Adaptive Fine-Tuning & Identity</Text>
+            <Text style={styles.headerTitle}>Profile</Text>
           </View>
         </View>
 
@@ -130,29 +153,14 @@ export default function ProfileScreen() {
           </TouchableOpacity>
 
           <View style={styles.identityInfo}>
-            <Text style={styles.userNameText}>{userName || 'Maya'}</Text>
-            <Text style={styles.userEmailText}>{userEmail || 'maya@shesync.app'}</Text>
-            <View style={styles.membershipPill}>
-              <Sparkles size={11} color={Theme.colors.feminismAccent} />
-              <Text style={styles.membershipText}>
-                {isAssessmentCompleted ? 'Fully Calibrated' : 'Initial Profile'}
-              </Text>
-            </View>
+            <Text style={styles.userNameText}>{userName}</Text>
+            {userEmail ? <Text style={styles.userEmailText}>{userEmail}</Text> : null}
           </View>
         </View>
 
         {/* Bio-Adaptive Archetype Card */}
         <View style={styles.archetypeCard}>
-          <View style={styles.archetypeHeader}>
-            <View style={styles.archetypeTag}>
-              <Activity size={13} color={Theme.colors.feminismAccent} />
-              <Text style={styles.archetypeTagText}>BIO-ADAPTIVE ARCHETYPE</Text>
-            </View>
-            <Text style={styles.conditionPill}>{fineTuningSettings.primaryCondition}</Text>
-          </View>
-
           <Text style={styles.archetypeNameText}>{fineTuningSettings.archetypeName}</Text>
-          <Text style={styles.archetypeTaglineText}>{fineTuningSettings.archetypeTagline}</Text>
           <Text style={styles.archetypeDescText}>{fineTuningSettings.archetypeDescription}</Text>
         </View>
 
@@ -165,7 +173,9 @@ export default function ProfileScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.assessmentTitle}>Health Assessment</Text>
               <Text style={styles.assessmentStatusText}>
-                {answeredCount > 0 ? `${answeredCount}/30 Questions Completed` : '30-Question Calibration Available'}
+                {answeredCount > 0
+                  ? `${answeredCount}/${ASSESSMENT_QUESTIONS.length} questions answered`
+                  : `${ASSESSMENT_QUESTIONS.length} quick questions`}
               </Text>
             </View>
           </View>
@@ -177,7 +187,7 @@ export default function ProfileScreen() {
           >
             <RefreshCw size={15} color="#FFFFFF" style={{ marginRight: 6 }} />
             <Text style={styles.retakeButtonText}>
-              {answeredCount > 0 ? 'Review or Re-take Assessment (30 MCQs)' : 'Start 30-Question Health Assessment'}
+              {answeredCount > 0 ? 'Review or retake' : 'Start'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -186,18 +196,14 @@ export default function ProfileScreen() {
         <View style={styles.sectionBlock}>
           <View style={styles.sectionHeaderRow}>
             <Sliders size={16} color={Theme.colors.textPrimary} />
-            <Text style={styles.sectionTitle}>Fine-Tuning Control Center</Text>
+            <Text style={styles.sectionTitle}>Settings</Text>
           </View>
-          <Text style={styles.sectionSubtitle}>
-            Custom rules calibrated directly from your clinical responses.
-          </Text>
 
           {/* Setting 1: Strain Sensitivity */}
           <View style={styles.settingItem}>
             <View style={styles.settingTopRow}>
               <View>
-                <Text style={styles.settingLabel}>Strain Sensitivity</Text>
-                <Text style={styles.settingHelp}>Adjusts workout intensity limits</Text>
+                <Text style={styles.settingLabel}>Workout intensity</Text>
               </View>
             </View>
             <View style={styles.chipsRow}>
@@ -223,17 +229,16 @@ export default function ProfileScreen() {
           <View style={styles.settingItem}>
             <View style={styles.settingTopRow}>
               <View>
-                <Text style={styles.settingLabel}>Somatic Therapy Modality</Text>
-                <Text style={styles.settingHelp}>Featured in Mind tab daily</Text>
+                <Text style={styles.settingLabel}>Calming practice</Text>
               </View>
             </View>
             <View style={styles.chipsRow}>
               {(['somatic', 'cbt', 'breathwork'] as const).map((mode) => {
                 const isActive = fineTuningSettings.preferredTherapy === mode;
                 const labels: Record<string, string> = {
-                  somatic: 'Vagus Nerve',
-                  cbt: 'CBT Reframing',
-                  breathwork: 'Box Breathwork',
+                  somatic: 'Body calm',
+                  cbt: 'Reframing',
+                  breathwork: 'Breathing',
                 };
                 return (
                   <TouchableOpacity
@@ -254,10 +259,8 @@ export default function ProfileScreen() {
           {/* Setting 3: Cortisol Auto-Override Switch */}
           <View style={styles.toggleRow}>
             <View style={{ flex: 1, paddingRight: 12 }}>
-              <Text style={styles.settingLabel}>Cortisol Workout Override</Text>
-              <Text style={styles.settingHelp}>
-                Swaps intense sessions for gentle pelvic, yoga or vagus flows when your strain score is high.
-              </Text>
+              <Text style={styles.settingLabel}>Gentler workouts on hard days</Text>
+              <Text style={styles.settingHelp}>Swaps intense sessions for gentle ones when your strain is high.</Text>
             </View>
             <Switch
               value={fineTuningSettings.autoCortisolOverride}
@@ -270,10 +273,8 @@ export default function ProfileScreen() {
           {/* Setting 4: PMDD Early Shield Alert Switch */}
           <View style={styles.toggleRow}>
             <View style={{ flex: 1, paddingRight: 12 }}>
-              <Text style={styles.settingLabel}>Late-Luteal PMDD Shield</Text>
-              <Text style={styles.settingHelp}>
-                Proactive neuro-hormonal calming sequences 7 days before period.
-              </Text>
+              <Text style={styles.settingLabel}>Pre-period calm reminders</Text>
+              <Text style={styles.settingHelp}>Extra calming suggestions in the week before your period.</Text>
             </View>
             <Switch
               value={fineTuningSettings.pmddEarlyShield}
@@ -287,8 +288,7 @@ export default function ProfileScreen() {
           <View style={styles.settingItem}>
             <View style={styles.settingTopRow}>
               <View>
-                <Text style={styles.settingLabel}>Restorative Sleep Target</Text>
-                <Text style={styles.settingHelp}>Recommended minimum for hormonal synthesis</Text>
+                <Text style={styles.settingLabel}>Sleep goal</Text>
               </View>
               <View style={styles.sleepStepper}>
                 <TouchableOpacity
@@ -329,20 +329,35 @@ export default function ProfileScreen() {
             <FileText size={20} color={Theme.colors.primaryDark} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.exportTitle}>Clinical 90-Day Health Report</Text>
-            <Text style={styles.exportSubtitle}>Export formatted summary for your OB/GYN</Text>
+            <Text style={styles.exportTitle}>Doctor report (PDF)</Text>
+            <Text style={styles.exportSubtitle}>Your last 90 days for your gynaecologist</Text>
           </View>
           <ChevronRight size={18} color={Theme.colors.textTertiary} />
         </TouchableOpacity>
+
+        {/* Backup status */}
+        <BackupRow
+          state={sync.state}
+          lastSyncedAt={sync.lastSyncedAt}
+          onDevice={isOfflineAccount || !isSupabaseConfigured}
+          onSignIn={() => router.push({ pathname: '/login', params: { email: userEmail ?? '' } })}
+          onRetry={() => void flushCloudSync(15000)}
+        />
 
         {/* Logout Button */}
         <TouchableOpacity
           style={styles.logoutButton}
           onPress={confirmLogout}
+          disabled={!!busy}
           activeOpacity={0.8}
         >
           <LogOut size={16} color="#DC2626" style={{ marginRight: 8 }} />
-          <Text style={styles.logoutText}>Sign Out of SheSync</Text>
+          <Text style={styles.logoutText}>{busy === 'signout' ? 'Signing out…' : 'Sign out'}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.deleteButton} onPress={confirmDelete} disabled={!!busy} activeOpacity={0.7}>
+          <Trash2 size={14} color={Theme.colors.textTertiary} style={{ marginRight: 6 }} />
+          <Text style={styles.deleteText}>{busy === 'delete' ? 'Deleting…' : 'Delete account'}</Text>
         </TouchableOpacity>
 
         <View style={{ height: 40 }} />
@@ -350,6 +365,67 @@ export default function ProfileScreen() {
         </ScrollView>
       </SafeAreaView>
     </AdaptiveBackground>
+  );
+}
+
+function timeAgo(ms: number): string {
+  const min = Math.round((Date.now() - ms) / 60000);
+  if (min < 1) return 'just now';
+  if (min < 60) return `${min} min ago`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `${h} h ago`;
+  return new Date(ms).toLocaleDateString();
+}
+
+function BackupRow(props: {
+  state: ReturnType<typeof useSyncStatus.getState>['state'];
+  lastSyncedAt?: number;
+  onDevice: boolean;
+  onSignIn: () => void;
+  onRetry: () => void;
+}) {
+  const { state, lastSyncedAt, onDevice } = props;
+  let title = 'Backed up';
+  let detail = lastSyncedAt ? timeAgo(lastSyncedAt) : 'Waiting for your first change';
+  let action: { label: string; onPress: () => void } | null = null;
+  let ok = true;
+
+  if (onDevice) {
+    ok = false;
+    title = 'Saved on this device only';
+    detail = isSupabaseConfigured ? 'Sign in online to back up your data' : 'Cloud backup is not set up';
+    if (isSupabaseConfigured) action = { label: 'Sign in', onPress: props.onSignIn };
+  } else if (state === 'syncing') {
+    title = 'Backing up…';
+    detail = lastSyncedAt ? `Last backup ${timeAgo(lastSyncedAt)}` : 'First backup';
+  } else if (state === 'signin') {
+    ok = false;
+    title = 'Backup paused';
+    detail = 'Sign in again to keep backing up';
+    action = { label: 'Sign in', onPress: props.onSignIn };
+  } else if (state === 'error') {
+    ok = false;
+    title = 'Backup paused';
+    detail = 'No connection — it will retry automatically';
+    action = { label: 'Retry', onPress: props.onRetry };
+  }
+
+  const Icon = ok ? Cloud : CloudOff;
+  return (
+    <View style={styles.backupRow}>
+      <View style={[styles.backupIcon, !ok && styles.backupIconOff]}>
+        <Icon size={18} color={ok ? Theme.colors.primaryDark : Theme.colors.textTertiary} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.backupTitle}>{title}</Text>
+        <Text style={styles.backupDetail}>{detail}</Text>
+      </View>
+      {action ? (
+        <TouchableOpacity onPress={action.onPress} style={styles.backupAction} activeOpacity={0.8}>
+          <Text style={styles.backupActionText}>{action.label}</Text>
+        </TouchableOpacity>
+      ) : null}
+    </View>
   );
 }
 
@@ -569,7 +645,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   retakeButton: {
-    backgroundColor: '#111827',
+    backgroundColor: '#46375A',
     borderRadius: Theme.radius.md,
     paddingVertical: 12,
     paddingHorizontal: 14,
@@ -746,5 +822,62 @@ const styles = StyleSheet.create({
     color: '#DC2626',
     flexShrink: 1,
     textAlign: 'center',
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginTop: 6,
+  },
+  deleteText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Theme.colors.textTertiary,
+  },
+  backupRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    marginBottom: 14,
+    borderRadius: Theme.radius.md,
+    backgroundColor: Theme.colors.cardGlass,
+    borderWidth: 1,
+    borderColor: Theme.colors.cardBorder,
+  },
+  backupIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Theme.colors.primaryLight,
+  },
+  backupIconOff: {
+    backgroundColor: Theme.colors.secondaryLight,
+  },
+  backupTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Theme.colors.textPrimary,
+  },
+  backupDetail: {
+    fontSize: 12,
+    color: Theme.colors.textSecondary,
+    marginTop: 2,
+  },
+  backupAction: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: Theme.colors.primaryLight,
+  },
+  backupActionText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Theme.colors.primaryDark,
   },
 });

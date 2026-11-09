@@ -61,7 +61,6 @@ export const BiometricScroll: React.FC<BiometricScrollProps> = ({ biometrics, cy
   return (
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>Today’s Snapshot</Text>
-      <Text style={styles.sectionHint}>Built from what you log — no wearable needed</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <MetricCard
           icon={<BatteryCharging size={18} color={Theme.colors.strainOptimal} />}

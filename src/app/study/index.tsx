@@ -97,8 +97,7 @@ export default function StudyDashboard() {
     <Screen>
       <ScreenHeader
         title="Study Focus"
-        subtitle="Focus, confidence & motivation — planned around your cycle"
-        badge="Focus Engine"
+        subtitle="Focus timer, study plan and confidence"
       />
 
       {/* ── Forecast ─────────────────────────────────── */}
@@ -378,14 +377,14 @@ export default function StudyDashboard() {
 
 const styles = StyleSheet.create({
   forecastLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1, color: Theme.colors.secondaryDark },
-  forecastTitle: { fontSize: 22, fontWeight: '900', color: Theme.colors.textPrimary, marginTop: 6, letterSpacing: -0.4 },
+  forecastTitle: { fontSize: 22, fontWeight: '800', color: Theme.colors.textPrimary, marginTop: 6, letterSpacing: -0.4 },
   forecastHeadline: { fontSize: 14, fontWeight: '700', color: Theme.colors.secondaryDark, marginTop: 2 },
   reasonPill: { backgroundColor: '#FFFFFF', borderRadius: 10, padding: 8, marginTop: 10, borderWidth: 1, borderColor: Theme.colors.secondaryBorder },
   reasonText: { fontSize: 12, fontWeight: '700', color: Theme.colors.secondaryDark },
   listBlock: { marginTop: 10, gap: 6 },
   listRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 2 },
   listText: { fontSize: 13, color: Theme.colors.textPrimary, flex: 1, lineHeight: 18 },
-  avoidMark: { fontSize: 12, fontWeight: '900', color: Theme.colors.strainHigh, width: 14, textAlign: 'center' },
+  avoidMark: { fontSize: 12, fontWeight: '800', color: Theme.colors.strainHigh, width: 14, textAlign: 'center' },
   evidence: { fontSize: 11, color: Theme.colors.textTertiary, marginTop: 8, lineHeight: 16, paddingHorizontal: 4 },
   tiles: { flexDirection: 'row', gap: 10 },
   taskRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: Theme.colors.cardBorder, marginTop: 6 },
