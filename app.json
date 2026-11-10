@@ -17,6 +17,10 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.vyomvarshney1234.shesync"
     },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vyomvarshney1234.shesync"
+    },
     "web": {
       "output": "single",
       "favicon": "./assets/images/favicon.png"
