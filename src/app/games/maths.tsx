@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { GameResult, LevelPicker, StatStrip, clock } from '@/components/games/GameKit';
 import { Card, uiStyles } from '@/components/common/ui';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { makeMathsQuestion, type MathsQuestion } from '@/lib/games';
 import { useGamesStore } from '@/store/useGamesStore';
 
@@ -127,7 +127,7 @@ export default function MathsGame() {
             <Text style={styles.question} accessibilityLiveRegion="polite">
               {q.text} = ?
             </Text>
-            <Text style={[styles.feedback, { color: feedback?.ok ? '#047857' : Theme.colors.strainHigh }]}>
+            <Text style={[styles.feedback, { color: feedback?.ok ? themed('#047857') : Theme.colors.strainHigh }]}>
               {feedback?.text ?? ' '}
             </Text>
           </Card>
@@ -169,7 +169,7 @@ export default function MathsGame() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   qCard: { alignItems: 'center', paddingVertical: 28 },
   question: { fontSize: 40, fontWeight: '800', color: Theme.colors.textPrimary, fontVariant: ['tabular-nums'] },
   feedback: { fontSize: 14, fontWeight: '800', marginTop: 8, minHeight: 20 },
@@ -186,4 +186,4 @@ const styles = StyleSheet.create({
     ...Theme.shadows.card,
   },
   optionText: { fontSize: 24, fontWeight: '800', color: Theme.colors.textPrimary, fontVariant: ['tabular-nums'] },
-});
+}));

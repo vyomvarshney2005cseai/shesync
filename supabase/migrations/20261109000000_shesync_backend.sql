@@ -122,14 +122,19 @@ create table if not exists public.care_contacts (
   primary key (user_id, id)
 );
 
--- ─── app_documents: fitness / study / games state (JSON) ────
+-- ─── app_documents: one JSON document per feature ───────────
 create table if not exists public.app_documents (
   user_id uuid not null references auth.users (id) on delete cascade,
-  doc text not null check (doc in ('fitness', 'study', 'games')),
+  doc text not null,
   data jsonb not null,
   updated_at timestamptz not null default now(),
   primary key (user_id, doc)
 );
+-- Allowed documents. Re-created each run so new features can be added
+-- (PCOS mode and Confidence Booster were added on 10 Nov 2026).
+alter table public.app_documents drop constraint if exists app_documents_doc_check;
+alter table public.app_documents add constraint app_documents_doc_check
+  check (doc in ('fitness', 'study', 'games', 'pcos', 'confidence'));
 
 -- ─── updated_at triggers ────────────────────────────────────
 do $$

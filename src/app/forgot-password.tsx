@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
@@ -13,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { sendPasswordResetEmail } from '@/lib/supabaseService';
 import {
   ArrowLeft,
@@ -183,9 +182,9 @@ export default function ForgotPasswordScreen() {
                     disabled={loading}
                   >
                     {loading ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />
+                      <ActivityIndicator size="small" color={themed('#FFFFFF')} style={{ marginRight: 8 }} />
                     ) : (
-                      <Send size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+                      <Send size={18} color={themed('#FFFFFF')} style={{ marginRight: 8 }} />
                     )}
                     <Text style={styles.submitButtonText}>
                       {loading ? 'Sending Reset Link...' : 'Send Reset Link'}
@@ -196,7 +195,7 @@ export default function ForgotPasswordScreen() {
                 /* Success State */
                 <View style={styles.successWrapper}>
                   <View style={styles.successPill}>
-                    <CheckCircle2 size={20} color="#059669" style={{ marginRight: 8 }} />
+                    <CheckCircle2 size={20} color={themed('#059669')} style={{ marginRight: 8 }} />
                     <Text style={styles.successPillText}>Reset Link Dispatched</Text>
                   </View>
 
@@ -274,7 +273,7 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFF4F7',
@@ -530,4 +529,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Theme.colors.feminismAccent,
   },
-});
+}));

@@ -1,11 +1,13 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { router, type Href } from 'expo-router';
-import { Dumbbell, GraduationCap, HeartHandshake, MessageCircleHeart, Puzzle, Wind } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Dumbbell, Flower2, GraduationCap, HeartHandshake, MessageCircleHeart, Puzzle, Sparkles, Wind } from 'lucide-react-native';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { useFitnessStore } from '@/store/useFitnessStore';
 import { useStudyStore } from '@/store/useStudyStore';
 import { useGamesStore } from '@/store/useGamesStore';
+import { usePcosStore } from '@/store/usePcosStore';
+import { useConfidenceStore } from '@/store/useConfidenceStore';
 import { startOfWeekKey, todayKey } from '@/lib/dates';
 import { ROUTES } from '@/lib/routes';
 
@@ -25,6 +27,12 @@ export function FeatureSquares() {
   const sessions = useFitnessStore((s) => s.sessions);
   const focusSessions = useStudyStore((s) => s.sessions);
   const records = useGamesStore((s) => s.records);
+  const pcosCheckins = usePcosStore((s) => s.checkins.length);
+  const confidenceToday = useConfidenceStore((s) => {
+    const today = todayKey();
+    const n = (s.glow[today]?.length ?? 0) + (s.challenges[today] ? 1 : 0) + (s.levels[today] ? 1 : 0);
+    return n;
+  });
 
   const stats = useMemo(() => {
     const week = startOfWeekKey();
@@ -42,7 +50,7 @@ export function FeatureSquares() {
       title: 'YourGoGirl',
       sub: 'Ask about periods, mood & focus',
       href: ROUTES.yourGoGirl,
-      bg: '#FCE9F1',
+      bg: themed('#FCE9F1'),
       ink: Theme.colors.primaryDark,
       icon: <MessageCircleHeart size={22} color={Theme.colors.primary} />,
     },
@@ -52,16 +60,36 @@ export function FeatureSquares() {
       sub: 'Workouts for your cycle',
       stat: `${stats.moveMinutes}/150 min this week`,
       href: '/fitness',
-      bg: '#E7F5F0',
-      ink: '#2F7D69',
-      icon: <Dumbbell size={22} color="#3E9E86" />,
+      bg: themed('#E7F5F0'),
+      ink: themed('#2F7D69'),
+      icon: <Dumbbell size={22} color={themed('#3E9E86')} />,
+    },
+    {
+      id: 'pcos',
+      title: 'PCOS Care',
+      sub: 'Signs, food, exercise & doctor checklist',
+      stat: pcosCheckins ? `${pcosCheckins} check-in${pcosCheckins === 1 ? '' : 's'}` : undefined,
+      href: ROUTES.pcos,
+      bg: themed('#FCEEF3'),
+      ink: themed('#A8436F'),
+      icon: <Flower2 size={22} color={themed('#C9578C')} />,
+    },
+    {
+      id: 'confidence',
+      title: 'Confidence Booster',
+      sub: 'Affirmations & glow habits',
+      stat: confidenceToday ? `${confidenceToday} done today` : undefined,
+      href: ROUTES.confidence,
+      bg: themed('#FFF1E8'),
+      ink: themed('#B0603A'),
+      icon: <Sparkles size={22} color={themed('#E07B4F')} />,
     },
     {
       id: 'care',
       title: 'Care Connect',
       sub: 'Doctors & women counsellors',
       href: ROUTES.care,
-      bg: '#EFEAFB',
+      bg: themed('#EFEAFB'),
       ink: Theme.colors.secondaryDark,
       icon: <HeartHandshake size={22} color={Theme.colors.secondary} />,
     },
@@ -71,9 +99,9 @@ export function FeatureSquares() {
       sub: 'Focus timer & study plan',
       stat: `${stats.focusToday} focus min today`,
       href: '/study',
-      bg: '#FDF0E6',
-      ink: '#9A5A2E',
-      icon: <GraduationCap size={22} color="#C77B4A" />,
+      bg: themed('#FDF0E6'),
+      ink: themed('#9A5A2E'),
+      icon: <GraduationCap size={22} color={themed('#C77B4A')} />,
     },
     {
       id: 'games',
@@ -81,18 +109,18 @@ export function FeatureSquares() {
       sub: 'Puzzles to reset your mind',
       stat: `${stats.gamesWeek} played this week`,
       href: '/games',
-      bg: '#E9F2FA',
-      ink: '#3A6E94',
-      icon: <Puzzle size={22} color="#4F8DBA" />,
+      bg: themed('#E9F2FA'),
+      ink: themed('#3A6E94'),
+      icon: <Puzzle size={22} color={themed('#4F8DBA')} />,
     },
     {
       id: 'breathe',
       title: 'Breathe',
       sub: 'One calm minute, any time',
       href: '/games/breathe',
-      bg: '#FFF4E3',
-      ink: '#94672A',
-      icon: <Wind size={22} color="#D19A45" />,
+      bg: themed('#FFF4E3'),
+      ink: themed('#94672A'),
+      icon: <Wind size={22} color={themed('#D19A45')} />,
     },
   ];
 
@@ -102,13 +130,13 @@ export function FeatureSquares() {
         <Pressable
           key={sq.id}
           onPress={() => router.push(sq.href)}
-          style={({ pressed }) => [styles.square, { backgroundColor: sq.bg }, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.square, { backgroundColor: themed(sq.bg) }, pressed && styles.pressed]}
           accessibilityRole="button"
           accessibilityLabel={`${sq.title}. ${sq.sub}`}
         >
           <View style={styles.iconWrap}>{sq.icon}</View>
           <View style={styles.textBlock}>
-            <Text style={[styles.title, { color: sq.ink }]} numberOfLines={1}>
+            <Text style={[styles.title, { color: themed(sq.ink) }]} numberOfLines={2}>
               {sq.title}
             </Text>
             <Text style={styles.sub} numberOfLines={2}>
@@ -116,7 +144,7 @@ export function FeatureSquares() {
             </Text>
           </View>
           {sq.stat ? (
-            <Text style={[styles.stat, { color: sq.ink }]} numberOfLines={1}>
+            <Text style={[styles.stat, { color: themed(sq.ink) }]} numberOfLines={1}>
               {sq.stat}
             </Text>
           ) : null}
@@ -126,7 +154,7 @@ export function FeatureSquares() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -157,4 +185,4 @@ const styles = StyleSheet.create({
   sub: { fontSize: 11.5, lineHeight: 15, color: Theme.colors.textSecondary },
   stat: { fontSize: 10.5, fontWeight: '700', opacity: 0.85 },
   pressed: { opacity: 0.88, transform: [{ scale: 0.98 }] },
-});
+}));

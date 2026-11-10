@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   Image,
   ScrollView,
@@ -12,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect, router } from 'expo-router';
 import { useAppStore } from '@/store/useAppStore';
 import { useStoresHydrated } from '@/store/hydration';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { ArrowRight, UserCheck, Quote as QuoteIcon } from 'lucide-react-native';
 
 const SLIDES = [
@@ -205,7 +204,7 @@ export default function WelcomeScreen() {
                 onPress={() => router.push('/signup')}
               >
                 <Text style={styles.signUpText}>Sign Up</Text>
-                <ArrowRight size={18} color="#FFFFFF" />
+                <ArrowRight size={18} color={themed('#FFFFFF')} />
               </TouchableOpacity>
 
               {/* Secondary: Log In Button */}
@@ -225,7 +224,7 @@ export default function WelcomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFEBF2',
@@ -442,4 +441,4 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     textAlign: 'center',
   },
-});
+}));

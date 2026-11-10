@@ -1,3 +1,26 @@
+# SheSync — PCOS Care, Confidence Booster, export/import, night mode (10 Nov 2026)
+
+**PCOS Care** (`/pcos`, new Home box)
+- Signs tab: the 3 things doctors check (2023 International PCOS Guideline / Rotterdam criteria) explained simply, each marked from her own data — irregular cycles from saved periods, androgen signs from a monthly check-in, ovaries from her scan/AMH answer. Clear "worth talking to a gynaecologist" card with a link to Care Connect. Never diagnoses; notes that teenagers are assessed differently.
+- Monthly check-in: facial/body hair, acne, scalp thinning, dark skin patches, optional waist and weight; history with delete.
+- Food (Indian thali principles + sample day), Move (150 min/week target using her Fitness logs + weekly plan), Doctor (checklist of what to bring, common tests, questions to ask).
+
+**Confidence Booster** (`/confidence`, new Home box)
+- Daily affirmation (save favourites), confidence check-in 1–5 with a 7-day chart, one daily "brave step", 7 glow habits (feel good, not look perfect), proud-moments jar, streak. On a low day it shows one of her own proud moments and a link to YourGoGirl.
+
+**Export & import** (Profile → Export or import data)
+- Export: full backup (JSON), daily logs (CSV), periods (CSV), doctor PDF. CSV cells are protected against spreadsheet formulas.
+- Import: a SheSync backup, Flo or Clue exports, or any JSON/CSV with period dates. Shows what was found before saving; only adds — never replaces or duplicates (tested by importing the same file twice). Predictions ignored; future dates ignored; ZIP files get a clear "unzip first" message.
+
+**Night mode** (Profile → Settings: Off / On / Auto 9 pm–6 am)
+- Calm deep-plum palette on every screen, including charts, chips and the background. Setting stays on the phone after sign-out.
+
+**Backend**: PCOS and Confidence data are included in cloud backup. Re-run `supabase/migrations/20261109000000_shesync_backend.sql` in the Supabase SQL editor once (it now allows the two new documents).
+
+**Tested**: tsc + ESLint clean; 12 export/import tests (Clue, Flo, CSV, dates, merging, backup round-trip); 10 sync tests; database test; 447 YourGoGirl checks; referral checks; web + Android/iOS builds; web click-through in light and night mode (PCOS check-in, checklist, confidence actions, backup download, Clue import) with no errors.
+
+---
+
 # SheSync — Clean UI, cloud backend, optimisation (9 Nov 2026)
 
 **Cleaner UI** — removed filler text, decorative icons and jargon only; every feature stays.

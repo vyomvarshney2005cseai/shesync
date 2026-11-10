@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   TextInput,
@@ -12,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Check, Flame, MapPin, Shield, HeartPulse, Sparkles, ArrowRight } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed, withAlpha } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { nextSyncHref, syncStepBadge } from '@/lib/syncDetails';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
@@ -76,7 +75,7 @@ export default function LogPainScreen() {
     if (level <= 3) return { label: 'Mild Discomfort', color: Theme.colors.strainTeal, desc: 'Noticeable but easily manageable' };
     if (level <= 6) return { label: 'Moderate Pain', color: Theme.colors.strainAmber, desc: 'Distracting, slows down daily routine' };
     if (level <= 8) return { label: 'Severe Strain', color: Theme.colors.strainHigh, desc: 'Intense discomfort, limits mobility' };
-    return { label: 'Debilitating', color: '#991B1B', desc: 'Requires immediate rest and medical care' };
+    return { label: 'Debilitating', color: themed('#991B1B'), desc: 'Requires immediate rest and medical care' };
   };
 
   const severity = getSeverityInfo(painLevel);
@@ -147,11 +146,11 @@ export default function LogPainScreen() {
         <View style={styles.section}>
           <View style={styles.severityHeaderRow}>
             <View style={styles.sectionRow}>
-              <Flame size={20} color={severity.color} />
+              <Flame size={20} color={themed(severity.color)} />
               <Text style={styles.sectionHeader}>How strong?</Text>
             </View>
-            <View style={[styles.severityBadge, { backgroundColor: `${severity.color}20` }]}>
-              <Text style={[styles.severityBadgeText, { color: severity.color }]}>
+            <View style={[styles.severityBadge, { backgroundColor: withAlpha(themed(severity.color), 0.13) }]}>
+              <Text style={[styles.severityBadgeText, { color: themed(severity.color) }]}>
                 {painLevel}/10 • {severity.label}
               </Text>
             </View>
@@ -169,8 +168,8 @@ export default function LogPainScreen() {
                   style={[
                     styles.scaleButton,
                     isSelected && {
-                      backgroundColor: info.color,
-                      borderColor: info.color,
+                      backgroundColor: themed(info.color),
+                      borderColor: themed(info.color),
                       transform: [{ scale: 1.1 }],
                     },
                   ]}
@@ -282,7 +281,7 @@ export default function LogPainScreen() {
 
         {/* Submit CTA */}
         <TouchableOpacity
-          style={[styles.saveButton, { backgroundColor: severity.color }]}
+          style={[styles.saveButton, { backgroundColor: themed(severity.color) }]}
           activeOpacity={0.85}
           onPress={handleSave}
           disabled={isSaved}
@@ -290,11 +289,11 @@ export default function LogPainScreen() {
           {isOnboarding ? (
             <>
               <Text style={styles.saveButtonText}>Save & continue</Text>
-              <ArrowRight size={20} color="#FFFFFF" style={{ marginLeft: 8 }} />
+              <ArrowRight size={20} color={themed('#FFFFFF')} style={{ marginLeft: 8 }} />
             </>
           ) : (
             <>
-              <Check size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Check size={20} color={themed('#FFFFFF')} style={{ marginRight: 8 }} />
               <Text style={styles.saveButtonText}>
                 {isSaved ? 'Logged to History' : 'Save Pain Entry'}
               </Text>
@@ -307,7 +306,7 @@ export default function LogPainScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   safeArea: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -563,4 +562,4 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     textAlign: 'center',
   },
-});
+}));

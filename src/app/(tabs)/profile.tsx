@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   Switch,
@@ -12,8 +11,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
+import { useSettingsStore } from '@/store/useSettingsStore';
+import { ROUTES } from '@/lib/routes';
 import { ASSESSMENT_QUESTIONS } from '@/constants/assessment';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { deleteAccountAndData, flushCloudSync, signOutAndClear, useSyncStatus } from '@/lib/sync';
@@ -25,6 +26,7 @@ import {
   Cloud,
   CloudOff,
   Trash2,
+  Database,
   Sliders,
   CheckCircle2,
 } from 'lucide-react-native';
@@ -42,6 +44,8 @@ export default function ProfileScreen() {
   const updateFineTuningSettings = useAppStore((s) => s.updateFineTuningSettings);
   const isOfflineAccount = useAppStore((s) => s.isOfflineAccount);
   const sync = useSyncStatus();
+  const nightMode = useSettingsStore((s) => s.nightMode);
+  const setNightMode = useSettingsStore((s) => s.setNightMode);
   const [busy, setBusy] = useState<'signout' | 'delete' | null>(null);
   const generateClinicalPDF = useAppStore((s) => s.generateClinicalPDF);
 
@@ -185,7 +189,7 @@ export default function ProfileScreen() {
             onPress={handleRetakeAssessment}
             activeOpacity={0.8}
           >
-            <RefreshCw size={15} color="#FFFFFF" style={{ marginRight: 6 }} />
+            <RefreshCw size={15} color={themed('#FFFFFF')} style={{ marginRight: 6 }} />
             <Text style={styles.retakeButtonText}>
               {answeredCount > 0 ? 'Review or retake' : 'Start'}
             </Text>
@@ -197,6 +201,33 @@ export default function ProfileScreen() {
           <View style={styles.sectionHeaderRow}>
             <Sliders size={16} color={Theme.colors.textPrimary} />
             <Text style={styles.sectionTitle}>Settings</Text>
+          </View>
+
+          {/* Night mode */}
+          <View style={styles.settingItem}>
+            <View style={styles.settingTopRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingLabel}>Night mode</Text>
+                <Text style={styles.settingHelp}>A calm dark screen. Auto turns it on from 9 pm to 6 am.</Text>
+              </View>
+            </View>
+            <View style={styles.chipsRow}>
+              {(['off', 'on', 'auto'] as const).map((option) => {
+                const isActive = nightMode === option;
+                return (
+                  <TouchableOpacity
+                    key={option}
+                    style={[styles.settingChip, isActive && styles.settingChipActive]}
+                    onPress={() => setNightMode(option)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.settingChipText, isActive && styles.settingChipTextActive]}>
+                      {option === 'off' ? 'Off' : option === 'on' ? 'On' : 'Auto'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
           {/* Setting 1: Strain Sensitivity */}
@@ -265,8 +296,8 @@ export default function ProfileScreen() {
             <Switch
               value={fineTuningSettings.autoCortisolOverride}
               onValueChange={(val) => updateFineTuningSettings({ autoCortisolOverride: val })}
-              trackColor={{ false: '#E5E7EB', true: '#FF88AD' }}
-              thumbColor={fineTuningSettings.autoCortisolOverride ? Theme.colors.feminismAccent : '#F3F4F6'}
+              trackColor={{ false: themed('#E5E7EB'), true: themed('#FF88AD') }}
+              thumbColor={fineTuningSettings.autoCortisolOverride ? Theme.colors.feminismAccent : themed('#F3F4F6')}
             />
           </View>
 
@@ -279,8 +310,8 @@ export default function ProfileScreen() {
             <Switch
               value={fineTuningSettings.pmddEarlyShield}
               onValueChange={(val) => updateFineTuningSettings({ pmddEarlyShield: val })}
-              trackColor={{ false: '#E5E7EB', true: '#FF88AD' }}
-              thumbColor={fineTuningSettings.pmddEarlyShield ? Theme.colors.feminismAccent : '#F3F4F6'}
+              trackColor={{ false: themed('#E5E7EB'), true: themed('#FF88AD') }}
+              thumbColor={fineTuningSettings.pmddEarlyShield ? Theme.colors.feminismAccent : themed('#F3F4F6')}
             />
           </View>
 
@@ -335,6 +366,18 @@ export default function ProfileScreen() {
           <ChevronRight size={18} color={Theme.colors.textTertiary} />
         </TouchableOpacity>
 
+        {/* Export / import */}
+        <TouchableOpacity style={styles.exportCard} onPress={() => router.push(ROUTES.data)} activeOpacity={0.8}>
+          <View style={styles.exportIconBox}>
+            <Database size={20} color={Theme.colors.primaryDark} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.exportTitle}>Export or import data</Text>
+            <Text style={styles.exportSubtitle}>Backup, CSV, or bring data from Flo / Clue</Text>
+          </View>
+          <ChevronRight size={18} color={Theme.colors.textTertiary} />
+        </TouchableOpacity>
+
         {/* Backup status */}
         <BackupRow
           state={sync.state}
@@ -351,7 +394,7 @@ export default function ProfileScreen() {
           disabled={!!busy}
           activeOpacity={0.8}
         >
-          <LogOut size={16} color="#DC2626" style={{ marginRight: 8 }} />
+          <LogOut size={16} color={themed('#DC2626')} style={{ marginRight: 8 }} />
           <Text style={styles.logoutText}>{busy === 'signout' ? 'Signing out…' : 'Sign out'}</Text>
         </TouchableOpacity>
 
@@ -429,7 +472,7 @@ function BackupRow(props: {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   safeArea: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -880,4 +923,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Theme.colors.primaryDark,
   },
-});
+}));

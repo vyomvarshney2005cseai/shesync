@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   TextInput,
@@ -21,7 +20,7 @@ import {
   Volume2,
   Brain,
 } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
 
@@ -194,7 +193,7 @@ export default function VoiceJournalScreen() {
                 styles.pulseHalo,
                 isRecording && {
                   transform: [{ scale: pulseAnim }],
-                  backgroundColor: 'rgba(201, 87, 140, 0.2)',
+                  backgroundColor: themed('rgba(201, 87, 140, 0.2)'),
                 },
               ]}
             >
@@ -208,9 +207,9 @@ export default function VoiceJournalScreen() {
                 activeOpacity={0.8}
               >
                 {isRecording ? (
-                  <Square size={28} color="#FFFFFF" />
+                  <Square size={28} color={themed('#FFFFFF')} />
                 ) : (
-                  <Mic size={32} color="#FFFFFF" />
+                  <Mic size={32} color={themed('#FFFFFF')} />
                 )}
               </TouchableOpacity>
             </Animated.View>
@@ -285,7 +284,7 @@ export default function VoiceJournalScreen() {
           onPress={handleSave}
           disabled={isSaved}
         >
-          <Check size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+          <Check size={20} color={themed('#FFFFFF')} style={{ marginRight: 8 }} />
           <Text style={styles.saveButtonText}>
             {isSaved ? 'Entry Saved' : 'Save Journal Entry'}
           </Text>
@@ -296,7 +295,7 @@ export default function VoiceJournalScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   safeArea: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -566,4 +565,4 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     textAlign: 'center',
   },
-});
+}));

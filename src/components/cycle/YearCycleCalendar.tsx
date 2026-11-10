@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
@@ -16,7 +15,7 @@ import {
   Info,
 } from 'lucide-react-native';
 import { addDaysToKey, daysAgoKey, shortDateLabel } from '@/lib/dates';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
 import type { PastCycleRecord } from '@/types';
 
 const MONTH_NAMES = [
@@ -770,7 +769,7 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   calendarContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -1299,4 +1298,4 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: Theme.colors.textSecondary,
   },
-});
+}));

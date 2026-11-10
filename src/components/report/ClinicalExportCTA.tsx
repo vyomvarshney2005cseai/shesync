@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -7,7 +7,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { FileDown, Check, Loader } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
 
 interface ClinicalExportCTAProps {
@@ -84,7 +84,7 @@ export const ClinicalExportCTA: React.FC<ClinicalExportCTAProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     marginTop: 24,
     paddingBottom: 40,
@@ -126,4 +126,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     fontStyle: 'italic',
   },
-});
+}));

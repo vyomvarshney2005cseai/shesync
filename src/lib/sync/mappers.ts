@@ -12,7 +12,8 @@ import type {
   SymptomLog,
 } from '@/types';
 
-export type DocName = 'fitness' | 'study' | 'games';
+export type DocName = 'fitness' | 'study' | 'games' | 'pcos' | 'confidence';
+export const DOC_NAMES: DocName[] = ['fitness', 'study', 'games', 'pcos', 'confidence'];
 
 export interface LocalProfile {
   userName: string;
@@ -221,6 +222,14 @@ export function isEmptyDoc(doc: DocName, data: Record<string, unknown> | undefin
   const len = (k: string) => (Array.isArray(data[k]) ? (data[k] as unknown[]).length : 0);
   if (doc === 'fitness') return !data.profile && len('sessions') === 0 && len('weights') === 0;
   if (doc === 'study') return len('sessions') === 0 && len('tasks') === 0 && len('wins') === 0;
+  if (doc === 'pcos') {
+    const ticks = Object.keys((data.checklist as object) ?? {}).length;
+    return len('checkins') === 0 && ticks === 0 && (data.diagnosed ?? 'unknown') === 'unknown' && (data.scan ?? 'unknown') === 'unknown';
+  }
+  if (doc === 'confidence') {
+    const days = (k: string) => Object.keys((data[k] as object) ?? {}).length;
+    return len('proud') === 0 && len('saved') === 0 && days('levels') === 0 && days('glow') === 0 && days('challenges') === 0;
+  }
   return len('records') === 0;
 }
 

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import {
   ExternalLink,
@@ -18,7 +18,7 @@ import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { AuthGate } from '@/components/common/AuthGate';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
 import { Chip } from '@/components/common/ui';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import {
   COUNSELLOR_SERVICES,
   GYNAE_SERVICES,
@@ -93,7 +93,7 @@ export default function CareConnectScreen() {
               pressed && { opacity: 0.88 },
             ]}
           >
-            <Text style={[styles.statusLabel, { color: result.referable ? '#9A5A2E' : '#2F7D69' }]}>
+            <Text style={[styles.statusLabel, { color: result.referable ? themed('#9A5A2E') : themed('#2F7D69') }]}>
               YOUR SYNC RESULT · {result.referable ? 'REFERABLE' : 'NOT REFERABLE'}
             </Text>
             <Text style={styles.statusTitle}>{REFERRAL_LEVEL_TEXT[result.level].title}</Text>
@@ -120,7 +120,7 @@ export default function CareConnectScreen() {
           ))}
           <PrimaryButton
             title="Download my SheSync doctor report"
-            icon={<FileText size={16} color="#FFFFFF" />}
+            icon={<FileText size={16} color={themed('#FFFFFF')} />}
             onPress={() => generateClinicalPDF()}
             loading={isGenerating}
             variant="dark"
@@ -147,7 +147,7 @@ export default function CareConnectScreen() {
         </Text>
 
         {/* ── Safety ── */}
-        <SectionTitle icon={<ShieldAlert size={18} color="#A33B55" />} title="Women’s safety & emergencies" />
+        <SectionTitle icon={<ShieldAlert size={18} color={themed('#A33B55')} />} title="Women’s safety & emergencies" />
         {WOMEN_SAFETY_SERVICES.map((s) => (
           <ServiceCard key={s.id} service={s} tone="neutral" />
         ))}
@@ -249,7 +249,7 @@ function SectionTitle({ icon, title, sub }: { icon: React.ReactNode; title: stri
 }
 
 function ServiceCard({ service, tone }: { service: CareService; tone: 'rose' | 'lilac' | 'neutral' }) {
-  const accent = tone === 'rose' ? Theme.colors.primary : tone === 'lilac' ? Theme.colors.secondaryDark : '#A33B55';
+  const accent = tone === 'rose' ? Theme.colors.primary : tone === 'lilac' ? Theme.colors.secondaryDark : themed('#A33B55');
   return (
     <View style={styles.card}>
       <View style={styles.serviceHead}>
@@ -266,10 +266,10 @@ function ServiceCard({ service, tone }: { service: CareService; tone: 'rose' | '
         {service.call ? (
           <Pressable
             onPress={() => callNumber(service.call!, service.name)}
-            style={({ pressed }) => [styles.action, { backgroundColor: accent }, pressed && { opacity: 0.85 }]}
+            style={({ pressed }) => [styles.action, { backgroundColor: themed(accent) }, pressed && { opacity: 0.85 }]}
             accessibilityRole="button"
           >
-            <Phone size={15} color="#FFFFFF" />
+            <Phone size={15} color={themed('#FFFFFF')} />
             <Text style={styles.actionText}>{service.callLabel ?? `Call ${service.call}`}</Text>
           </Pressable>
         ) : null}
@@ -279,21 +279,21 @@ function ServiceCard({ service, tone }: { service: CareService; tone: 'rose' | '
             style={({ pressed }) => [styles.actionOutline, pressed && { opacity: 0.85 }]}
             accessibilityRole="button"
           >
-            <MessageCircle size={15} color={accent} />
-            <Text style={[styles.actionOutlineText, { color: accent }]}>WhatsApp</Text>
+            <MessageCircle size={15} color={themed(accent)} />
+            <Text style={[styles.actionOutlineText, { color: themed(accent) }]}>WhatsApp</Text>
           </Pressable>
         ) : null}
         {service.url ? (
           <Pressable
             onPress={() => openUrl(service.url!)}
             style={({ pressed }) => [
-              service.call ? styles.actionOutline : [styles.action, { backgroundColor: accent }],
+              service.call ? styles.actionOutline : [styles.action, { backgroundColor: themed(accent) }],
               pressed && { opacity: 0.85 },
             ]}
             accessibilityRole="link"
           >
-            <ExternalLink size={15} color={service.call ? accent : '#FFFFFF'} />
-            <Text style={service.call ? [styles.actionOutlineText, { color: accent }] : styles.actionText}>
+            <ExternalLink size={15} color={service.call ? accent : themed('#FFFFFF')} />
+            <Text style={service.call ? [styles.actionOutlineText, { color: themed(accent) }] : styles.actionText}>
               {service.urlLabel ?? 'Open'}
             </Text>
           </Pressable>
@@ -303,7 +303,7 @@ function ServiceCard({ service, tone }: { service: CareService; tone: 'rose' | '
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   status: { borderRadius: 22, padding: 16, borderWidth: 1, marginBottom: 4 },
   statusRef: { backgroundColor: '#FFF3E6', borderColor: '#F4D6B5' },
   statusOk: { backgroundColor: '#E9F6F0', borderColor: '#BFE3D4' },
@@ -380,4 +380,4 @@ const styles = StyleSheet.create({
   formError: { color: '#A33B55', fontSize: 12.5, marginTop: 8, fontWeight: '600' },
   formRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
   footnote: { fontSize: 11, color: Theme.colors.textTertiary, textAlign: 'center', marginTop: 18, lineHeight: 16 },
-});
+}));

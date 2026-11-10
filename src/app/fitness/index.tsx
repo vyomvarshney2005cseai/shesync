@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import {
   Flame,
@@ -21,7 +21,7 @@ import { VideoShelf } from '@/components/common/VideoShelf';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
 import { WeightChart } from '@/components/fitness/WeightChart';
 import { WorkoutListItem } from '@/components/fitness/WorkoutListItem';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import {
   CATEGORY_LABELS,
   FITNESS_LIBRARY,
@@ -124,7 +124,7 @@ export default function FitnessDashboard() {
         </Text>
         {plan.isOverride ? (
           <View style={styles.overridePill}>
-            <ShieldCheck size={13} color="#FDE68A" />
+            <ShieldCheck size={13} color={themed('#FDE68A')} />
             <Text style={styles.overrideText}>
               Swapped from “{plan.planned.title}” — strain {strainScore}/100
             </Text>
@@ -144,9 +144,9 @@ export default function FitnessDashboard() {
                 accessibilityState={{ selected: active }}
               >
                 {p === 'gym' ? (
-                  <Dumbbell size={13} color={active ? Theme.colors.obsidian : '#FFFFFF'} />
+                  <Dumbbell size={13} color={active ? Theme.colors.obsidian : themed('#FFFFFF')} />
                 ) : (
-                  <HomeIcon size={13} color={active ? Theme.colors.obsidian : '#FFFFFF'} />
+                  <HomeIcon size={13} color={active ? Theme.colors.obsidian : themed('#FFFFFF')} />
                 )}
                 <Text style={[styles.placeText, active && styles.placeTextActive]}>{p === 'gym' ? 'Gym' : 'Home'}</Text>
               </Pressable>
@@ -155,7 +155,7 @@ export default function FitnessDashboard() {
         </View>
         <PrimaryButton
           title={`Start ${plan.workout.minutes}-min session`}
-          icon={<Play size={16} color="#FFFFFF" fill="#FFFFFF" />}
+          icon={<Play size={16} color={themed('#FFFFFF')} fill={themed('#FFFFFF')} />}
           onPress={() => router.push(`/fitness/workout/${plan.workout.id}`)}
           fullWidth
           style={{ marginTop: 14 }}
@@ -176,8 +176,8 @@ export default function FitnessDashboard() {
           label="Strength days"
           value={`${week.strengthDays}/2`}
           hint={week.strengthDays >= 2 ? 'Goal met' : 'Lift or bodyweight'}
-          color="#0F766E"
-          icon={<Dumbbell size={16} color="#0F766E" />}
+          color={themed('#0F766E')}
+          icon={<Dumbbell size={16} color={themed('#0F766E')} />}
         />
         <StatTile
           label="Burned"
@@ -231,10 +231,10 @@ export default function FitnessDashboard() {
           <View style={styles.bmiRow}>
             <View>
               <Text style={uiStyles.label}>BMI</Text>
-              <Text style={[styles.bmiValue, { color: band.color }]}>{currentBmi.toFixed(1)}</Text>
+              <Text style={[styles.bmiValue, { color: themed(band.color) }]}>{currentBmi.toFixed(1)}</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.bandLabel, { color: band.color }]}>{band.label}</Text>
+              <Text style={[styles.bandLabel, { color: themed(band.color) }]}>{band.label}</Text>
               <Text style={uiStyles.muted}>{band.note}</Text>
             </View>
           </View>
@@ -242,22 +242,22 @@ export default function FitnessDashboard() {
           <Text style={uiStyles.label}>{GOAL_LABELS[profile.goal]}</Text>
           <View style={[styles.tiles, { marginTop: 8 }]}>
             <StatTile label="Eat about" value={`${ep.target}`} hint="kcal / day" color={Theme.colors.primary} />
-            <StatTile label="Protein" value={`${ep.proteinGrams[0]}–${ep.proteinGrams[1]}g`} hint="per day" color="#0F766E" />
-            <StatTile label="Water" value={`${ep.waterLitres} L`} hint="per day" color="#0284C7" />
+            <StatTile label="Protein" value={`${ep.proteinGrams[0]}–${ep.proteinGrams[1]}g`} hint="per day" color={themed('#0F766E')} />
+            <StatTile label="Water" value={`${ep.waterLitres} L`} hint="per day" color={themed('#0284C7')} />
           </View>
           <Text style={[uiStyles.muted, { marginTop: 10 }]}>
             Maintenance ≈ {ep.maintenance} kcal · BMR ≈ {ep.bmr} kcal. {ep.message}
           </Text>
           {ep.lossBlocked ? (
-            <View style={[styles.notice, { backgroundColor: '#E0F2FE', borderColor: '#7DD3FC' }]}>
-              <Info size={14} color="#0369A1" />
-              <Text style={[styles.noticeText, { color: '#075985' }]}>Weight-loss target paused for your safety.</Text>
+            <View style={[styles.notice, { backgroundColor: themed('#E0F2FE'), borderColor: themed('#7DD3FC') }]}>
+              <Info size={14} color={themed('#0369A1')} />
+              <Text style={[styles.noticeText, { color: themed('#075985') }]}>Weight-loss target paused for your safety.</Text>
             </View>
           ) : null}
           {ep.floorApplied ? (
-            <View style={[styles.notice, { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' }]}>
-              <Info size={14} color="#B45309" />
-              <Text style={[styles.noticeText, { color: '#92400E' }]}>
+            <View style={[styles.notice, { backgroundColor: themed('#FFFBEB'), borderColor: themed('#FDE68A') }]}>
+              <Info size={14} color={themed('#B45309')} />
+              <Text style={[styles.noticeText, { color: themed('#92400E') }]}>
                 Target raised to your safe minimum. Add activity rather than eating less.
               </Text>
             </View>
@@ -273,7 +273,7 @@ export default function FitnessDashboard() {
                 </Text>
               </View>
               <View style={{ marginTop: 6 }}>
-                <ProgressBar value={goalProgress.value} color="#10B981" track="rgba(16,185,129,0.15)" />
+                <ProgressBar value={goalProgress.value} color={themed('#10B981')} track={themed('rgba(16,185,129,0.15)')} />
               </View>
               {ep.weeksToGoal ? (
                 <Text style={[uiStyles.muted, { marginTop: 6 }]}>
@@ -320,7 +320,7 @@ export default function FitnessDashboard() {
           </Text>
         ) : null}
         {weightTrend?.fast ? (
-          <View style={[styles.notice, { backgroundColor: '#FFF1F2', borderColor: '#FECDD3' }]}>
+          <View style={[styles.notice, { backgroundColor: themed('#FFF1F2'), borderColor: themed('#FECDD3') }]}>
             <Info size={14} color={Theme.colors.strainHigh} />
             <Text style={[styles.noticeText, { color: Theme.colors.primaryDark }]}>
               You are losing more than 1% of your weight a week. Please eat a little more — fast loss can disrupt periods.
@@ -337,29 +337,29 @@ export default function FitnessDashboard() {
       <View style={styles.habitRow}>
         <Card style={styles.habitCard}>
           <View style={uiStyles.row}>
-            <Droplet size={16} color="#0284C7" />
+            <Droplet size={16} color={themed('#0284C7')} />
             <Text style={styles.habitTitle}>Water</Text>
           </View>
           <Text style={styles.habitValue}>
             {todayHabits.water}
             <Text style={styles.habitGoal}> / {waterGoal} glasses</Text>
           </Text>
-          <ProgressBar value={todayHabits.water / waterGoal} color="#0284C7" track="rgba(2,132,199,0.12)" />
+          <ProgressBar value={todayHabits.water / waterGoal} color={themed('#0284C7')} track={themed('rgba(2,132,199,0.12)')} />
           <View style={[uiStyles.row, { gap: 8, marginTop: 10 }]}>
             <Chip label="− 1" onPress={() => addWater(-1)} small accessibilityLabel="Remove a glass of water" />
-            <Chip label="+ 1 glass" onPress={() => addWater(1)} selected color="#0284C7" small accessibilityLabel="Add a glass of water" />
+            <Chip label="+ 1 glass" onPress={() => addWater(1)} selected color={themed('#0284C7')} small accessibilityLabel="Add a glass of water" />
           </View>
         </Card>
         <Card style={styles.habitCard}>
           <View style={uiStyles.row}>
-            <Footprints size={16} color="#7C3AED" />
+            <Footprints size={16} color={themed('#7C3AED')} />
             <Text style={styles.habitTitle}>Steps</Text>
           </View>
           <Text style={styles.habitValue}>
             {todayHabits.steps.toLocaleString('en-IN')}
             <Text style={styles.habitGoal}> / 7,500</Text>
           </Text>
-          <ProgressBar value={todayHabits.steps / 7500} color="#7C3AED" track="rgba(124,58,237,0.12)" />
+          <ProgressBar value={todayHabits.steps / 7500} color={themed('#7C3AED')} track={themed('rgba(124,58,237,0.12)')} />
           <View style={{ marginTop: 10, alignItems: 'flex-start' }}>
             <Stepper
               label="Steps"
@@ -418,7 +418,7 @@ export default function FitnessDashboard() {
       <VideoShelf videos={FITNESS_VIDEOS} categories={FITNESS_VIDEO_CATEGORIES} />
 
       <Card tone="amber" style={{ marginTop: 18 }}>
-        <Text style={[uiStyles.body, { color: '#92400E' }]}>
+        <Text style={[uiStyles.body, { color: themed('#92400E') }]}>
           Stop and rest if you feel dizzy, faint, short of breath or have chest pain. If you are pregnant, injured,
           have very heavy bleeding or a health condition, check with a doctor before starting a new routine.
         </Text>
@@ -427,7 +427,7 @@ export default function FitnessDashboard() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   todayCard: { marginTop: 4 },
   todayLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1, color: '#FDA4AF' },
   todayTitle: { fontSize: 22, fontWeight: '800', color: '#FFFFFF', marginTop: 6, letterSpacing: -0.4 },
@@ -490,4 +490,4 @@ const styles = StyleSheet.create({
   recentBorder: { borderTopWidth: 1, borderTopColor: Theme.colors.cardBorder },
   recentTitle: { fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary },
   feel: { fontSize: 12, fontWeight: '700', color: Theme.colors.textSecondary },
-});
+}));

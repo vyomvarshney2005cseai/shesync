@@ -4,7 +4,7 @@ import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { GameResult, LevelPicker, StatStrip, clock, nowMs, useElapsed } from '@/components/games/GameKit';
 import { Chip, uiStyles } from '@/components/common/ui';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
 import { createSudoku, isSudokuSolved, sudokuConflicts, SUDOKU_SPECS, type SudokuPuzzle } from '@/lib/games';
 import { useGamesStore } from '@/store/useGamesStore';
 
@@ -162,7 +162,7 @@ export default function MiniSudoku() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   board: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -202,4 +202,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   padText: { fontSize: 20, fontWeight: '800', color: Theme.colors.textPrimary },
-});
+}));

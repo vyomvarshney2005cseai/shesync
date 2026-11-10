@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { ArrowRightLeft, TrendingDown } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
 import type { WorkoutHistory } from '@/types';
 
 interface AdaptationHistoryProps {
@@ -50,7 +50,7 @@ export const AdaptationHistory: React.FC<AdaptationHistoryProps> = ({ history })
   );
 };
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     paddingHorizontal: 20,
     marginTop: 20,
@@ -142,4 +142,4 @@ const styles = StyleSheet.create({
     color: Theme.colors.textTertiary,
     fontStyle: 'italic',
   },
-});
+}));

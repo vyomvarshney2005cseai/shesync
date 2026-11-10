@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Pressable, Text, StyleSheet, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,7 +9,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { AlertTriangle } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 
 interface SOSFabProps {
   onPress: () => void;
@@ -54,7 +54,7 @@ export const SOSFab: React.FC<SOSFabProps> = ({ onPress }) => {
           onPress={onPress}
           style={({ pressed }) => [styles.fab, pressed && styles.pressed]}
         >
-          <AlertTriangle size={24} color="#FFFFFF" />
+          <AlertTriangle size={24} color={themed('#FFFFFF')} />
           <Text style={styles.fabText}>SOS</Text>
         </Pressable>
       </Animated.View>
@@ -62,7 +62,7 @@ export const SOSFab: React.FC<SOSFabProps> = ({ onPress }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   wrapper: {
     position: 'absolute',
     bottom: 24,
@@ -98,4 +98,4 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     transform: [{ scale: 0.95 }],
   },
-});
+}));

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { Card, Chip, SectionHeader, uiStyles } from '@/components/common/ui';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
 import { useFitnessStore } from '@/store/useFitnessStore';
 import {
   ACTIVITY_FACTORS,
@@ -159,11 +159,11 @@ function Field({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   row: { flexDirection: 'row', gap: 10 },
   fieldLabel: { fontSize: 11, fontWeight: '700', color: Theme.colors.textSecondary, marginBottom: 6 },
   optionCard: { paddingVertical: 12 },
   optionTitle: { fontSize: 14, fontWeight: '800', color: Theme.colors.textPrimary },
   optionHint: { fontSize: 12, fontWeight: '500', color: Theme.colors.textSecondary, marginTop: 2, marginLeft: 18 },
   error: { color: Theme.colors.primaryDark, fontWeight: '700', marginTop: 16, fontSize: 13 },
-});
+}));

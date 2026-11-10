@@ -1,7 +1,8 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
+import { ScrollView, View, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
+import { createStyles } from '@/constants/theme';
 
 interface ScreenProps {
   children: React.ReactNode;
@@ -35,9 +36,9 @@ export function Screen({ children, overlay, contentStyle, scroll = true }: Scree
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   safe: { flex: 1, backgroundColor: 'transparent' },
   scroll: { flex: 1, width: '100%' },
   scrollContent: { flexGrow: 1, paddingBottom: 48 },
   column: { width: '100%', maxWidth: 520, alignSelf: 'center', paddingHorizontal: 16 },
-});
+}));

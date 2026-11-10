@@ -1,8 +1,8 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
 import { YourGoGirlChatView } from '@/components/yourgogirl/YourGoGirlChatView';
+import { createStyles } from '@/constants/theme';
 
 export default function YourGoGirlModalScreen() {
   return (
@@ -14,9 +14,9 @@ export default function YourGoGirlModalScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   safeArea: {
     flex: 1,
     backgroundColor: 'transparent',
   },
-});
+}));

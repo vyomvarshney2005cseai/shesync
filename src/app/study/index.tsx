@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { Check, Plus, Trash2, Sparkles, Phone, Wind, Lightbulb } from 'lucide-react-native';
 import { Screen } from '@/components/common/Screen';
@@ -8,7 +8,7 @@ import { Card, Chip, MiniBars, SectionHeader, StatTile, Stepper, uiStyles } from
 import { VideoShelf } from '@/components/common/VideoShelf';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
 import { FocusTimer } from '@/components/study/FocusTimer';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import {
   AFFIRMATIONS,
   CONFIDENCE_LEVELS,
@@ -116,7 +116,7 @@ export default function StudyDashboard() {
         <View style={styles.listBlock}>
           {forecast.doList.map((d) => (
             <View key={d} style={styles.listRow}>
-              <Check size={14} color="#047857" />
+              <Check size={14} color={themed('#047857')} />
               <Text style={styles.listText}>{d}</Text>
             </View>
           ))}
@@ -207,7 +207,7 @@ export default function StudyDashboard() {
               accessibilityState={{ checked: t.done }}
               accessibilityLabel={t.title}
             >
-              {t.done ? <Check size={14} color="#FFFFFF" /> : null}
+              {t.done ? <Check size={14} color={themed('#FFFFFF')} /> : null}
             </Pressable>
             <View style={{ flex: 1 }}>
               <Text style={[styles.taskTitle, t.done && styles.taskDone]}>{t.title}</Text>
@@ -318,7 +318,7 @@ export default function StudyDashboard() {
               accessibilityRole="checkbox"
               accessibilityState={{ checked: on }}
             >
-              <View style={[styles.checkbox, on && styles.checkboxOn]}>{on ? <Check size={14} color="#FFFFFF" /> : null}</View>
+              <View style={[styles.checkbox, on && styles.checkboxOn]}>{on ? <Check size={14} color={themed('#FFFFFF')} /> : null}</View>
               <Text style={[styles.kitText, on && styles.taskDone]}>{item.label}</Text>
             </Pressable>
           );
@@ -338,7 +338,7 @@ export default function StudyDashboard() {
           <PrimaryButton
             title="1-min breathing"
             variant="lilac"
-            icon={<Wind size={15} color="#FFFFFF" />}
+            icon={<Wind size={15} color={themed('#FFFFFF')} />}
             onPress={() => router.push('/games/breathe')}
             style={{ flex: 1 }}
           />
@@ -362,10 +362,10 @@ export default function StudyDashboard() {
       >
         <Card tone="amber" style={{ marginTop: 18 }}>
           <View style={[uiStyles.row, { gap: 8 }]}>
-            <Phone size={15} color="#92400E" />
-            <Text style={[uiStyles.strong, { color: '#92400E', fontSize: 14 }]}>Feeling low for two weeks or more?</Text>
+            <Phone size={15} color={themed('#92400E')} />
+            <Text style={[uiStyles.strong, { color: themed('#92400E'), fontSize: 14 }]}>Feeling low for two weeks or more?</Text>
           </View>
-          <Text style={[uiStyles.body, { color: '#92400E', marginTop: 4 }]}>
+          <Text style={[uiStyles.body, { color: themed('#92400E'), marginTop: 4 }]}>
             Exam stress and period-related low mood are common and treatable. Talk to someone — Tele-MANAS on{' '}
             {CRISIS_LINES.teleManas.number} is free and open 24×7. Tap to call.
           </Text>
@@ -375,7 +375,7 @@ export default function StudyDashboard() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   forecastLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1, color: Theme.colors.secondaryDark },
   forecastTitle: { fontSize: 22, fontWeight: '800', color: Theme.colors.textPrimary, marginTop: 6, letterSpacing: -0.4 },
   forecastHeadline: { fontSize: 14, fontWeight: '700', color: Theme.colors.secondaryDark, marginTop: 2 },
@@ -420,4 +420,4 @@ const styles = StyleSheet.create({
   affText: { fontSize: 18, fontWeight: '800', color: '#FFFFFF', marginTop: 8, lineHeight: 26 },
   kitRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
   kitText: { fontSize: 13, fontWeight: '600', color: Theme.colors.textPrimary, flex: 1 },
-});
+}));

@@ -1,8 +1,8 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { router, type Href } from 'expo-router';
 import { Check, ChevronRight, Sparkles } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { nextSyncHref, syncProgress } from '@/lib/syncDetails';
 
@@ -78,7 +78,7 @@ export function SyncDetailsCard() {
             </View>
             {step.done ? (
               <View style={styles.tick}>
-                <Check size={13} color="#FFFFFF" strokeWidth={3} />
+                <Check size={13} color={themed('#FFFFFF')} strokeWidth={3} />
               </View>
             ) : (
               <ChevronRight size={18} color={Theme.colors.textTertiary} />
@@ -95,7 +95,7 @@ export function SyncDetailsCard() {
         <Text style={styles.ctaText} numberOfLines={1}>
           {ctaLabel}
         </Text>
-        <ChevronRight size={18} color="#FFFFFF" />
+        <ChevronRight size={18} color={themed('#FFFFFF')} />
       </Pressable>
       <Text style={styles.footnote}>
         At the end you’ll see if a gynaecologist visit is suggested.
@@ -104,7 +104,7 @@ export function SyncDetailsCard() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   card: {
     marginHorizontal: 20,
     marginTop: 6,
@@ -192,4 +192,4 @@ const styles = StyleSheet.create({
   ctaText: { color: '#FFFFFF', fontSize: 15, fontWeight: '800', flexShrink: 1 },
   footnote: { fontSize: 11, color: Theme.colors.textTertiary, textAlign: 'center', marginTop: 10, lineHeight: 15 },
   pressed: { opacity: 0.85, transform: [{ scale: 0.99 }] },
-});
+}));

@@ -3,10 +3,10 @@ import { Header } from '@/components/common/Header';
 import { AdaptationHistory } from '@/components/move/AdaptationHistory';
 import { AdaptiveWorkoutCard } from '@/components/move/AdaptiveWorkoutCard';
 import { InterventionBanner } from '@/components/move/InterventionBanner';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { X } from 'lucide-react-native';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTodayPlan } from '@/hooks/useTodayPlan';
@@ -101,7 +101,7 @@ export default function MoveScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   safeArea: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -192,4 +192,4 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.cardBorder,
     marginVertical: 16,
   },
-});
+}));

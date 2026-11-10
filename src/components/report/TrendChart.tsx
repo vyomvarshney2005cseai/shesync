@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Dimensions } from 'react-native';
 import Svg, { Path, Line, Circle, Rect, Text as SvgText, G } from 'react-native-svg';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { shortDateLabel } from '@/lib/dates';
 import type { DailyDataPoint } from '@/types';
 
@@ -75,7 +75,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data }) => {
             y={PAD.top}
             width={Math.max(2, x(s.end) - x(s.start))}
             height={plotHeight}
-            fill="rgba(245, 158, 11, 0.10)"
+            fill={themed('rgba(245, 158, 11, 0.10)')}
             rx={4}
           />
         ))}
@@ -125,7 +125,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ data }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     backgroundColor: Theme.colors.card,
     borderRadius: Theme.radius.xl,
@@ -148,4 +148,4 @@ const styles = StyleSheet.create({
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
   legendText: { fontSize: 11, fontWeight: '600', color: Theme.colors.textTertiary },
-});
+}));

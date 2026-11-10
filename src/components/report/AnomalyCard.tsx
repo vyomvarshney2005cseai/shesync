@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { AlertTriangle, TrendingDown, Activity, Droplets, Moon, Heart } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import type { ClinicalAnomaly } from '@/types';
 
 interface AnomalyCardProps {
@@ -30,9 +30,9 @@ const getIcon = (type: ClinicalAnomaly['type']) => {
 const getSeverityColor = (severity: ClinicalAnomaly['severity']) => {
   switch (severity) {
     case 'critical':
-      return { bg: '#FFF1F2', border: '#FECDD3', text: Theme.colors.strainHigh };
+      return { bg: themed('#FFF1F2'), border: themed('#FECDD3'), text: Theme.colors.strainHigh };
     case 'severe':
-      return { bg: '#FFF7ED', border: '#FDBA74', text: '#D97706' };
+      return { bg: themed('#FFF7ED'), border: themed('#FDBA74'), text: themed('#D97706') };
     case 'moderate':
       return { bg: Theme.colors.secondaryLight, border: Theme.colors.secondaryBorder, text: Theme.colors.secondary };
     default:
@@ -46,8 +46,8 @@ export const AnomalyCard: React.FC<AnomalyCardProps> = ({ anomalies }) => {
       <Text style={styles.sectionTitle}>Patterns to Discuss</Text>
       <Text style={styles.sectionSubtitle}>From the last 30 days — observations, not a diagnosis</Text>
       {anomalies.length === 0 ? (
-        <View style={[styles.card, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
-          <Text style={[styles.title, { color: '#047857' }]}>Nothing flagged yet</Text>
+        <View style={[styles.card, { backgroundColor: themed('#ECFDF5'), borderColor: themed('#A7F3D0') }]}>
+          <Text style={[styles.title, { color: themed('#047857') }]}>Nothing flagged yet</Text>
           <Text style={[styles.description, { marginBottom: 0 }]}>
             Keep logging pain, flow, mood and sleep. Patterns worth raising with a doctor will show up here.
           </Text>
@@ -58,17 +58,17 @@ export const AnomalyCard: React.FC<AnomalyCardProps> = ({ anomalies }) => {
         return (
           <View
             key={anomaly.id}
-            style={[styles.card, { backgroundColor: colors.bg, borderColor: colors.border }]}
+            style={[styles.card, { backgroundColor: themed(colors.bg), borderColor: themed(colors.border) }]}
           >
             <View style={styles.headerRow}>
               {getIcon(anomaly.type)}
-              <Text style={[styles.title, { color: colors.text }]}>
+              <Text style={[styles.title, { color: themed(colors.text) }]}>
                 {anomaly.title}
               </Text>
             </View>
             <Text style={styles.description}>{anomaly.description}</Text>
             <View style={styles.severityRow}>
-              <View style={[styles.severityBadge, { backgroundColor: colors.text }]}>
+              <View style={[styles.severityBadge, { backgroundColor: themed(colors.text) }]}>
                 <Text style={styles.severityText}>
                   {anomaly.severity === 'critical' ? 'SEE A DOCTOR' : anomaly.severity === 'severe' ? 'WORTH ASKING' : 'KEEP AN EYE'}
                 </Text>
@@ -81,7 +81,7 @@ export const AnomalyCard: React.FC<AnomalyCardProps> = ({ anomalies }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     marginTop: 20,
   },
@@ -143,4 +143,4 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
-});
+}));

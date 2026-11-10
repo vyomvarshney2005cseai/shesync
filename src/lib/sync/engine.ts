@@ -12,7 +12,7 @@
  * (see ./index.ts), which keeps this testable in Node.
  */
 import {
-  type DocName,
+  DOC_NAMES,
   type LocalSnapshot,
   type RemoteData,
   contactToRow,
@@ -62,7 +62,6 @@ export interface SyncEngineOptions {
 }
 
 const CHUNK = 200;
-const DOCS: DocName[] = ['fitness', 'study', 'games'];
 const emptyMeta = (): SyncMeta => ({ pushedLogIds: [], hashes: {}, lastSyncedAt: 0 });
 
 export function createSyncEngine(opts: SyncEngineOptions) {
@@ -178,7 +177,7 @@ export function createSyncEngine(opts: SyncEngineOptions) {
       meta.hashes.contacts = kh;
     }
 
-    for (const doc of DOCS) {
+    for (const doc of DOC_NAMES) {
       const data = local.docs[doc] ?? {};
       const dh = fresh(`doc:${doc}`, data);
       if (dh) {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
 import { Card, Chip, uiStyles } from '@/components/common/ui';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
 import { useGamesStore, type Feel } from '@/store/useGamesStore';
@@ -111,7 +111,7 @@ export function GameResult({
 
 export const clock = formatClock;
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   strip: {
     flexDirection: 'row',
     backgroundColor: Theme.colors.card,
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   stripLabel: { fontSize: 10, fontWeight: '700', color: Theme.colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.6 },
   resultTitle: { fontSize: 20, fontWeight: '800', color: '#065F46' },
   best: { fontSize: 13, fontWeight: '800', color: '#B45309', marginVertical: 4 },
-});
+}));
 
 /** Current time for event handlers (kept out of render on purpose). */
 export const nowMs = () => Date.now();

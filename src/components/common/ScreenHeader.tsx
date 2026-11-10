@@ -1,8 +1,8 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
 
 interface ScreenHeaderProps {
   title: string;
@@ -44,7 +44,7 @@ export function ScreenHeader({ title, subtitle, badge, fallbackHref = '/(tabs)',
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -69,4 +69,4 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: 11, fontWeight: '700', color: Theme.colors.primary, letterSpacing: 0.6, marginBottom: 4 },
   title: { fontSize: 24, fontWeight: '800', color: Theme.colors.textPrimary, letterSpacing: -0.5 },
   subtitle: { fontSize: 13, fontWeight: '500', color: Theme.colors.textSecondary, marginTop: 2, lineHeight: 18 },
-});
+}));

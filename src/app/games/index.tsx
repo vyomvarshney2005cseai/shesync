@@ -1,11 +1,11 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Brain, Calculator, Grid3x3, LayoutGrid, Puzzle, Wind } from 'lucide-react-native';
 import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { Card, SectionHeader, StatTile, uiStyles } from '@/components/common/ui';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { useGamesStore, type GameId } from '@/store/useGamesStore';
 import { startOfWeekKey, formatClock } from '@/lib/dates';
 import { dayStreak } from '@/lib/streaks';
@@ -105,12 +105,12 @@ export default function GamesDashboard() {
 
       <View style={styles.tiles}>
         <StatTile label="This week" value={`${stats.games}`} hint="games played" color={Theme.colors.primary} />
-        <StatTile label="Calm time" value={`${stats.minutes} min`} hint="this week" color="#047857" />
+        <StatTile label="Calm time" value={`${stats.minutes} min`} hint="this week" color={themed('#047857')} />
         <StatTile label="Streak" value={`${stats.streak}d`} hint="days in a row" color={Theme.colors.secondary} />
       </View>
       {stats.calmerPct != null ? (
         <Card tone="mint" style={{ marginTop: 10 }}>
-          <Text style={[uiStyles.body, { color: '#065F46' }]}>
+          <Text style={[uiStyles.body, { color: themed('#065F46') }]}>
             You felt okay or calmer after {stats.calmerPct}% of your recent sessions. 💚
           </Text>
         </Card>
@@ -126,7 +126,7 @@ export default function GamesDashboard() {
             accessibilityRole="button"
             accessibilityLabel={`${g.name}. ${g.benefit}`}
           >
-            <View style={[styles.icon, { backgroundColor: g.bg }]}>{g.icon}</View>
+            <View style={[styles.icon, { backgroundColor: themed(g.bg) }]}>{g.icon}</View>
             <Text style={styles.name}>{g.name}</Text>
             <Text style={styles.benefit} numberOfLines={2}>
               {g.benefit}
@@ -147,7 +147,7 @@ export default function GamesDashboard() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   tiles: { flexDirection: 'row', gap: 10 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   card: {
@@ -164,4 +164,4 @@ const styles = StyleSheet.create({
   name: { fontSize: 15, fontWeight: '800', color: Theme.colors.textPrimary },
   benefit: { fontSize: 12, color: Theme.colors.textSecondary, marginTop: 3, lineHeight: 16, minHeight: 32 },
   bestText: { fontSize: 11, fontWeight: '800', color: Theme.colors.primary, marginTop: 8 },
-});
+}));

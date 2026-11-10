@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 
 export const CyclePredictionBanner: React.FC = () => {
@@ -80,7 +80,7 @@ export const CyclePredictionBanner: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: { paddingHorizontal: 20, marginTop: 16 },
   card: {
     backgroundColor: 'rgba(255,255,255,0.92)',
@@ -127,4 +127,4 @@ const styles = StyleSheet.create({
   precautionContent: { flex: 1 },
   precautionTitle: { fontSize: 12.5, fontWeight: '800', color: Theme.colors.textPrimary, marginBottom: 2 },
   precautionDesc: { fontSize: 12, lineHeight: 17, color: Theme.colors.textSecondary },
-});
+}));

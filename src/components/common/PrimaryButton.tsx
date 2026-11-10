@@ -1,6 +1,6 @@
 import React from 'react';
-import { Pressable, Text, StyleSheet, ViewStyle, ActivityIndicator } from 'react-native';
-import { Theme } from '@/constants/theme';
+import { Pressable, Text, ViewStyle, ActivityIndicator } from 'react-native';
+import { Theme, createStyles, themed } from '@/constants/theme';
 
 interface PrimaryButtonProps {
   title: string;
@@ -22,10 +22,10 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   fullWidth = false,
 }) => {
   const variantStyles: Record<string, { bg: string; text: string; border?: string }> = {
-    rose: { bg: Theme.colors.primary, text: '#FFFFFF' },
-    dark: { bg: Theme.colors.obsidian, text: '#FFFFFF' },
+    rose: { bg: Theme.colors.primary, text: themed('#FFFFFF') },
+    dark: { bg: Theme.colors.obsidian, text: themed('#FFFFFF') },
     outline: { bg: 'transparent', text: Theme.colors.textPrimary, border: Theme.colors.cardBorder },
-    lilac: { bg: Theme.colors.secondary, text: '#FFFFFF' },
+    lilac: { bg: Theme.colors.secondary, text: themed('#FFFFFF') },
   };
 
   const v = variantStyles[variant];
@@ -55,7 +55,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   button: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -81,4 +81,4 @@ const styles = StyleSheet.create({
     opacity: 0.85,
     transform: [{ scale: 0.98 }],
   },
-});
+}));

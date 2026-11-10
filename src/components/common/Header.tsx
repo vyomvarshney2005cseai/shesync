@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image, Platform, Alert } from 'react-native';
+import { View, Text, Pressable, Image, Platform, Alert } from 'react-native';
 import { Bell } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
 import { router } from 'expo-router';
 import { useAppStore } from '@/store/useAppStore';
 
@@ -76,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -157,4 +157,4 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.7,
   },
-});
+}));

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import {
@@ -14,7 +14,7 @@ import {
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
 import { AuthGate } from '@/components/common/AuthGate';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { assessReferral, REFERRAL_LEVEL_TEXT } from '@/lib/referral';
 import { syncProgress } from '@/lib/syncDetails';
@@ -62,10 +62,10 @@ export default function SyncResultScreen() {
   const referable = result.referable;
   const text = REFERRAL_LEVEL_TEXT[result.level];
   const tone = !referable
-    ? { bg: '#E9F6F0', border: '#BFE3D4', ink: '#2F7D69', icon: <ShieldCheck size={30} color="#2F7D69" /> }
+    ? { bg: themed('#E9F6F0'), border: themed('#BFE3D4'), ink: themed('#2F7D69'), icon: <ShieldCheck size={30} color={themed('#2F7D69')} /> }
     : result.level === 'urgent'
-    ? { bg: '#FDECEF', border: '#F3BFCB', ink: '#A33B55', icon: <AlertTriangle size={30} color="#A33B55" /> }
-    : { bg: '#FFF3E6', border: '#F4D6B5', ink: '#9A5A2E', icon: <Stethoscope size={30} color="#9A5A2E" /> };
+    ? { bg: themed('#FDECEF'), border: themed('#F3BFCB'), ink: themed('#A33B55'), icon: <AlertTriangle size={30} color={themed('#A33B55')} /> }
+    : { bg: themed('#FFF3E6'), border: themed('#F4D6B5'), ink: themed('#9A5A2E'), icon: <Stethoscope size={30} color={themed('#9A5A2E')} /> };
 
   return (
     <AuthGate>
@@ -101,7 +101,7 @@ export default function SyncResultScreen() {
                 <View style={styles.row}>
                   <PrimaryButton
                     title="Call Tele-MANAS 14416"
-                    icon={<Phone size={16} color="#FFFFFF" />}
+                    icon={<Phone size={16} color={themed('#FFFFFF')} />}
                     onPress={() => callNumber(CRISIS_LINES.teleManas.number, CRISIS_LINES.teleManas.label)}
                     style={{ flex: 1 }}
                   />
@@ -184,7 +184,7 @@ export default function SyncResultScreen() {
               {(referable || result.counsellorSuggested) && (
                 <PrimaryButton
                   title={referable ? 'Find a gynaecologist · Care Connect' : 'Talk to a counsellor · Care Connect'}
-                  icon={<HeartHandshake size={17} color="#FFFFFF" />}
+                  icon={<HeartHandshake size={17} color={themed('#FFFFFF')} />}
                   variant="lilac"
                   onPress={() => router.push(ROUTES.care)}
                   fullWidth
@@ -210,8 +210,8 @@ function ReasonRow({ reason }: { reason: ReferralReason }) {
     <View style={styles.reason}>
       <View style={styles.reasonHead}>
         <Text style={[styles.reasonTitle, { flex: 1 }]}>{reason.title}</Text>
-        <View style={[styles.chip, { backgroundColor: chip.bg }]}>
-          <Text style={[styles.chipText, { color: chip.ink }]}>{chip.label}</Text>
+        <View style={[styles.chip, { backgroundColor: themed(chip.bg) }]}>
+          <Text style={[styles.chipText, { color: themed(chip.ink) }]}>{chip.label}</Text>
         </View>
       </View>
       <Text style={styles.reasonDetail}>{reason.detail}</Text>
@@ -219,7 +219,7 @@ function ReasonRow({ reason }: { reason: ReferralReason }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   safe: { flex: 1, backgroundColor: 'transparent' },
   topBar: {
     flexDirection: 'row',
@@ -330,4 +330,4 @@ const styles = StyleSheet.create({
   counsellorHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   profileLine: { marginTop: 16, fontSize: 12.5, color: Theme.colors.textSecondary, textAlign: 'center' },
   disclaimer: { fontSize: 11, color: Theme.colors.textTertiary, textAlign: 'center', marginTop: 16, lineHeight: 16 },
-});
+}));

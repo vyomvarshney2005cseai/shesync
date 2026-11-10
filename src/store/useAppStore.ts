@@ -32,6 +32,8 @@ import { createInitialWelcomeMessage } from '@/lib/yourGoGirlEngine';
 import { useFitnessStore } from './useFitnessStore';
 import { useStudyStore } from './useStudyStore';
 import { useGamesStore } from './useGamesStore';
+import { usePcosStore } from './usePcosStore';
+import { useConfidenceStore } from './useConfidenceStore';
 
 // ============================================================
 // Defaults for a brand-new account.
@@ -547,6 +549,8 @@ function resetFeatureStores() {
   useFitnessStore.getState().reset();
   useStudyStore.getState().reset();
   useGamesStore.getState().reset();
+  usePcosStore.getState().reset();
+  useConfidenceStore.getState().reset();
 }
 
 const initialUser = freshUserData();

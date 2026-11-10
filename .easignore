@@ -44,10 +44,11 @@ example
 /android
 
 # ── EAS only: files not needed to build the app (keeps uploads small) ──
-sheshync/
-YourGoGirl/
-Claude outputs/
-supabase/
+/sheshync/
+/YourGoGirl/
+/Claude outputs/
+/supabase/
+!src/components/yourgogirl/**
 *.docx
 *.pdf
 *.py

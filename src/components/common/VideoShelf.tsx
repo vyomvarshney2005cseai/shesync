@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { ExternalLink, Play } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { openUrl, youtubeThumb, youtubeUrl } from '@/lib/openExternal';
 
 export interface ShelfVideo {
@@ -57,7 +57,7 @@ export function VideoShelf({ videos, categories, initialCategory = 'all' }: Vide
           <View style={styles.thumbWrap}>
             <Image source={{ uri: youtubeThumb(v.youtubeId) }} style={styles.thumb} resizeMode="cover" />
             <View style={styles.playDot}>
-              <Play size={12} color="#FFFFFF" fill="#FFFFFF" style={{ marginLeft: 1 }} />
+              <Play size={12} color={themed('#FFFFFF')} fill={themed('#FFFFFF')} style={{ marginLeft: 1 }} />
             </View>
             {v.length ? (
               <View style={styles.lengthPill}>
@@ -84,7 +84,7 @@ export function VideoShelf({ videos, categories, initialCategory = 'all' }: Vide
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   filters: { gap: 8, paddingBottom: 12 },
   filter: {
     paddingHorizontal: 12,
@@ -142,4 +142,4 @@ const styles = StyleSheet.create({
   channel: { fontSize: 11, fontWeight: '600', color: Theme.colors.secondary, marginTop: 2 },
   why: { fontSize: 11, color: Theme.colors.textSecondary, marginTop: 3, lineHeight: 15 },
   footnote: { fontSize: 10, color: Theme.colors.textTertiary, textAlign: 'center', marginTop: 2 },
-});
+}));

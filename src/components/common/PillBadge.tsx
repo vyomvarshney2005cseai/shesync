@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { Theme } from '@/constants/theme';
+import { View, Text, ViewStyle } from 'react-native';
+import { Theme, createStyles } from '@/constants/theme';
 
 interface PillBadgeProps {
   label: string;
@@ -25,7 +25,7 @@ export const PillBadge: React.FC<PillBadgeProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -45,4 +45,4 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
-});
+}));

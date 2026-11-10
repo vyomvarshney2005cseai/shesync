@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
@@ -13,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { isOfflineAuthError, signUpWithSupabase } from '@/lib/supabaseService';
 import {
@@ -261,7 +260,7 @@ export default function SignUpScreen() {
                       ]}
                     >
                       {isSelected ? (
-                        <Check size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
+                        <Check size={13} color={themed('#FFFFFF')} style={{ marginRight: 4 }} />
                       ) : null}
                       <Text
                         style={[
@@ -284,7 +283,7 @@ export default function SignUpScreen() {
               activeOpacity={0.8}
             >
               <View style={[styles.checkbox, agreedToTerms && styles.checkboxActive]}>
-                {agreedToTerms && <CheckCircle2 size={16} color="#FFFFFF" />}
+                {agreedToTerms && <CheckCircle2 size={16} color={themed('#FFFFFF')} />}
               </View>
               <Text style={styles.agreeText}>
                 I agree to the Terms of Service & Privacy Policy.
@@ -298,7 +297,7 @@ export default function SignUpScreen() {
               onPress={handleSignUp}
               disabled={loading}
             >
-              {loading ? <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} /> : null}
+              {loading ? <ActivityIndicator size="small" color={themed('#FFFFFF')} style={{ marginRight: 8 }} /> : null}
               <Text style={styles.submitButtonText}>{loading ? 'Creating account…' : 'Create account'}</Text>
             </TouchableOpacity>
           </View>
@@ -321,7 +320,7 @@ export default function SignUpScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFF4F7',
@@ -537,4 +536,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Theme.colors.feminismAccent,
   },
-});
+}));

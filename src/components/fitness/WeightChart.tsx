@@ -1,7 +1,7 @@
 import React from 'react';
-import { Dimensions, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Text, View } from 'react-native';
 import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { shortDateLabel } from '@/lib/dates';
 import type { WeightEntry } from '@/store/useFitnessStore';
 
@@ -41,8 +41,8 @@ export function WeightChart({ entries, target }: { entries: WeightEntry[]; targe
       ))}
       {target ? (
         <>
-          <Line x1={PAD.left} x2={width - PAD.right} y1={y(target)} y2={y(target)} stroke="#10B981" strokeWidth={1.5} strokeDasharray="6,4" />
-          <SvgText x={width - PAD.right} y={y(target) - 4} fontSize={10} textAnchor="end" fill="#047857">
+          <Line x1={PAD.left} x2={width - PAD.right} y1={y(target)} y2={y(target)} stroke={themed('#10B981')} strokeWidth={1.5} strokeDasharray="6,4" />
+          <SvgText x={width - PAD.right} y={y(target) - 4} fontSize={10} textAnchor="end" fill={themed('#047857')}>
             Goal {target} kg
           </SvgText>
         </>
@@ -61,7 +61,7 @@ export function WeightChart({ entries, target }: { entries: WeightEntry[]; targe
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   empty: {
     height: 90,
     borderRadius: Theme.radius.md,
@@ -73,4 +73,4 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   emptyText: { fontSize: 12, color: Theme.colors.textSecondary, textAlign: 'center' },
-});
+}));

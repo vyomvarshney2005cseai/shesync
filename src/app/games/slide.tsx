@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { GameResult, LevelPicker, StatStrip, clock, nowMs, useElapsed } from '@/components/games/GameKit';
 import { uiStyles } from '@/components/common/ui';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
 import { createSlidePuzzle, isSlideSolved, trySlide } from '@/lib/games';
 import { useGamesStore } from '@/store/useGamesStore';
 
@@ -95,7 +95,7 @@ export default function SlidePuzzle() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   board: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -118,4 +118,4 @@ const styles = StyleSheet.create({
   },
   tileDone: { backgroundColor: '#10B981' },
   tileText: { fontSize: 28, fontWeight: '800', color: '#FFFFFF' },
-});
+}));

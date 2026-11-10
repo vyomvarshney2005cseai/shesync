@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import Svg, { Defs, LinearGradient, RadialGradient, Stop, Rect } from 'react-native-svg';
 import { useAppStore } from '@/store/useAppStore';
 import type { AppState } from '@/types';
+import { createStyles, isNight } from '@/constants/theme';
 
 interface AdaptiveBackgroundProps {
   children: React.ReactNode;
@@ -38,6 +39,31 @@ const PALETTES = [
   },
 ] as const;
 
+// Night mode: deep plum with faint lavender, rose and teal glows.
+const NIGHT_PALETTES = [
+  {
+    gradStart: '#1D1826', gradMid: '#1B1623', gradEnd: '#191521',
+    blob1Color: '#4A3A72', blob1Opacity: 0.38,
+    blob2Color: '#5A3550', blob2Opacity: 0.26,
+    blob3Color: '#274A4A', blob3Opacity: 0.24,
+    overlayTint: 'rgba(20, 16, 26, 0.18)',
+  },
+  {
+    gradStart: '#1C1727', gradMid: '#1A1624', gradEnd: '#181622',
+    blob1Color: '#463A78', blob1Opacity: 0.4,
+    blob2Color: '#543452', blob2Opacity: 0.24,
+    blob3Color: '#2A4258', blob3Opacity: 0.24,
+    overlayTint: 'rgba(20, 16, 26, 0.2)',
+  },
+  {
+    gradStart: '#1A1727', gradMid: '#181624', gradEnd: '#161722',
+    blob1Color: '#3F3A78', blob1Opacity: 0.4,
+    blob2Color: '#2B4460', blob2Opacity: 0.28,
+    blob3Color: '#4A3458', blob3Opacity: 0.22,
+    overlayTint: 'rgba(18, 16, 26, 0.22)',
+  },
+] as const;
+
 /** 0 = light, 1 = steady, 2 = hard day — from strain and the latest mood. */
 function paletteIndex(s: AppState): number {
   const mood = s.symptomLogs[0]?.mood;
@@ -49,7 +75,8 @@ function paletteIndex(s: AppState): number {
 
 export function AdaptiveBackground({ children }: AdaptiveBackgroundProps) {
   // Re-renders only when the palette actually changes, not on every log.
-  const palette = PALETTES[useAppStore(paletteIndex)];
+  const index = useAppStore(paletteIndex);
+  const palette = (isNight() ? NIGHT_PALETTES : PALETTES)[index];
   // Unique gradient ids: several screens can be mounted at once (stack), and
   // duplicate SVG ids would make them share one gradient on web.
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
@@ -106,7 +133,7 @@ export function AdaptiveBackground({ children }: AdaptiveBackgroundProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     flex: 1,
     position: 'relative',
@@ -118,4 +145,4 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     width: '100%',
   },
-});
+}));

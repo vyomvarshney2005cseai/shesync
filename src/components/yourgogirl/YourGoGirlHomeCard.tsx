@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { MessageCircleHeart, ChevronRight } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
 import { ROUTES } from '@/lib/routes';
 
 /** Compact entry to the YourGoGirl chat on Home. */
@@ -25,7 +25,7 @@ export const YourGoGirlHomeCard: React.FC = () => (
   </View>
 );
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   wrapper: { paddingHorizontal: 20, marginTop: 16 },
   card: {
     flexDirection: 'row',
@@ -49,4 +49,4 @@ const styles = StyleSheet.create({
   textCol: { flex: 1 },
   title: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary },
   subtitle: { fontSize: 12.5, lineHeight: 17, color: Theme.colors.textSecondary, marginTop: 2 },
-});
+}));

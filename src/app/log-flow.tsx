@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   TextInput,
@@ -19,7 +18,7 @@ import {
   Sparkles,
   ArrowRight,
 } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { nextSyncHref, syncStepBadge } from '@/lib/syncDetails';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
@@ -170,7 +169,7 @@ export default function LogFlowScreen() {
         {/* Flow Intensity Cards */}
         <View style={styles.section}>
           <View style={styles.sectionRow}>
-            <Droplets size={20} color={currentFlow.color} />
+            <Droplets size={20} color={themed(currentFlow.color)} />
             <Text style={styles.sectionHeader}>How heavy?</Text>
           </View>
 
@@ -183,8 +182,8 @@ export default function LogFlowScreen() {
                   style={[
                     styles.flowCard,
                     isSelected && {
-                      borderColor: flow.color,
-                      backgroundColor: flow.bgColor,
+                      borderColor: themed(flow.color),
+                      backgroundColor: themed(flow.bgColor),
                       transform: [{ scale: 1.01 }],
                     },
                   ]}
@@ -193,11 +192,11 @@ export default function LogFlowScreen() {
                 >
                   <View style={styles.flowCardHeader}>
                     <View style={styles.flowNameGroup}>
-                      <View style={[styles.flowIndicator, { backgroundColor: flow.color }]} />
+                      <View style={[styles.flowIndicator, { backgroundColor: themed(flow.color) }]} />
                       <Text
                         style={[
                           styles.flowCardLabel,
-                          isSelected && { color: flow.color, fontWeight: '800' },
+                          isSelected && { color: themed(flow.color), fontWeight: '800' },
                         ]}
                       >
                         {flow.label}
@@ -229,7 +228,7 @@ export default function LogFlowScreen() {
                   onPress={() => setSelectedShade(shade.label)}
                   activeOpacity={0.8}
                 >
-                  <View style={[styles.colorDot, { backgroundColor: shade.color }]} />
+                  <View style={[styles.colorDot, { backgroundColor: themed(shade.color) }]} />
                   <Text style={[styles.shadeChipText, isSelected && styles.shadeChipTextActive]}>
                     {shade.label}
                   </Text>
@@ -255,7 +254,7 @@ export default function LogFlowScreen() {
 
         {/* Save CTA */}
         <TouchableOpacity
-          style={[styles.saveButton, { backgroundColor: currentFlow.color }]}
+          style={[styles.saveButton, { backgroundColor: themed(currentFlow.color) }]}
           activeOpacity={0.85}
           onPress={handleSave}
           disabled={isSaved}
@@ -263,11 +262,11 @@ export default function LogFlowScreen() {
           {isOnboarding ? (
             <>
               <Text style={styles.saveButtonText}>Save & continue</Text>
-              <ArrowRight size={20} color="#FFFFFF" style={{ marginLeft: 8 }} />
+              <ArrowRight size={20} color={themed('#FFFFFF')} style={{ marginLeft: 8 }} />
             </>
           ) : (
             <>
-              <Check size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Check size={20} color={themed('#FFFFFF')} style={{ marginRight: 8 }} />
               <Text style={styles.saveButtonText}>
                 {isSaved ? 'Saved to Cycle Record' : 'Save Flow Entry'}
               </Text>
@@ -280,7 +279,7 @@ export default function LogFlowScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   safeArea: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -510,4 +509,4 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     textAlign: 'center',
   },
-});
+}));

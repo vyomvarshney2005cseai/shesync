@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, View, StyleSheet } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/components/common/Header';
 import { CalibratedScorecard } from '@/components/report/CalibratedScorecard';
@@ -8,6 +8,7 @@ import { AnomalyCard } from '@/components/report/AnomalyCard';
 import { ClinicalExportCTA } from '@/components/report/ClinicalExportCTA';
 import { useAppStore } from '@/store/useAppStore';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
+import { createStyles } from '@/constants/theme';
 
 export default function ReportScreen() {
   const clinicalReport = useAppStore((s) => s.clinicalReport);
@@ -43,7 +44,7 @@ export default function ReportScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   safeArea: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -65,4 +66,4 @@ const styles = StyleSheet.create({
   mainContent: {
     paddingHorizontal: 16,
   },
-});
+}));

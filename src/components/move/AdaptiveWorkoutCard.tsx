@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import { Timer, Zap, Leaf, ArrowRight } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
 import { PillBadge } from '@/components/common/PillBadge';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
 import type { AdaptiveWorkout } from '@/types';
@@ -88,7 +88,7 @@ export const AdaptiveWorkoutCard: React.FC<AdaptiveWorkoutCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     backgroundColor: Theme.colors.card,
     borderRadius: Theme.radius.xl,
@@ -187,4 +187,4 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
     borderColor: '#E5E7EB',
   },
-});
+}));

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput } from 'react-native';
 import { Brain, Send, Check } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
 import type { CBTPrompt } from '@/types';
 
@@ -69,7 +69,7 @@ export const CBTReframeCard: React.FC<CBTReframeCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     backgroundColor: Theme.colors.card,
     borderRadius: Theme.radius.xl,
@@ -159,4 +159,4 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     color: Theme.colors.textPrimary,
   },
-});
+}));

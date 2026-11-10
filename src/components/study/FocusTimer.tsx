@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Platform, StyleSheet, Text, TextInput, Vibration, View } from 'react-native';
+import { Platform, Text, TextInput, Vibration, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Pause, Play, Square, SkipForward } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed, withAlpha } from '@/constants/theme';
 import { Card, Chip, uiStyles } from '@/components/common/ui';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
 import { FOCUS_PRESETS, useStudyStore } from '@/store/useStudyStore';
@@ -62,7 +62,7 @@ export function FocusTimer({ subjects }: { subjects: string[] }) {
       : timer.pausedRemaining ?? total;
   const fraction = total > 0 ? left / total : 1;
   const isBreak = timer.mode === 'break';
-  const color = isBreak ? '#10B981' : Theme.colors.secondary;
+  const color = isBreak ? themed('#10B981') : Theme.colors.secondary;
 
   const commitSubject = () => setSubject(subjectDraft);
 
@@ -88,12 +88,12 @@ export function FocusTimer({ subjects }: { subjects: string[] }) {
 
       <View style={styles.ringWrap}>
         <Svg width={SIZE} height={SIZE}>
-          <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} stroke={`${color}22`} strokeWidth={STROKE} fill="none" />
+          <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} stroke={withAlpha(color, 0.13)} strokeWidth={STROKE} fill="none" />
           <Circle
             cx={SIZE / 2}
             cy={SIZE / 2}
             r={R}
-            stroke={color}
+            stroke={themed(color)}
             strokeWidth={STROKE}
             fill="none"
             strokeDasharray={`${C} ${C}`}
@@ -149,7 +149,7 @@ export function FocusTimer({ subjects }: { subjects: string[] }) {
           <PrimaryButton
             title={`Start ${preset.focus}-min focus`}
             variant="lilac"
-            icon={<Play size={16} color="#FFFFFF" fill="#FFFFFF" />}
+            icon={<Play size={16} color={themed('#FFFFFF')} fill={themed('#FFFFFF')} />}
             onPress={() => {
               commitSubject();
               startFocus(Date.now());
@@ -164,7 +164,7 @@ export function FocusTimer({ subjects }: { subjects: string[] }) {
             <PrimaryButton
               title="Resume"
               variant="lilac"
-              icon={<Play size={16} color="#FFFFFF" />}
+              icon={<Play size={16} color={themed('#FFFFFF')} />}
               onPress={() => resume(Date.now())}
               style={{ flex: 1 }}
             />
@@ -189,7 +189,7 @@ export function FocusTimer({ subjects }: { subjects: string[] }) {
             <PrimaryButton
               title="Stop"
               variant="dark"
-              icon={<Square size={14} color="#FFFFFF" />}
+              icon={<Square size={14} color={themed('#FFFFFF')} />}
               onPress={() => stop(Date.now())}
               style={{ flex: 1 }}
             />
@@ -203,7 +203,7 @@ export function FocusTimer({ subjects }: { subjects: string[] }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   presetRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   ringWrap: { alignItems: 'center', justifyContent: 'center', marginVertical: 16 },
   ringCenter: { position: 'absolute', alignItems: 'center', width: SIZE - 40 },
@@ -212,4 +212,4 @@ const styles = StyleSheet.create({
   subjectLabel: { fontSize: 13, fontWeight: '700', color: Theme.colors.textSecondary, maxWidth: SIZE - 50 },
   rounds: { fontSize: 10, color: Theme.colors.textTertiary, marginTop: 4, fontWeight: '600' },
   btnRow: { flexDirection: 'row', gap: 10 },
-});
+}));

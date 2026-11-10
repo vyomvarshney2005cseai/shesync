@@ -1,9 +1,9 @@
 import React from 'react';
-import { ScrollView, View, Text, StyleSheet, Modal, Pressable } from 'react-native';
+import { ScrollView, View, Text, Modal, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { X, Heart, Phone, MessageCircle, Wind, Siren, Sparkles } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { Header } from '@/components/common/Header';
 import { YourGoGirlHomeCard } from '@/components/yourgogirl/YourGoGirlHomeCard';
 import { SomaticVideoLibrary } from '@/components/mind/SomaticVideoLibrary';
@@ -91,7 +91,7 @@ export default function MindScreen() {
               <PrimaryButton
                 title="Talk to YourGoGirl"
                 variant="rose"
-                icon={<Sparkles size={16} color="#FFFFFF" />}
+                icon={<Sparkles size={16} color={themed('#FFFFFF')} />}
                 onPress={() => {
                   dismissSOS();
                   router.push('/your-go-girl' as any);
@@ -101,7 +101,7 @@ export default function MindScreen() {
               <PrimaryButton
                 title="Breathe with me (2 min)"
                 variant="dark"
-                icon={<Wind size={16} color="#FFFFFF" />}
+                icon={<Wind size={16} color={themed('#FFFFFF')} />}
                 onPress={() => {
                   dismissSOS();
                   router.push('/games/breathe');
@@ -111,7 +111,7 @@ export default function MindScreen() {
               <PrimaryButton
                 title={`Call Tele-MANAS ${CRISIS_LINES.teleManas.number} (free, 24×7)`}
                 variant="dark"
-                icon={<Phone size={16} color="#FFFFFF" />}
+                icon={<Phone size={16} color={themed('#FFFFFF')} />}
                 onPress={() => callNumber(CRISIS_LINES.teleManas.number, CRISIS_LINES.teleManas.label)}
                 fullWidth
               />
@@ -143,7 +143,7 @@ export default function MindScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   safeArea: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -252,4 +252,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
   },
-});
+}));

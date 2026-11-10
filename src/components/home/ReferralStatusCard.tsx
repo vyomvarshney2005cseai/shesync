@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { ChevronRight, HeartHandshake, ShieldCheck, Stethoscope } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { assessReferral, REFERRAL_LEVEL_TEXT } from '@/lib/referral';
 import { ROUTES } from '@/lib/routes';
@@ -23,9 +23,9 @@ export function ReferralStatusCard() {
   const referable = result.referable;
   const tone = referable
     ? result.level === 'urgent'
-      ? { bg: '#FDECEF', border: '#F5C6D0', ink: '#A33B55' }
-      : { bg: '#FFF4E8', border: '#F6DDBF', ink: '#9A5A2E' }
-    : { bg: '#ECF7F2', border: '#CDEADF', ink: '#2F7D69' };
+      ? { bg: themed('#FDECEF'), border: themed('#F5C6D0'), ink: themed('#A33B55') }
+      : { bg: themed('#FFF4E8'), border: themed('#F6DDBF'), ink: themed('#9A5A2E') }
+    : { bg: themed('#ECF7F2'), border: themed('#CDEADF'), ink: themed('#2F7D69') };
 
   return (
     <View style={styles.wrap}>
@@ -67,7 +67,7 @@ export function ReferralStatusCard() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   wrap: { paddingHorizontal: 20, marginTop: 16, gap: 8 },
   card: {
     flexDirection: 'row',
@@ -101,4 +101,4 @@ const styles = StyleSheet.create({
   },
   careText: { flex: 1, fontSize: 12.5, fontWeight: '700', color: Theme.colors.secondaryDark },
   pressed: { opacity: 0.86 },
-});
+}));

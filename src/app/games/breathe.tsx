@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Animated, Easing, Platform, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Platform, Text, View } from 'react-native';
 import { useKeepAwake } from 'expo-keep-awake';
 import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { GameResult, LevelPicker, StatStrip, clock } from '@/components/games/GameKit';
 import { Card, uiStyles } from '@/components/common/ui';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
 import { BREATH_PATTERNS } from '@/lib/games';
 import { useGamesStore } from '@/store/useGamesStore';
 
@@ -166,7 +166,7 @@ export default function CalmBreathing() {
 }
 
 const SIZE = 240;
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   stage: { height: SIZE + 30, alignItems: 'center', justifyContent: 'center', marginVertical: 6 },
   halo: {
     position: 'absolute',
@@ -187,4 +187,4 @@ const styles = StyleSheet.create({
   center: { alignItems: 'center' },
   stepLabel: { fontSize: 24, fontWeight: '800', color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.2)', textShadowRadius: 4 },
   stepCount: { fontSize: 44, fontWeight: '800', color: '#FFFFFF', fontVariant: ['tabular-nums'] },
-});
+}));

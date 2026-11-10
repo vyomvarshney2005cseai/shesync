@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TextInput,
   TouchableOpacity,
@@ -27,7 +26,7 @@ import {
 } from 'lucide-react-native';
 import { router, type Href } from 'expo-router';
 import { callNumber, openUrl } from '@/lib/openExternal';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import {
   QUICK_PROMPT_TOPICS,
@@ -416,7 +415,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   keyboardContainer: {
     flex: 1,
     width: '100%',
@@ -843,4 +842,4 @@ const styles = StyleSheet.create({
   sendButtonDisabled: {
     opacity: 0.45,
   },
-});
+}));

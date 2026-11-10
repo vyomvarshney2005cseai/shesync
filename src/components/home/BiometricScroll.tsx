@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { BatteryCharging, Moon, Calendar, X } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { Stepper } from '@/components/common/ui';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
@@ -30,17 +30,17 @@ const MetricCard: React.FC<MetricCardProps> = ({ icon, title, value, subtitle, a
     disabled={!onPress}
     accessibilityRole={onPress ? 'button' : undefined}
     accessibilityLabel={`${title}: ${value}. ${subtitle}`}
-    style={({ pressed }) => [styles.card, { borderColor: bgColor }, pressed && { opacity: 0.85 }]}
+    style={({ pressed }) => [styles.card, { borderColor: themed(bgColor) }, pressed && { opacity: 0.85 }]}
   >
-    <View style={[styles.iconCircle, { backgroundColor: bgColor }]}>{icon}</View>
+    <View style={[styles.iconCircle, { backgroundColor: themed(bgColor) }]}>{icon}</View>
     <Text style={styles.cardTitle}>{title}</Text>
-    <Text style={[styles.cardValue, { color: accentColor }]} numberOfLines={1} adjustsFontSizeToFit>
+    <Text style={[styles.cardValue, { color: themed(accentColor) }]} numberOfLines={1} adjustsFontSizeToFit>
       {value}
     </Text>
     <Text style={styles.cardSubtitle} numberOfLines={2}>
       {subtitle}
     </Text>
-    {actionLabel ? <Text style={[styles.action, { color: accentColor }]}>{actionLabel}</Text> : null}
+    {actionLabel ? <Text style={[styles.action, { color: themed(accentColor) }]}>{actionLabel}</Text> : null}
   </Pressable>
 );
 
@@ -68,7 +68,7 @@ export const BiometricScroll: React.FC<BiometricScrollProps> = ({ biometrics, cy
           value={`${readiness}%`}
           subtitle={readinessText}
           accentColor={Theme.colors.strainOptimal}
-          bgColor="#D1FAE5"
+          bgColor={themed('#D1FAE5')}
         />
         <MetricCard
           icon={<Moon size={18} color={Theme.colors.secondary} />}
@@ -89,7 +89,7 @@ export const BiometricScroll: React.FC<BiometricScrollProps> = ({ biometrics, cy
           value={cycle.hasCycleData ? `Day ${cycle.currentDay}` : '—'}
           subtitle={cycle.hasCycleData ? (cycle.isIrregular ? 'Irregular pattern' : cycle.phase) : 'Add period dates'}
           accentColor={Theme.colors.strainAmber}
-          bgColor="#FEF3C7"
+          bgColor={themed('#FEF3C7')}
           onPress={() => router.push('/log-cycle')}
           actionLabel={cycle.hasCycleData ? 'Update' : 'Add'}
         />
@@ -131,7 +131,7 @@ export const BiometricScroll: React.FC<BiometricScrollProps> = ({ biometrics, cy
   );
 };
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: { marginTop: 8 },
   sectionTitle: {
     fontSize: 16,
@@ -166,4 +166,4 @@ const styles = StyleSheet.create({
   sheetTitle: { fontSize: 18, fontWeight: '800', color: Theme.colors.textPrimary },
   sheetHint: { fontSize: 13, color: Theme.colors.textSecondary, marginTop: 6 },
   close: { width: 32, height: 32, borderRadius: 16, backgroundColor: Theme.colors.backgroundMuted, alignItems: 'center', justifyContent: 'center' },
-});
+}));

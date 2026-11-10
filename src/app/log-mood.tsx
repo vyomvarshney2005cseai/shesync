@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   TextInput,
@@ -19,7 +18,7 @@ import {
   Sparkles,
   ArrowRight,
 } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { nextSyncHref, syncStepBadge } from '@/lib/syncDetails';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
@@ -189,8 +188,8 @@ export default function LogMoodScreen() {
                   style={[
                     styles.moodTile,
                     isSelected && {
-                      borderColor: m.color,
-                      backgroundColor: m.bgColor,
+                      borderColor: themed(m.color),
+                      backgroundColor: themed(m.bgColor),
                       transform: [{ scale: 1.02 }],
                     },
                   ]}
@@ -201,7 +200,7 @@ export default function LogMoodScreen() {
                   <Text
                     style={[
                       styles.moodLabel,
-                      isSelected && { color: m.color, fontWeight: '800' },
+                      isSelected && { color: themed(m.color), fontWeight: '800' },
                     ]}
                   >
                     {m.label}
@@ -295,11 +294,11 @@ export default function LogMoodScreen() {
           {isOnboarding ? (
             <>
               <Text style={styles.saveButtonText}>Save & continue</Text>
-              <ArrowRight size={20} color="#FFFFFF" style={{ marginLeft: 8 }} />
+              <ArrowRight size={20} color={themed('#FFFFFF')} style={{ marginLeft: 8 }} />
             </>
           ) : (
             <>
-              <Check size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Check size={20} color={themed('#FFFFFF')} style={{ marginRight: 8 }} />
               <Text style={styles.saveButtonText}>
                 {isSaved ? 'Saved to Health Log' : 'Save Mood Entry'}
               </Text>
@@ -312,7 +311,7 @@ export default function LogMoodScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   safeArea: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -544,4 +543,4 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     textAlign: 'center',
   },
-});
+}));

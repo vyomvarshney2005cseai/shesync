@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Phone, ShieldCheck } from 'lucide-react-native';
 import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { AuthGate } from '@/components/common/AuthGate';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { HEALTH_CHECK_QUESTIONS } from '@/constants/healthCheck';
 import { useAppStore } from '@/store/useAppStore';
 import { nextSyncHref, syncStepBadge } from '@/lib/syncDetails';
@@ -112,7 +112,7 @@ export default function HealthCheckScreen() {
                     <View style={styles.crisisRow}>
                       <PrimaryButton
                         title="Call Tele-MANAS 14416"
-                        icon={<Phone size={16} color="#FFFFFF" />}
+                        icon={<Phone size={16} color={themed('#FFFFFF')} />}
                         onPress={() => callNumber(CRISIS_LINES.teleManas.number, CRISIS_LINES.teleManas.label)}
                         style={{ flex: 1 }}
                       />
@@ -149,7 +149,7 @@ export default function HealthCheckScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   privacy: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -210,4 +210,4 @@ const styles = StyleSheet.create({
   crisisRow: { flexDirection: 'row', gap: 8 },
   missingText: { marginTop: 10, fontSize: 13, color: '#9A5A2E', fontWeight: '700', textAlign: 'center' },
   footnote: { fontSize: 11, color: Theme.colors.textTertiary, textAlign: 'center', marginTop: 12, lineHeight: 16 },
-});
+}));

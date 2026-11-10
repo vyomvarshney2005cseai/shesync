@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   Image,
   Linking,
@@ -15,7 +14,7 @@ import {
   ExternalLink,
   Clock,
 } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
 import type { YouTubeVideoSession } from '@/types';
 
 export const SOMATIC_YOUTUBE_VIDEOS: YouTubeVideoSession[] = [
@@ -303,7 +302,7 @@ export const SomaticVideoLibrary: React.FC<SomaticVideoLibraryProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     marginVertical: 10,
   },
@@ -577,4 +576,4 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.primaryLight,
     borderRadius: 8,
   },
-});
+}));

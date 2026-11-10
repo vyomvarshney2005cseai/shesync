@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { GameResult, LevelPicker, StatStrip, clock, nowMs, useElapsed } from '@/components/games/GameKit';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
 import { createMemoryDeck, type MemoryCard } from '@/lib/games';
 import { useGamesStore } from '@/store/useGamesStore';
 
@@ -109,7 +109,7 @@ export default function MemoryGame() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
   card: {
     aspectRatio: 0.85,
@@ -122,4 +122,4 @@ const styles = StyleSheet.create({
   cardUp: { backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: Theme.colors.primaryLight },
   cardMatched: { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0', opacity: 0.8 },
   symbol: { fontSize: 30, color: '#FFFFFF' },
-});
+}));

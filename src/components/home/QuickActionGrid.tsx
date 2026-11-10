@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Smile, Flame, Droplets, Mic, Calendar } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 
 export type QuickActionId = 'mood' | 'pain' | 'flow' | 'cycle' | 'voice';
 
@@ -30,8 +30,8 @@ export const QuickActionGrid: React.FC<QuickActionGridProps> = ({ onAction }) =>
           accessibilityRole="button"
           accessibilityLabel={`Log ${label}`}
         >
-          <View style={[styles.iconWrap, { backgroundColor: bg }]}>
-            <Icon size={22} color={color} />
+          <View style={[styles.iconWrap, { backgroundColor: themed(bg) }]}>
+            <Icon size={22} color={themed(color)} />
           </View>
           <Text style={styles.label}>{label}</Text>
         </Pressable>
@@ -40,7 +40,7 @@ export const QuickActionGrid: React.FC<QuickActionGridProps> = ({ onAction }) =>
   </View>
 );
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: { paddingHorizontal: 20, marginTop: 20 },
   sectionTitle: { fontSize: 15, fontWeight: '800', color: Theme.colors.textPrimary, marginBottom: 10 },
   row: {
@@ -57,4 +57,4 @@ const styles = StyleSheet.create({
   iconWrap: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   label: { fontSize: 12, fontWeight: '700', color: Theme.colors.textPrimary },
   pressed: { opacity: 0.8, transform: [{ scale: 0.97 }] },
-});
+}));

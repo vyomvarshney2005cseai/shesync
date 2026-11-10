@@ -1,8 +1,8 @@
 // Small shared building blocks for the wellness dashboards, styled to
 // match SheSync's existing cards (rounded white glass, rose accents).
 import React from 'react';
-import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { Theme } from '@/constants/theme';
+import { Pressable, Text, View, ViewStyle } from 'react-native';
+import { Theme, createStyles, themed, withAlpha } from '@/constants/theme';
 
 export function SectionHeader({
   title,
@@ -40,14 +40,14 @@ export function Card({
   return <View style={[styles.card, toneStyles[tone], style as ViewStyle]}>{children}</View>;
 }
 
-const toneStyles = StyleSheet.create({
+const toneStyles = createStyles(() => ({
   default: { backgroundColor: Theme.colors.card, borderColor: Theme.colors.cardBorder },
   rose: { backgroundColor: '#FFF1F5', borderColor: 'rgba(201, 87, 140, 0.25)' },
   lilac: { backgroundColor: Theme.colors.secondaryLight, borderColor: Theme.colors.secondaryBorder },
   dark: { backgroundColor: Theme.colors.obsidian, borderColor: 'rgba(255,255,255,0.08)' },
   mint: { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' },
   amber: { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' },
-});
+}));
 
 export function Chip({
   label,
@@ -85,7 +85,7 @@ export function Chip({
 export function ProgressBar({
   value,
   color = Theme.colors.primary,
-  track = 'rgba(201, 87, 140, 0.12)',
+  track = themed('rgba(201, 87, 140, 0.12)'),
   height = 8,
 }: {
   value: number; // 0..1
@@ -160,7 +160,7 @@ export function MiniBars({
                   height: `${Math.max(v > 0 ? 8 : 0, (v / max) * 100)}%`,
                   width: '100%',
                   borderRadius: 6,
-                  backgroundColor: isLast ? color : `${color}88`,
+                  backgroundColor: isLast ? color : withAlpha(color, 0.53),
                 }}
               />
             </View>
@@ -206,7 +206,7 @@ export function Stepper({
   );
 }
 
-export const uiStyles = StyleSheet.create({
+export const uiStyles = createStyles(() => ({
   row: { flexDirection: 'row', alignItems: 'center' },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   muted: { fontSize: 12, color: Theme.colors.textSecondary, lineHeight: 17 },
@@ -223,9 +223,9 @@ export const uiStyles = StyleSheet.create({
     fontSize: 14,
     color: Theme.colors.textPrimary,
   },
-});
+}));
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   sectionRow: { flexDirection: 'row', alignItems: 'flex-end', marginTop: 22, marginBottom: 10, gap: 8 },
   sectionTitle: { fontSize: 17, fontWeight: '800', color: Theme.colors.textPrimary, letterSpacing: -0.3 },
   sectionSubtitle: { fontSize: 12, color: Theme.colors.textSecondary, marginTop: 2, lineHeight: 17 },
@@ -285,4 +285,4 @@ const styles = StyleSheet.create({
   stepBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: Theme.colors.primaryLight },
   stepBtnText: { fontSize: 20, fontWeight: '800', color: Theme.colors.primary },
   stepValue: { minWidth: 70, textAlign: 'center', fontSize: 15, fontWeight: '800', color: Theme.colors.textPrimary },
-});
+}));

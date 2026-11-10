@@ -1,8 +1,8 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Dumbbell, Flower2, Footprints, Timer, ChevronRight } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { INTENSITY_LABELS, type LibraryWorkout } from '@/constants/fitnessLibrary';
 import type { CyclePhase } from '@/types';
 
@@ -24,8 +24,8 @@ export function WorkoutListItem({ workout, phase }: { workout: LibraryWorkout; p
       accessibilityRole="button"
       accessibilityLabel={`${workout.title}, ${workout.minutes} minutes, ${INTENSITY_LABELS[workout.intensity]}`}
     >
-      <View style={[styles.icon, { backgroundColor: colors.bg }]}>
-        <Icon size={20} color={colors.fg} />
+      <View style={[styles.icon, { backgroundColor: themed(colors.bg) }]}>
+        <Icon size={20} color={themed(colors.fg)} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.title}>{workout.title}</Text>
@@ -37,8 +37,8 @@ export function WorkoutListItem({ workout, phase }: { workout: LibraryWorkout; p
             <Timer size={12} color={Theme.colors.textTertiary} />
             <Text style={styles.metaText}>{workout.minutes} min</Text>
           </View>
-          <View style={[styles.pill, { backgroundColor: colors.bg }]}>
-            <Text style={[styles.pillText, { color: colors.fg }]}>{INTENSITY_LABELS[workout.intensity]}</Text>
+          <View style={[styles.pill, { backgroundColor: themed(colors.bg) }]}>
+            <Text style={[styles.pillText, { color: themed(colors.fg) }]}>{INTENSITY_LABELS[workout.intensity]}</Text>
           </View>
           <Text style={styles.metaText}>{workout.level}</Text>
           {fits ? (
@@ -53,7 +53,7 @@ export function WorkoutListItem({ workout, phase }: { workout: LibraryWorkout; p
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   item: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -74,4 +74,4 @@ const styles = StyleSheet.create({
   metaText: { fontSize: 11, fontWeight: '600', color: Theme.colors.textTertiary },
   pill: { borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 },
   pillText: { fontSize: 10, fontWeight: '800' },
-});
+}));

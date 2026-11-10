@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Dumbbell, GraduationCap, Puzzle, ChevronRight } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { useFitnessStore } from '@/store/useFitnessStore';
 import { useStudyStore } from '@/store/useStudyStore';
 import { useGamesStore } from '@/store/useGamesStore';
@@ -43,9 +43,9 @@ export function WellnessHub({ only, title = 'Your wellness dashboards' }: Wellne
       id: 'fitness',
       title: 'Fitness & Weight',
       stat: `${stats.moveMinutes}/150 active min this week`,
-      icon: <Dumbbell size={22} color="#0F766E" />,
-      color: '#0F766E',
-      bg: '#E6F7F3',
+      icon: <Dumbbell size={22} color={themed('#0F766E')} />,
+      color: themed('#0F766E'),
+      bg: themed('#E6F7F3'),
       href: '/fitness',
     },
     {
@@ -81,11 +81,11 @@ export function WellnessHub({ only, title = 'Your wellness dashboards' }: Wellne
           accessibilityRole="button"
           accessibilityLabel={`Open ${c.title}`}
         >
-          <View style={[styles.iconWrap, { backgroundColor: c.bg }]}>{c.icon}</View>
+          <View style={[styles.iconWrap, { backgroundColor: themed(c.bg) }]}>{c.icon}</View>
           <View style={styles.textCol}>
             <Text style={styles.cardTitle}>{c.title}</Text>
-            <View style={[styles.statPill, { backgroundColor: c.bg }]}>
-              <Text style={[styles.statText, { color: c.color }]}>{c.stat}</Text>
+            <View style={[styles.statPill, { backgroundColor: themed(c.bg) }]}>
+              <Text style={[styles.statText, { color: themed(c.color) }]}>{c.stat}</Text>
             </View>
           </View>
           <ChevronRight size={20} color={Theme.colors.textTertiary} />
@@ -95,7 +95,7 @@ export function WellnessHub({ only, title = 'Your wellness dashboards' }: Wellne
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: { marginTop: 8, marginBottom: 8 },
   title: { fontSize: 16, fontWeight: '700', color: Theme.colors.textPrimary, marginBottom: 12 },
   card: {
@@ -116,4 +116,4 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary, letterSpacing: -0.2 },
   statPill: { alignSelf: 'flex-start', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3, marginTop: 8 },
   statText: { fontSize: 11, fontWeight: '800' },
-});
+}));

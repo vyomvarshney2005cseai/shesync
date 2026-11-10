@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Theme } from '@/constants/theme';
+import { View, Text } from 'react-native';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 
 const STRAIN_COLOR: Record<string, string> = {
@@ -90,7 +90,7 @@ export const CalibratedScorecard: React.FC = () => {
         {tiles.map((t) => (
           <View key={t.label} style={styles.tile}>
             <Text style={styles.tileLabel}>{t.label}</Text>
-            <Text style={[styles.tileValue, { color: t.color }]} numberOfLines={1}>
+            <Text style={[styles.tileValue, { color: themed(t.color) }]} numberOfLines={1}>
               {t.value}
             </Text>
             <Text style={styles.tileHint} numberOfLines={1}>
@@ -139,7 +139,7 @@ export const CalibratedScorecard: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     backgroundColor: '#FFFFFF',
     borderRadius: Theme.radius.xl,
@@ -172,4 +172,4 @@ const styles = StyleSheet.create({
   point: { flexDirection: 'row', gap: 6, marginBottom: 8 },
   bullet: { fontSize: 14, color: Theme.colors.primary, lineHeight: 19 },
   pointText: { flex: 1, fontSize: 13, lineHeight: 19, color: Theme.colors.textSecondary },
-});
+}));

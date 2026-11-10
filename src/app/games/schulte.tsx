@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { GameResult, LevelPicker, StatStrip, clock, nowMs, useElapsed } from '@/components/games/GameKit';
 import { uiStyles } from '@/components/common/ui';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { createSchulte } from '@/lib/games';
 import { useGamesStore } from '@/store/useGamesStore';
 
@@ -86,7 +86,7 @@ export default function FocusGrid() {
               accessibilityLabel={`${v}${found ? ', found' : ''}`}
             >
               <View style={[styles.inner, found && styles.found, wrong === v && styles.wrong]}>
-                <Text style={[styles.num, found && { color: '#047857' }, n === 5 && { fontSize: 20 }]}>{v}</Text>
+                <Text style={[styles.num, found && { color: themed('#047857') }, n === 5 && { fontSize: 20 }]}>{v}</Text>
               </View>
             </Pressable>
           );
@@ -108,7 +108,7 @@ export default function FocusGrid() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   board: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -130,4 +130,4 @@ const styles = StyleSheet.create({
   found: { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' },
   wrong: { backgroundColor: '#FFE4E6', borderColor: Theme.colors.strainHigh },
   num: { fontSize: 24, fontWeight: '800', color: Theme.colors.textPrimary },
-});
+}));

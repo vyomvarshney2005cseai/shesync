@@ -13,4 +13,7 @@ export const ROUTES = {
   care: r('/care'),
   syncResult: r('/sync-result'),
   healthCheck: r('/health-check'),
+  pcos: r('/pcos'),
+  confidence: r('/confidence'),
+  data: r('/data'),
 };

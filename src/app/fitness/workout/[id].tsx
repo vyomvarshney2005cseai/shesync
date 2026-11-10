@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useReducer, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, Vibration, View } from 'react-native';
+import { Platform, Pressable, Text, Vibration, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import { Check, ChevronLeft, ChevronRight, Pause, Play, SkipForward, Square, Timer } from 'lucide-react-native';
@@ -7,7 +7,7 @@ import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { Card, Chip, ProgressBar, SectionHeader, uiStyles } from '@/components/common/ui';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { getLibraryWorkout, INTENSITY_LABELS, type LibraryWorkout } from '@/constants/fitnessLibrary';
 import { useFitnessStore, type WorkoutSession } from '@/store/useFitnessStore';
 import { kcalFromMet } from '@/lib/fitness';
@@ -115,7 +115,7 @@ function Player({ workout }: { workout: LibraryWorkout }) {
           </Card>
           <PrimaryButton
             title="Start workout"
-            icon={<Play size={16} color="#FFFFFF" fill="#FFFFFF" />}
+            icon={<Play size={16} color={themed('#FFFFFF')} fill={themed('#FFFFFF')} />}
             onPress={() => dispatch({ type: 'start', now: now() })}
             fullWidth
             style={{ marginTop: 18 }}
@@ -136,7 +136,7 @@ function Player({ workout }: { workout: LibraryWorkout }) {
           </View>
 
           <Card tone={state.phase === 'rest' ? 'mint' : 'dark'} style={styles.liveCard}>
-            <Text style={[styles.liveLabel, state.phase === 'rest' && { color: '#047857' }]}>
+            <Text style={[styles.liveLabel, state.phase === 'rest' && { color: themed('#047857') }]}>
               {state.phase === 'rest' ? 'REST' : sets > 1 ? `SET ${state.set} OF ${sets}` : 'NOW'}
               {state.paused ? ' · PAUSED' : ''}
             </Text>
@@ -145,7 +145,7 @@ function Player({ workout }: { workout: LibraryWorkout }) {
             </Text>
             {left != null ? (
               <Text
-                style={[styles.bigTimer, state.phase === 'rest' && { color: '#047857' }]}
+                style={[styles.bigTimer, state.phase === 'rest' && { color: themed('#047857') }]}
                 accessibilityLabel={`${left} seconds left`}
                 accessibilityLiveRegion="polite"
               >
@@ -187,7 +187,7 @@ function Player({ workout }: { workout: LibraryWorkout }) {
           {state.phase === 'work' && left == null ? (
             <PrimaryButton
               title={state.set < sets ? `Done — set ${state.set} of ${sets}` : 'Done — next exercise'}
-              icon={<Check size={16} color="#FFFFFF" />}
+              icon={<Check size={16} color={themed('#FFFFFF')} />}
               onPress={() => dispatch({ type: 'doneSet', now: now() })}
               fullWidth
               style={{ marginTop: 12 }}
@@ -205,7 +205,7 @@ function Player({ workout }: { workout: LibraryWorkout }) {
           <PrimaryButton
             title="End workout"
             variant="dark"
-            icon={<Square size={14} color="#FFFFFF" />}
+            icon={<Square size={14} color={themed('#FFFFFF')} />}
             onPress={() => dispatch({ type: 'finish', now: now() })}
             fullWidth
             style={{ marginTop: 10 }}
@@ -264,7 +264,7 @@ function Player({ workout }: { workout: LibraryWorkout }) {
             <>
               <PrimaryButton
                 title="Save to my log"
-                icon={<Timer size={16} color="#FFFFFF" />}
+                icon={<Timer size={16} color={themed('#FFFFFF')} />}
                 onPress={save}
                 fullWidth
                 style={{ marginTop: 18 }}
@@ -312,7 +312,7 @@ function ControlButton({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   stepRow: { flexDirection: 'row', gap: 12, paddingVertical: 10 },
   stepBorder: { borderTopWidth: 1, borderTopColor: Theme.colors.cardBorder },
   stepNum: {
@@ -350,4 +350,4 @@ const styles = StyleSheet.create({
   ctrlText: { fontSize: 12, fontWeight: '700', color: Theme.colors.textPrimary },
   doneEmoji: { fontSize: 44 },
   doneTitle: { fontSize: 22, fontWeight: '800', color: Theme.colors.textPrimary, marginTop: 6 },
-});
+}));

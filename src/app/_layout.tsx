@@ -4,10 +4,11 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { View, StyleSheet, Platform } from 'react-native';
-import { Theme } from '@/constants/theme';
+import { View, Platform } from 'react-native';
+import { Theme, createStyles, setThemeMode } from '@/constants/theme';
 import { useStoresHydrated } from '@/store/hydration';
 import { startCloudSync } from '@/lib/sync';
+import { useNightActive } from '@/store/useSettingsStore';
 
 // Keep the splash visible until saved data has loaded from the device.
 // The navigator always renders (expo-router requires it on first render);
@@ -19,6 +20,11 @@ const push = { headerShown: false, animation: 'slide_from_right' } as const;
 
 export default function RootLayout() {
   const hydrated = useStoresHydrated();
+  const night = useNightActive();
+  // Set before any screen renders; the `key` below remounts the screens so
+  // every style is rebuilt in the new palette.
+  const themeMode = night ? 'dark' : 'light';
+  setThemeMode(themeMode);
 
   useEffect(() => {
     if (hydrated) SplashScreen.hideAsync().catch(() => {});
@@ -29,9 +35,9 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <View style={styles.page}>
+      <View key={themeMode} style={styles.page}>
         <View style={styles.container}>
-          <StatusBar style="dark" />
+          <StatusBar style={night ? 'light' : 'dark'} />
           <Stack
               screenOptions={{
                 headerShown: false,
@@ -57,6 +63,9 @@ export default function RootLayout() {
               <Stack.Screen name="health-check" options={push} />
               <Stack.Screen name="sync-result" options={sheet} />
               <Stack.Screen name="care" options={push} />
+              <Stack.Screen name="pcos" options={push} />
+              <Stack.Screen name="confidence" options={push} />
+              <Stack.Screen name="data" options={push} />
             </Stack>
         </View>
       </View>
@@ -64,7 +73,7 @@ export default function RootLayout() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   // Each screen paints its own background; this only shows beside the
   // centred column on wide web windows.
   page: {
@@ -86,4 +95,4 @@ const styles = StyleSheet.create({
         } as any)
       : {}),
   },
-});
+}));

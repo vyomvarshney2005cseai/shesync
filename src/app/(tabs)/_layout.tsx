@@ -1,8 +1,8 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, Platform, StyleSheet } from 'react-native';
+import { View, Platform } from 'react-native';
 import { Home, Activity, Brain, FileText, User, Sparkles } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthGate } from '@/components/common/AuthGate';
 
@@ -19,9 +19,9 @@ export default function TabLayout() {
         tabBarActiveTintColor: Theme.colors.primary,
         tabBarInactiveTintColor: Theme.colors.textTertiary,
         tabBarStyle: {
-          backgroundColor: 'rgba(255, 255, 255, 0.92)',
+          backgroundColor: themed('rgba(255, 255, 255, 0.92)'),
           borderTopWidth: 1,
-          borderTopColor: 'rgba(255, 226, 235, 0.7)',
+          borderTopColor: themed('rgba(255, 226, 235, 0.7)'),
           height: Platform.OS === 'ios' ? 64 + insets.bottom : 68,
           paddingTop: 6,
           paddingBottom: Platform.OS === 'ios' ? insets.bottom : 8,
@@ -52,7 +52,7 @@ export default function TabLayout() {
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && styles.activeIconBg]}>
-              <Home size={20} color={color} strokeWidth={focused ? 2.4 : 1.8} />
+              <Home size={20} color={themed(color)} strokeWidth={focused ? 2.4 : 1.8} />
             </View>
           ),
         }}
@@ -63,7 +63,7 @@ export default function TabLayout() {
           title: 'GoGirl',
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && styles.activeIconBg]}>
-              <Sparkles size={20} color={color} strokeWidth={focused ? 2.4 : 1.8} />
+              <Sparkles size={20} color={themed(color)} strokeWidth={focused ? 2.4 : 1.8} />
             </View>
           ),
         }}
@@ -74,7 +74,7 @@ export default function TabLayout() {
           title: 'Move',
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && styles.activeIconBg]}>
-              <Activity size={20} color={color} strokeWidth={focused ? 2.4 : 1.8} />
+              <Activity size={20} color={themed(color)} strokeWidth={focused ? 2.4 : 1.8} />
             </View>
           ),
         }}
@@ -85,7 +85,7 @@ export default function TabLayout() {
           title: 'Mind',
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && styles.activeIconBg]}>
-              <Brain size={20} color={color} strokeWidth={focused ? 2.4 : 1.8} />
+              <Brain size={20} color={themed(color)} strokeWidth={focused ? 2.4 : 1.8} />
             </View>
           ),
         }}
@@ -96,7 +96,7 @@ export default function TabLayout() {
           title: 'Report',
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && styles.activeIconBg]}>
-              <FileText size={20} color={color} strokeWidth={focused ? 2.4 : 1.8} />
+              <FileText size={20} color={themed(color)} strokeWidth={focused ? 2.4 : 1.8} />
             </View>
           ),
         }}
@@ -107,7 +107,7 @@ export default function TabLayout() {
           title: 'Profile',
           tabBarIcon: ({ color, focused }) => (
             <View style={[styles.iconContainer, focused && styles.activeIconBg]}>
-              <User size={20} color={color} strokeWidth={focused ? 2.4 : 1.8} />
+              <User size={20} color={themed(color)} strokeWidth={focused ? 2.4 : 1.8} />
             </View>
           ),
         }}
@@ -117,7 +117,7 @@ export default function TabLayout() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -128,4 +128,4 @@ const styles = StyleSheet.create({
   activeIconBg: {
     backgroundColor: Theme.colors.primaryLight,
   },
-});
+}));

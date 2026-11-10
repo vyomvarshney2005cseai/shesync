@@ -2,14 +2,13 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   ScrollView,
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import {
   ASSESSMENT_QUESTIONS,
   ASSESSMENT_CHAPTERS,
@@ -207,7 +206,7 @@ export default function AssessmentScreen() {
                       isSelected ? styles.radioCircleSelected : styles.radioCircleUnselected,
                     ]}
                   >
-                    {isSelected && <Check size={13} color="#FFFFFF" />}
+                    {isSelected && <Check size={13} color={themed('#FFFFFF')} />}
                   </View>
                 </TouchableOpacity>
               );
@@ -242,7 +241,7 @@ export default function AssessmentScreen() {
                 : 'Next Question'}
             </Text>
             {currentIndex !== ASSESSMENT_QUESTIONS.length - 1 && (
-              <ArrowRight size={18} color="#FFFFFF" />
+              <ArrowRight size={18} color={themed('#FFFFFF')} />
             )}
           </TouchableOpacity>
         </View>
@@ -251,7 +250,7 @@ export default function AssessmentScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   cycleLine: { fontSize: 13, color: Theme.colors.textSecondary, textAlign: 'center', marginTop: 14 },
   retakeLink: { alignSelf: 'center', paddingVertical: 14 },
   retakeLinkText: { fontSize: 14, fontWeight: '700', color: Theme.colors.primary },
@@ -762,4 +761,4 @@ const styles = StyleSheet.create({
     color: '#FCA5A5',
     flex: 1,
   },
-});
+}));

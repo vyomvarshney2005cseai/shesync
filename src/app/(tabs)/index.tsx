@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ScrollView, StyleSheet, Text } from 'react-native';
+import { View, ScrollView, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Header } from '@/components/common/Header';
 import { StrainGauge } from '@/components/home/StrainGauge';
@@ -13,7 +13,7 @@ import { router } from 'expo-router';
 import { useAppStore } from '@/store/useAppStore';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
 import { timeOfDayGreeting } from '@/lib/dates';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
 
 const QUICK_ROUTES = {
   mood: '/log-mood',
@@ -76,7 +76,7 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   safeArea: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -105,4 +105,4 @@ const styles = StyleSheet.create({
     color: Theme.colors.textPrimary,
     letterSpacing: -0.3,
   },
-});
+}));

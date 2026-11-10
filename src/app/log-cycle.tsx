@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   Platform,
@@ -16,7 +15,7 @@ import {
   Plus,
   Minus,
 } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore, withFreshDaysAgo } from '@/store/useAppStore';
 import { nextSyncHref, syncStepBadge } from '@/lib/syncDetails';
 import { daysAgoKey } from '@/lib/dates';
@@ -446,7 +445,7 @@ export default function LogCycleScreen() {
                 <Text style={styles.timelineVal}>{prediction.ovulationWindow}</Text>
               </View>
               <View style={styles.timelineRow}>
-                <View style={[styles.timelineDot, { backgroundColor: '#F59E0B' }]} />
+                <View style={[styles.timelineDot, { backgroundColor: themed('#F59E0B') }]} />
                 <Text style={styles.timelineLabel}>PMS days:</Text>
                 <Text style={styles.timelineVal}>{prediction.lutealPhaseWindow}</Text>
               </View>
@@ -522,7 +521,7 @@ export default function LogCycleScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   safeArea: {
     flex: 1,
     backgroundColor: 'transparent',
@@ -1042,4 +1041,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
-});
+}));

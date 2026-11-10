@@ -15,6 +15,8 @@ import { useAppStore } from '@/store/useAppStore';
 import { useFitnessStore } from '@/store/useFitnessStore';
 import { useGamesStore } from '@/store/useGamesStore';
 import { useStudyStore } from '@/store/useStudyStore';
+import { usePcosStore } from '@/store/usePcosStore';
+import { useConfidenceStore } from '@/store/useConfidenceStore';
 import { flushStorage } from '@/store/storage';
 import { createSyncEngine, type SyncState } from './engine';
 import { supabaseSyncClient } from './supabaseClient';
@@ -29,11 +31,13 @@ interface SyncStatus {
 export const useSyncStatus = create<SyncStatus>(() => ({ state: 'off' }));
 
 // ─── Store ⇄ snapshot ───────────────────────────────────────
-function getLocal(): LocalSnapshot {
+export function getLocal(): LocalSnapshot {
   const s = useAppStore.getState();
   const f = useFitnessStore.getState();
   const st = useStudyStore.getState();
   const g = useGamesStore.getState();
+  const pc = usePcosStore.getState();
+  const cf = useConfidenceStore.getState();
   return {
     profile: {
       userName: s.userName,
@@ -61,6 +65,8 @@ function getLocal(): LocalSnapshot {
         kitChecks: st.kitChecks,
       },
       games: { records: g.records, best: g.best },
+      pcos: { diagnosed: pc.diagnosed, scan: pc.scan, checkins: pc.checkins, checklist: pc.checklist },
+      confidence: { levels: cf.levels, glow: cf.glow, challenges: cf.challenges, proud: cf.proud, saved: cf.saved },
     },
   };
 }
@@ -72,7 +78,7 @@ function pick(data: Record<string, unknown>, keys: string[]) {
   return out;
 }
 
-function applyLocal(m: LocalSnapshot) {
+export function applyLocal(m: LocalSnapshot) {
   const app = useAppStore.getState();
   useAppStore.setState({
     userName: m.profile.userName || app.userName,
@@ -93,6 +99,8 @@ function applyLocal(m: LocalSnapshot) {
   useFitnessStore.setState(pick(m.docs.fitness, ['profile', 'weights', 'sessions', 'habits']));
   useStudyStore.setState(pick(m.docs.study, ['preset', 'sessions', 'tasks', 'confidence', 'wins', 'kitChecks']));
   useGamesStore.setState(pick(m.docs.games, ['records', 'best']));
+  usePcosStore.setState(pick(m.docs.pcos ?? {}, ['diagnosed', 'scan', 'checkins', 'checklist']));
+  useConfidenceStore.setState(pick(m.docs.confidence ?? {}, ['levels', 'glow', 'challenges', 'proud', 'saved']));
 }
 
 const isCloudAccount = () => {
@@ -154,6 +162,12 @@ export function startCloudSync(): () => void {
     }),
     useGamesStore.subscribe((s, p) => {
       if (s.records !== p.records || s.best !== p.best) schedule();
+    }),
+    usePcosStore.subscribe((s, p) => {
+      if (s.checkins !== p.checkins || s.checklist !== p.checklist || s.diagnosed !== p.diagnosed || s.scan !== p.scan) schedule();
+    }),
+    useConfidenceStore.subscribe((s, p) => {
+      if (s.levels !== p.levels || s.glow !== p.glow || s.challenges !== p.challenges || s.proud !== p.proud || s.saved !== p.saved) schedule();
     }),
   ];
   // Upload anything waiting when the app goes to the background, and retry

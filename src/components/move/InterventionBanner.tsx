@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,7 +9,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { ShieldAlert, Sparkles } from 'lucide-react-native';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 
 interface InterventionBannerProps {
   isOverride: boolean;
@@ -48,27 +48,27 @@ export const InterventionBanner: React.FC<InterventionBannerProps> = ({ isOverri
   const tone = isOverride ? amber : calm;
 
   return (
-    <Animated.View style={[styles.container, { backgroundColor: tone.bg, borderColor: tone.border }, slideStyle]}>
+    <Animated.View style={[styles.container, { backgroundColor: themed(tone.bg), borderColor: themed(tone.border) }, slideStyle]}>
       <View style={styles.iconRow}>
         <Animated.View style={pulseStyle}>
-          <View style={[styles.iconCircle, { backgroundColor: tone.iconBg, borderColor: tone.border }]}>
-            {isOverride ? <ShieldAlert size={22} color={tone.text} /> : <Sparkles size={22} color={tone.text} />}
+          <View style={[styles.iconCircle, { backgroundColor: themed(tone.iconBg), borderColor: themed(tone.border) }]}>
+            {isOverride ? <ShieldAlert size={22} color={themed(tone.text)} /> : <Sparkles size={22} color={themed(tone.text)} />}
           </View>
         </Animated.View>
         <View style={styles.textCol}>
-          <Text style={[styles.title, { color: tone.title }]}>
+          <Text style={[styles.title, { color: themed(tone.title) }]}>
             {isOverride ? 'Today’s plan was adjusted' : 'Today’s plan fits your cycle'}
           </Text>
-          <Text style={[styles.subtitle, { color: tone.text }]}>
+          <Text style={[styles.subtitle, { color: themed(tone.text) }]}>
             {isOverride ? 'A high-intensity session was swapped for a gentler one.' : note}
           </Text>
         </View>
       </View>
-      <View style={[styles.detailRow, { borderTopColor: tone.border }]}>
-        <Text style={[styles.detailLabel, { color: tone.text }]}>Strain</Text>
-        <Text style={[styles.detailValue, { color: tone.title }]}>{strainScore}/100</Text>
-        <View style={[styles.dot, { backgroundColor: tone.text }]} />
-        <Text style={[styles.detailLabel, { color: tone.text }]} numberOfLines={1}>
+      <View style={[styles.detailRow, { borderTopColor: themed(tone.border) }]}>
+        <Text style={[styles.detailLabel, { color: themed(tone.text) }]}>Strain</Text>
+        <Text style={[styles.detailValue, { color: themed(tone.title) }]}>{strainScore}/100</Text>
+        <View style={[styles.dot, { backgroundColor: themed(tone.text) }]} />
+        <Text style={[styles.detailLabel, { color: themed(tone.text) }]} numberOfLines={1}>
           {phaseLabel}
         </Text>
       </View>
@@ -79,7 +79,7 @@ export const InterventionBanner: React.FC<InterventionBannerProps> = ({ isOverri
 const amber = { bg: '#FFF7ED', border: '#FDBA74', iconBg: '#FEF3C7', title: '#92400E', text: '#B45309' };
 const calm = { bg: '#ECFDF5', border: '#A7F3D0', iconBg: '#D1FAE5', title: '#065F46', text: '#047857' };
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     borderRadius: Theme.radius.xl,
     padding: 16,
@@ -111,4 +111,4 @@ const styles = StyleSheet.create({
   detailValue: { fontSize: 12, fontWeight: '800' },
   dot: { width: 4, height: 4, borderRadius: 2 },
   source: { fontSize: 11, marginTop: 6, opacity: 0.85 },
-});
+}));

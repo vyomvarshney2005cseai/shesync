@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Stop, G } from 'react-native-svg';
 import Animated, {
   useSharedValue,
@@ -7,7 +7,7 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { Theme } from '@/constants/theme';
+import { Theme, createStyles, themed } from '@/constants/theme';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -42,9 +42,9 @@ export const StrainGauge: React.FC<StrainGaugeProps> = ({ score, level }) => {
   };
 
   const getGlow = () => {
-    if (score >= 75) return 'rgba(244, 63, 94, 0.15)';
-    if (score >= 50) return 'rgba(245, 158, 11, 0.15)';
-    return 'rgba(16, 185, 129, 0.15)';
+    if (score >= 75) return themed('rgba(244, 63, 94, 0.15)');
+    if (score >= 50) return themed('rgba(245, 158, 11, 0.15)');
+    return themed('rgba(16, 185, 129, 0.15)');
   };
 
   return (
@@ -99,7 +99,7 @@ export const StrainGauge: React.FC<StrainGaugeProps> = ({ score, level }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const styles = createStyles(() => ({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -145,4 +145,4 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.8,
   },
-});
+}));
