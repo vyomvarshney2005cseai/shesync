@@ -6,6 +6,7 @@ import { CalibratedScorecard } from '@/components/report/CalibratedScorecard';
 import { TrendChart } from '@/components/report/TrendChart';
 import { AnomalyCard } from '@/components/report/AnomalyCard';
 import { ClinicalExportCTA } from '@/components/report/ClinicalExportCTA';
+import { DigestiveCard } from '@/components/report/DigestiveCard';
 import { useAppStore } from '@/store/useAppStore';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
 import { createStyles } from '@/constants/theme';
@@ -31,6 +32,7 @@ export default function ReportScreen() {
               <CalibratedScorecard />
               <TrendChart data={clinicalReport.trendData} />
               <AnomalyCard anomalies={clinicalReport.anomalies} />
+              <DigestiveCard />
               <ClinicalExportCTA
                 isGenerating={clinicalReport.isGenerating}
                 generatedAt={clinicalReport.generatedAt}

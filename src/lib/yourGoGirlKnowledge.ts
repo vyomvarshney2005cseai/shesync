@@ -281,7 +281,7 @@ const GENERAL: Intent[] = [
     ],
     examples: ['how do i log my period', 'how to use this app', 'how do i add my period dates', 'where is my doctor report'],
     reply: () => ({
-      text: `Here's where things live in SheSync:\n\n• **Period dates** — Home → Log Period (or the calendar). Tick the first and last day of each period.\n• **Pain, flow, mood** — Home → Quick check-in buttons. Logging even 10 seconds a day makes predictions and advice much better.\n• **Doctor report** — the Report tab makes a PDF of your last 90 days to show a gynaecologist.\n• **Care Connect** — free helplines and ways to find a gynaecologist or counsellor.`,
+      text: `Here's where things live in SheSync:\n\n• **Period dates** — Home → Log Period (or the calendar). Tick the first and last day of each period.\n• **Pain, flow, mood** — Home → 10-second check-in (or the quick log buttons). Logging even 10 seconds a day makes predictions and advice much better.\n• **Doctor report** — the Report tab makes a PDF of your last 90 days to show a gynaecologist.\n• **Pad change reminders** — Home → Pad Care. Tap “I just changed” and it reminds you when it's time.\n• **Care Connect** — free helplines and ways to find a gynaecologist or counsellor.`,
       actions: [LOG_PERIOD, LOG_PAIN, CARE],
     }),
     followUps: ['When is my next period?', 'When should I see a gynaecologist?'],

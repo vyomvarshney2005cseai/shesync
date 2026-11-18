@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Modal,
+  Pressable,
+  Alert,
+  Share,
 } from 'react-native';
 import {
   Sparkles,
   Send,
   Heart,
   Brain,
-  RotateCcw,
   ArrowLeft,
   CheckCircle2,
   Flame,
@@ -23,22 +26,79 @@ import {
   Stethoscope,
   Phone,
   ChevronRight,
+  EllipsisVertical,
+  FileDown,
+  Trash2,
+  Copy,
+  Share2,
 } from 'lucide-react-native';
 import { router, type Href } from 'expo-router';
 import { callNumber, openUrl } from '@/lib/openExternal';
 import { Theme, createStyles } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
+import { useSettingsStore, type ChatLanguageSetting } from '@/store/useSettingsStore';
+import { usePcosStore } from '@/store/usePcosStore';
 import {
   QUICK_PROMPT_TOPICS,
   generateYourGoGirlResponse,
   createInitialWelcomeMessage,
+  quickTopicLabel,
+  displayQuestion,
 } from '@/lib/yourGoGirlEngine';
-import type { CounsellorMode, YourGoGirlAction, YourGoGirlMessage } from '@/types';
+import { LANGUAGE_OPTIONS, UI } from '@/lib/yourGoGirlLang';
+import { chatFileName, chatToText, messageToText } from '@/lib/chatExport';
+import { saveTextFile } from '@/lib/files';
+import { pauseAppLock } from '@/lib/appLock';
+import type { ChatLanguage, CounsellorMode, YourGoGirlAction, YourGoGirlMessage } from '@/types';
+import type { DoctorPrepInput } from '@/lib/doctorVisitPrep';
+
+async function shareText(text: string) {
+  try {
+    if (Platform.OS === 'web') {
+      const nav = typeof navigator !== 'undefined' ? (navigator as Partial<Navigator>) : undefined;
+      if (nav?.share) await nav.share({ text });
+      else if (nav?.clipboard) {
+        await nav.clipboard.writeText(text);
+        window.alert('Copied — paste it into a note or message.');
+      }
+      return;
+    }
+    pauseAppLock(); // the share sheet is not "leaving" SheSync
+    await Share.share({ message: text });
+  } catch {
+    // Cancelled.
+  }
+}
+
+async function copyText(text: string) {
+  try {
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const Clipboard = await import('expo-clipboard');
+    await Clipboard.setStringAsync(text);
+  } catch {
+    // Not available.
+  }
+}
 
 function runAction(a: YourGoGirlAction) {
   if (a.kind === 'call') callNumber(a.value, a.label);
   else if (a.kind === 'url') openUrl(a.value);
+  else if (a.kind === 'share') void shareText(a.value);
   else router.push(a.value as Href);
+}
+
+function confirmAction(title: string, body: string, action: string, cancel: string, onYes: () => void) {
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && window.confirm(`${title}\n\n${body}`)) onYes();
+    return;
+  }
+  Alert.alert(title, body, [
+    { text: cancel, style: 'cancel' },
+    { text: action, style: 'destructive', onPress: onYes },
+  ]);
 }
 
 interface YourGoGirlChatViewProps {
@@ -51,12 +111,33 @@ function makeUserMessage(trimmed: string): YourGoGirlMessage {
     sender: 'user',
     text: trimmed,
     category: 'general',
+    createdAt: new Date().toISOString(),
     timestamp: new Date().toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
     }),
   };
 }
+
+/** A short note from YourGoGirl (e.g. after switching language). */
+function makeBotNote(text: string, lang: ChatLanguage): YourGoGirlMessage {
+  return {
+    id: `bot-note-${Date.now()}`,
+    sender: 'bot',
+    text,
+    lang,
+    category: 'general',
+    createdAt: new Date().toISOString(),
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  };
+}
+
+const SWITCH_NAMES: Record<ChatLanguageSetting, Record<ChatLanguage, string>> = {
+  auto: { en: 'the language you write in', hinglish: 'usi language (jismein aap likhogi)', hi: 'उसी भाषा (जिसमें आप लिखेंगी)' },
+  en: { en: 'English', hinglish: 'English', hi: 'English' },
+  hinglish: { en: 'Hinglish', hinglish: 'Hinglish', hi: 'Hinglish' },
+  hi: { en: 'हिन्दी', hinglish: 'हिन्दी', hi: 'हिन्दी' },
+};
 
 export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
   showBackButton = false,
@@ -72,16 +153,29 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
   const mode: CounsellorMode = 'empathetic_counsellor';
   const addMessage = useAppStore((s) => s.addYourGoGirlMessage);
   const clearChat = useAppStore((s) => s.clearYourGoGirlChat);
+  const deleteMessage = useAppStore((s) => s.deleteYourGoGirlMessage);
+  const language = useSettingsStore((s) => s.chatLanguage);
+  const setLanguage = useSettingsStore((s) => s.setChatLanguage);
 
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [selected, setSelected] = useState<YourGoGirlMessage | null>(null);
   const scrollViewRef = useRef<React.ElementRef<typeof ScrollView>>(null);
+
+  const lastBotLang = useMemo(
+    () => [...messages].reverse().find((m) => m.sender === 'bot' && m.lang)?.lang,
+    [messages]
+  );
+  // Labels follow her choice; on Auto they follow YourGoGirl's last reply.
+  const uiLang: ChatLanguage = language === 'auto' ? lastBotLang ?? 'en' : language;
+  const ui = UI[uiLang];
 
   useEffect(() => {
     if (!messages || messages.length === 0) {
-      addMessage(createInitialWelcomeMessage(userName, cycle, biometrics));
+      addMessage(createInitialWelcomeMessage(userName, language === 'auto' ? 'en' : language));
     }
-  }, [messages, userName, cycle, biometrics, addMessage]);
+  }, [messages, userName, language, addMessage]);
 
   useEffect(() => {
     setTimeout(() => {
@@ -89,24 +183,40 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
     }, 120);
   }, [messages?.length, isTyping]);
 
-  const handleSendMessage = async (textToSend?: string) => {
-    const trimmed = (textToSend ?? inputText).trim();
+  const getDoctorPrepInput = (): DoctorPrepInput => {
+    const s = useAppStore.getState();
+    const pcos = usePcosStore.getState();
+    const latest = pcos.checkins[0];
+    return {
+      symptomLogs: s.symptomLogs,
+      sleepLogs: s.sleepLogs,
+      pastCycles: s.pastCycles,
+      cyclePrediction: s.cyclePrediction,
+      healthCheck: s.healthCheck,
+      assessmentAnswers: s.assessmentAnswers,
+      sleepTarget: s.fineTuningSettings.dailySleepTargetHours || 8,
+      pcosDiagnosed: pcos.diagnosed === 'yes',
+      pcosSigns: !!latest && (latest.acne >= 2 || latest.bodyHair >= 2),
+    };
+  };
+
+  /** `shown` is what appears in her bubble; `query` is what YourGoGirl reads (chips send English wording). */
+  const handleSendMessage = async (shown?: string, query?: string) => {
+    const trimmed = (shown ?? inputText).trim();
     if (!trimmed || isTyping) return;
 
-    if (!textToSend) {
+    if (shown === undefined) {
       setInputText('');
     }
 
-    const userMsg = makeUserMessage(trimmed);
-
-    addMessage(userMsg);
+    addMessage(makeUserMessage(trimmed));
     setIsTyping(true);
 
     // The topic of YourGoGirl's last answer lets "tell me more" continue it.
     const lastIntentId = [...messages].reverse().find((m) => m.sender === 'bot')?.intentId;
 
     try {
-      const botReply = await generateYourGoGirlResponse(trimmed, {
+      const botReply = await generateYourGoGirlResponse((query ?? trimmed).trim(), {
         userName,
         cycle,
         biometrics,
@@ -115,6 +225,10 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
         mode,
         cyclePrediction,
         lastIntentId,
+        language,
+        // A tapped chip keeps the current language even though it sends English wording.
+        previousLang: query ? uiLang : lastBotLang,
+        getDoctorPrepInput,
       });
       addMessage(botReply);
     } finally {
@@ -122,9 +236,30 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
     }
   };
 
+  const changeLanguage = (next: ChatLanguageSetting) => {
+    if (next === language) return;
+    setLanguage(next);
+    const lang: ChatLanguage = next === 'auto' ? uiLang : next;
+    addMessage(makeBotNote(UI[lang].switched(SWITCH_NAMES[next][lang]), lang));
+  };
+
+  const exportChat = async () => {
+    setMenuOpen(false);
+    try {
+      await saveTextFile(chatFileName(), chatToText(messages, userName), 'text/plain');
+    } catch {
+      if (Platform.OS !== 'web') Alert.alert('Could not export', 'Please try again.');
+    }
+  };
+
+  const deleteAll = () => {
+    setMenuOpen(false);
+    confirmAction(ui.confirmDeleteAllTitle, ui.confirmDeleteAllBody, ui.delete, ui.cancel, clearChat);
+  };
+
   // Helper to render bold segments wrapped in **...**
   const renderFormattedText = (raw: string, isUser: boolean, textStyle?: object) => {
-    const parts = raw.split(/(\*\*.*?\*\*)/g);
+    const parts = raw.split(/(\*\*[\s\S]*?\*\*)/g);
     return (
       <Text style={[textStyle ?? styles.messageText, isUser && styles.userMessageText]}>
         {parts.map((part, idx) => {
@@ -144,6 +279,12 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
     );
   };
 
+  const cycleSubtitle = cycle.hasCycleData
+    ? uiLang === 'hi'
+      ? `दिन ${cycle.currentDay} · ${cycle.phase}`
+      : `Day ${cycle.currentDay} · ${cycle.phase} phase`
+    : ui.subtitleNoCycle;
+
   return (
     <KeyboardAvoidingView
       style={styles.keyboardContainer}
@@ -159,6 +300,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
                 onPress={() => router.back()}
                 style={styles.backBtn}
                 activeOpacity={0.7}
+                accessibilityLabel="Back"
               >
                 <ArrowLeft size={20} color={Theme.colors.textPrimary} />
               </TouchableOpacity>
@@ -171,21 +313,40 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
             <View style={styles.titleCol}>
               <Text style={styles.botName}>YourGoGirl</Text>
               <Text style={styles.botSubtitle} numberOfLines={1}>
-                {cycle.hasCycleData ? `Day ${cycle.currentDay} · ${cycle.phase} phase` : 'Periods · mood · focus'}
+                {cycleSubtitle}
               </Text>
             </View>
           </View>
 
           <TouchableOpacity
-            onPress={clearChat}
+            onPress={() => setMenuOpen(true)}
             style={styles.resetBtn}
             activeOpacity={0.7}
+            accessibilityLabel="Chat options: export or delete"
           >
-            <RotateCcw size={16} color={Theme.colors.textSecondary} />
+            <EllipsisVertical size={17} color={Theme.colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
-
+        {/* Reply language */}
+        <View style={styles.langRow} accessibilityRole="radiogroup">
+          <Text style={styles.langLabel}>{ui.language}</Text>
+          {LANGUAGE_OPTIONS.map((o) => {
+            const on = language === o.id;
+            return (
+              <TouchableOpacity
+                key={o.id}
+                onPress={() => changeLanguage(o.id)}
+                style={[styles.langChip, on && styles.langChipOn]}
+                activeOpacity={0.8}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: on }}
+              >
+                <Text style={[styles.langChipText, on && styles.langChipTextOn]}>{o.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
       {/* Main Chat Scroll Area */}
@@ -205,12 +366,12 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
             {QUICK_PROMPT_TOPICS.map((topic) => (
               <TouchableOpacity
                 key={topic.id}
-                style={styles.topicCard}
-                onPress={() => handleSendMessage(topic.prompt)}
+                style={[styles.topicCard, topic.id === 'doctor_prep' && styles.topicCardPrep]}
+                onPress={() => handleSendMessage(displayQuestion(topic.prompt, uiLang), topic.prompt)}
                 activeOpacity={0.8}
               >
                 <Text style={styles.topicEmoji}>{topic.emoji}</Text>
-                <Text style={styles.topicLabel}>{topic.label}</Text>
+                <Text style={styles.topicLabel}>{quickTopicLabel(topic, uiLang)}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -219,6 +380,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
         {/* Conversation Messages */}
         {messages.map((msg) => {
           const isUser = msg.sender === 'user';
+          const words = UI[msg.lang ?? uiLang];
           return (
             <View
               key={msg.id}
@@ -233,7 +395,10 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
                 </View>
               )}
 
-              <View
+              <Pressable
+                onLongPress={() => setSelected(msg)}
+                delayLongPress={350}
+                accessibilityHint="Press and hold for copy and delete"
                 style={[
                   styles.messageBubble,
                   isUser ? styles.userBubble : styles.botBubble,
@@ -242,7 +407,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
                 {!isUser && msg.urgent && (
                   <View style={styles.urgentBanner}>
                     <AlertTriangle size={14} color="#A33B55" />
-                    <Text style={styles.urgentText}>Please get help now — this needs a real person</Text>
+                    <Text style={styles.urgentText}>{words.urgent}</Text>
                   </View>
                 )}
 
@@ -253,9 +418,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
                   <View style={styles.bioCard}>
                     <View style={styles.bioCardHeader}>
                       <Brain size={14} color={Theme.colors.secondary} />
-                      <Text style={styles.bioCardTitle}>
-                        WHY THIS HAPPENS
-                      </Text>
+                      <Text style={styles.bioCardTitle}>{words.why}</Text>
                     </View>
                     <Text style={styles.bioCardBody}>{msg.biologicalWhy}</Text>
                   </View>
@@ -268,9 +431,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
                     <View style={styles.stepsCard}>
                       <View style={styles.stepsHeader}>
                         <Compass size={14} color={Theme.colors.primaryDark} />
-                        <Text style={styles.stepsTitle}>
-                          WHAT CAN HELP
-                        </Text>
+                        <Text style={styles.stepsTitle}>{words.help}</Text>
                       </View>
                       {msg.gentleActionSteps.map((step, i) => (
                         <View key={i} style={styles.stepRow}>
@@ -290,24 +451,26 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
                   <View style={styles.doctorCard}>
                     <View style={styles.stepsHeader}>
                       <Stethoscope size={14} color="#9A5A2E" />
-                      <Text style={styles.doctorTitle}>WHEN TO SEE A DOCTOR</Text>
+                      <Text style={styles.doctorTitle}>{words.doctor}</Text>
                     </View>
                     {renderFormattedText(msg.whenToSeeDoctor, false, styles.doctorText)}
                   </View>
                 )}
 
-                {/* Action buttons (call a helpline, open a screen) */}
+                {/* Action buttons (call a helpline, open a screen, share) */}
                 {!isUser && msg.actions && msg.actions.length > 0 && (
                   <View style={styles.actionsRow}>
                     {msg.actions.map((a) => (
                       <TouchableOpacity
-                        key={`${a.kind}-${a.value}`}
+                        key={`${a.kind}-${a.label}`}
                         style={[styles.actionBtn, a.kind === 'call' && styles.actionBtnCall]}
                         onPress={() => runAction(a)}
                         activeOpacity={0.8}
                       >
                         {a.kind === 'call' ? (
                           <Phone size={13} color="#FFFFFF" />
+                        ) : a.kind === 'share' ? (
+                          <Share2 size={13} color={Theme.colors.primaryDark} />
                         ) : (
                           <ChevronRight size={13} color={Theme.colors.primaryDark} />
                         )}
@@ -332,15 +495,13 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
                   msg.followUpSuggestions &&
                   msg.followUpSuggestions.length > 0 && (
                     <View style={styles.followUpContainer}>
-                      <Text style={styles.followUpHeader}>
-                        You could ask:
-                      </Text>
+                      <Text style={styles.followUpHeader}>{words.youCouldAsk}</Text>
                       <View style={styles.followUpList}>
                         {msg.followUpSuggestions.map((sugg, idx) => (
                           <TouchableOpacity
                             key={idx}
                             style={styles.followUpChip}
-                            onPress={() => handleSendMessage(sugg)}
+                            onPress={() => handleSendMessage(sugg, msg.followUpQueries?.[idx] ?? sugg)}
                             activeOpacity={0.75}
                           >
                             <Text style={styles.followUpChipText}>{sugg}</Text>
@@ -358,7 +519,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
                 >
                   {msg.timestamp}
                 </Text>
-              </View>
+              </Pressable>
             </View>
           );
         })}
@@ -371,9 +532,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
             </View>
             <View style={[styles.messageBubble, styles.botBubble, styles.typingBubble]}>
               <ActivityIndicator size="small" color={Theme.colors.primary} />
-              <Text style={styles.typingText}>
-                YourGoGirl is typing…
-              </Text>
+              <Text style={styles.typingText}>{ui.typing}</Text>
             </View>
           </View>
         )}
@@ -385,7 +544,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
           style={styles.textInput}
           value={inputText}
           onChangeText={setInputText}
-          placeholder="Ask anything — periods, pain, mood, focus…"
+          placeholder={ui.placeholder}
           placeholderTextColor={Theme.colors.textTertiary}
           multiline
           maxLength={600}
@@ -407,10 +566,64 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
           onPress={() => handleSendMessage()}
           disabled={!inputText.trim() || isTyping}
           activeOpacity={0.8}
+          accessibilityLabel="Send"
         >
           <Send size={18} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
+
+      {/* Chat menu: export / delete all */}
+      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+        <Pressable style={styles.menuBackdrop} onPress={() => setMenuOpen(false)}>
+          <View style={styles.menuCard}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => void exportChat()} activeOpacity={0.8}>
+              <FileDown size={18} color={Theme.colors.primaryDark} />
+              <Text style={styles.menuText}>{ui.menuExport}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={deleteAll} activeOpacity={0.8}>
+              <Trash2 size={18} color="#C0392B" />
+              <Text style={[styles.menuText, styles.menuDanger]}>{ui.menuDeleteAll}</Text>
+            </TouchableOpacity>
+            <Text style={styles.menuTip}>{ui.menuTip}</Text>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* One message: copy / delete */}
+      <Modal visible={!!selected} transparent animationType="fade" onRequestClose={() => setSelected(null)}>
+        <Pressable style={styles.sheetBackdrop} onPress={() => setSelected(null)}>
+          <View style={styles.sheetCard}>
+            <Text style={styles.sheetPreview} numberOfLines={3}>
+              {selected ? messageToText(selected) : ''}
+            </Text>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                if (selected) void copyText(messageToText(selected));
+                setSelected(null);
+              }}
+              activeOpacity={0.8}
+            >
+              <Copy size={18} color={Theme.colors.primaryDark} />
+              <Text style={styles.menuText}>{ui.copy}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                if (selected) deleteMessage(selected.id);
+                setSelected(null);
+              }}
+              activeOpacity={0.8}
+            >
+              <Trash2 size={18} color="#C0392B" />
+              <Text style={[styles.menuText, styles.menuDanger]}>{ui.deleteOne}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.menuItem, styles.menuCancel]} onPress={() => setSelected(null)} activeOpacity={0.8}>
+              <Text style={styles.menuCancelText}>{ui.cancel}</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -542,6 +755,68 @@ const styles = createStyles(() => ({
     color: Theme.colors.primaryDark,
     flex: 1,
   },
+  langRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    flexWrap: 'wrap',
+  },
+  langLabel: { fontSize: 11, fontWeight: '700', color: Theme.colors.textSecondary, marginRight: 2 },
+  langChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: Theme.radius.full,
+    borderWidth: 1,
+    borderColor: Theme.colors.cardBorder,
+    backgroundColor: Theme.colors.backgroundAlt,
+  },
+  langChipOn: { backgroundColor: Theme.colors.primary, borderColor: Theme.colors.primary },
+  langChipText: { fontSize: 11.5, fontWeight: '700', color: Theme.colors.textPrimary },
+  langChipTextOn: { color: '#FFFFFF' },
+  topicCardPrep: { borderColor: 'rgba(154, 90, 46, 0.35)', backgroundColor: '#FFF6EC' },
+  menuBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(43, 34, 54, 0.25)',
+    alignItems: 'flex-end',
+    paddingTop: Platform.OS === 'web' ? 70 : 110,
+    paddingHorizontal: 14,
+  },
+  menuCard: {
+    width: 270,
+    maxWidth: '92%',
+    backgroundColor: Theme.colors.background,
+    borderRadius: Theme.radius.lg,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: Theme.colors.cardBorder,
+    ...Theme.shadows.glowing,
+  },
+  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 13 },
+  menuText: { fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary, flexShrink: 1 },
+  menuDanger: { color: '#C0392B' },
+  menuTip: { fontSize: 11.5, color: Theme.colors.textTertiary, paddingHorizontal: 16, paddingBottom: 10, paddingTop: 4 },
+  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(43, 34, 54, 0.35)', justifyContent: 'flex-end', alignItems: 'center' },
+  sheetCard: {
+    width: '100%',
+    maxWidth: 520,
+    backgroundColor: Theme.colors.background,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    paddingTop: 14,
+    paddingBottom: 26,
+  },
+  sheetPreview: {
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: Theme.colors.textSecondary,
+    paddingHorizontal: 18,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.colors.cardBorder,
+  },
+  menuCancel: { justifyContent: 'center' },
+  menuCancelText: { fontSize: 14, fontWeight: '800', color: Theme.colors.textSecondary, textAlign: 'center', flex: 1 },
   chatScroll: {
     flex: 1,
   },

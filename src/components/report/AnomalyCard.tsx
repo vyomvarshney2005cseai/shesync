@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
-import { AlertTriangle, TrendingDown, Activity, Droplets, Moon, Heart } from 'lucide-react-native';
+import { AlertTriangle, TrendingDown, Activity, Droplets, Moon, Heart, Soup } from 'lucide-react-native';
 import { Theme, createStyles, themed } from '@/constants/theme';
 import type { ClinicalAnomaly } from '@/types';
 
@@ -22,6 +22,8 @@ const getIcon = (type: ClinicalAnomaly['type']) => {
       return <Moon size={16} color={Theme.colors.secondary} />;
     case 'mood_pattern':
       return <Heart size={16} color={Theme.colors.secondary} />;
+    case 'digestive':
+      return <Soup size={16} color={Theme.colors.peachDark} />;
     default:
       return <AlertTriangle size={16} color={Theme.colors.strainAmber} />;
   }

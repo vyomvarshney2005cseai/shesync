@@ -137,6 +137,9 @@ export type MoodLevel = 1 | 2 | 3 | 4 | 5;
 export type PainLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 export type FlowIntensity = 'none' | 'spotting' | 'light' | 'moderate' | 'heavy' | 'severe';
 
+/** Tummy symptoms that often come with periods and are rarely tracked. */
+export type DigestiveSymptom = 'bloating' | 'constipation' | 'loose_motions' | 'nausea';
+
 export interface SymptomLog {
   id: string;
   date: string;
@@ -154,6 +157,14 @@ export interface SymptomLog {
   productsUsed?: Record<string, number>;
   transcript?: string;
   audioDuration?: string;
+  /** Voice journal: file name of the recording in the app's journal folder (stays on this phone). */
+  audioFile?: string;
+  /** Voice journal: how the text was made. */
+  transcriptSource?: 'speech' | 'typed';
+  /** Tummy symptoms logged that day. */
+  digestive?: DigestiveSymptom[];
+  /** Saved from the 10-second daily check-in (one per day, updated in place). */
+  checkIn?: boolean;
 }
 
 // ─── Adaptive Movement / Workout ─────────────────────────────
@@ -235,15 +246,27 @@ export type CounsellorTopic =
 /** A tappable action under a YourGoGirl reply (call a helpline, open a screen). */
 export interface YourGoGirlAction {
   label: string;
-  kind: 'call' | 'route' | 'url';
-  value: string;              // phone number, app route or web link
+  kind: 'call' | 'route' | 'url' | 'share';
+  value: string;              // phone number, app route, web link, or text to share
 }
+
+/** Language YourGoGirl answers in. */
+export type ChatLanguage = 'en' | 'hinglish' | 'hi';
 
 export interface YourGoGirlMessage {
   id: string;
   sender: 'user' | 'bot';
   text: string;
   timestamp: string;
+  /** ISO time the message was written (older messages only have `timestamp`). */
+  createdAt?: string;
+  /** Language of a bot reply. */
+  lang?: ChatLanguage;
+  /**
+   * What each follow-up chip asks, in the wording YourGoGirl matches best
+   * (the chips themselves are shown in `followUpSuggestions`, in her language).
+   */
+  followUpQueries?: string[];
   category?: CounsellorTopic;
   mode?: CounsellorMode;
   /** Which answer in the built-in knowledge base produced this reply. */
@@ -309,7 +332,7 @@ export interface DailyDataPoint {
 
 export interface ClinicalAnomaly {
   id: string;
-  type: 'anovulatory_gap' | 'pain_cluster' | 'hrv_drop' | 'sleep_deficit' | 'flow_heavy' | 'mood_pattern';
+  type: 'anovulatory_gap' | 'pain_cluster' | 'hrv_drop' | 'sleep_deficit' | 'flow_heavy' | 'mood_pattern' | 'digestive';
   severity: 'moderate' | 'severe' | 'critical';
   title: string;
   description: string;
@@ -407,11 +430,15 @@ export interface AppState {
   toggleBiologicalReasoning: () => void;
   generateClinicalPDF: () => Promise<void> | void;
   logSymptom: (log: Partial<SymptomLog>) => void;
+  /** Saves today's 10-second check-in (updates today's check-in if there is one). */
+  saveCheckIn: (fields: Partial<SymptomLog>, sleepHours?: number) => void;
+  deleteSymptomLog: (id: string) => void;
   setStrainScore: (score: number) => void;
   fineTuneAllAnalytics: () => void;
   addYourGoGirlMessage: (msg: YourGoGirlMessage) => void;
   setYourGoGirlMode: (mode: CounsellorMode) => void;
   clearYourGoGirlChat: () => void;
+  deleteYourGoGirlMessage: (id: string) => void;
   saveHealthCheck: (answers: HealthCheckAnswers) => void;
   markSyncComplete: () => void;
   addCareContact: (contact: Omit<CareContact, 'id'>) => void;

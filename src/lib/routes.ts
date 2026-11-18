@@ -16,4 +16,7 @@ export const ROUTES = {
   pcos: r('/pcos'),
   confidence: r('/confidence'),
   data: r('/data'),
+  checkIn: r('/check-in'),
+  appLock: r('/app-lock'),
+  padCare: r('/pad-care'),
 };

@@ -9,6 +9,8 @@ import { Theme, createStyles, setThemeMode } from '@/constants/theme';
 import { useStoresHydrated } from '@/store/hydration';
 import { startCloudSync } from '@/lib/sync';
 import { useNightActive } from '@/store/useSettingsStore';
+import { AppLockGate } from '@/components/lock/AppLockGate';
+import { usePadReminderTaps } from '@/lib/padReminders';
 
 // Keep the splash visible until saved data has loaded from the device.
 // The navigator always renders (expo-router requires it on first render);
@@ -21,6 +23,8 @@ const push = { headerShown: false, animation: 'slide_from_right' } as const;
 export default function RootLayout() {
   const hydrated = useStoresHydrated();
   const night = useNightActive();
+  // Tapping a pad-change reminder opens Pad Care.
+  usePadReminderTaps();
   // Set before any screen renders; the `key` below remounts the screens so
   // every style is rebuilt in the new palette.
   const themeMode = night ? 'dark' : 'light';
@@ -66,8 +70,15 @@ export default function RootLayout() {
               <Stack.Screen name="pcos" options={push} />
               <Stack.Screen name="confidence" options={push} />
               <Stack.Screen name="data" options={push} />
+              <Stack.Screen
+                name="check-in"
+                options={{ headerShown: false, presentation: 'transparentModal', animation: 'slide_from_bottom', contentStyle: { backgroundColor: 'transparent' } }}
+              />
+              <Stack.Screen name="app-lock" options={push} />
+              <Stack.Screen name="pad-care" options={push} />
             </Stack>
         </View>
+        {hydrated && <AppLockGate />}
       </View>
     </SafeAreaProvider>
   );

@@ -9,6 +9,8 @@ import { CyclePredictionBanner } from '@/components/home/CyclePredictionBanner';
 import { SyncDetailsCard } from '@/components/home/SyncDetailsCard';
 import { FeatureSquares } from '@/components/home/FeatureSquares';
 import { ReferralStatusCard } from '@/components/home/ReferralStatusCard';
+import { CheckInCard } from '@/components/home/CheckInCard';
+import { MythBusterCard } from '@/components/home/MythBusterCard';
 import { router } from 'expo-router';
 import { useAppStore } from '@/store/useAppStore';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
@@ -49,11 +51,13 @@ export default function HomeScreen() {
             {isSynced ? (
               // ─── Synced: the full dashboard ───
               <>
+                <CheckInCard />
                 <StrainGauge score={biometrics.strainScore} level={biometrics.strainLevel} />
                 <BiometricScroll biometrics={biometrics} cycle={cycle} />
                 <ReferralStatusCard />
                 <CyclePredictionBanner />
                 <QuickActionGrid onAction={handleQuickAction} />
+                <MythBusterCard />
                 <View style={styles.sectionHead}>
                   <Text style={styles.sectionTitle}>Explore SheSync</Text>
                 </View>
@@ -63,6 +67,7 @@ export default function HomeScreen() {
               // ─── First run: Details for Sync + feature squares ───
               <>
                 <SyncDetailsCard />
+                <MythBusterCard />
                 <View style={styles.sectionHead}>
                   <Text style={styles.sectionTitle}>Explore SheSync</Text>
                 </View>

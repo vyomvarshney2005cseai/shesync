@@ -1,6 +1,10 @@
 import * as Print from 'expo-print';
 import { Platform } from 'react-native';
+import { pauseAppLock } from '@/lib/appLock';
 import type { AppState } from '@/types';
+import { buildDoctorQuestions } from '@/lib/doctorVisitPrep';
+import { DIGESTIVE_SYMPTOMS, summariseDigestive } from '@/lib/digestive';
+import { usePcosStore } from '@/store/usePcosStore';
 
 const escapeHtml = (value: unknown) =>
   String(value ?? '')
@@ -44,6 +48,31 @@ export async function generateAndDownloadClinicalPDF(state: AppState): Promise<s
           c.periodDurationDays
         )} days</td></tr>`
     )
+    .join('');
+  const tummy = summariseDigestive(state.symptomLogs ?? [], state.pastCycles ?? [], 30);
+  const tummyLine = tummy.days
+    ? DIGESTIVE_SYMPTOMS.filter((d) => tummy.bySymptom[d.id] > 0)
+        .map((d) => `${d.label.toLowerCase()} ${tummy.bySymptom[d.id]} d`)
+        .join(', ') + ` (${tummy.nearPeriodDays} of ${tummy.days} days within 5 days before or during a period)`
+    : 'none logged';
+  const pcos = usePcosStore.getState();
+  const latestPcos = pcos.checkins[0];
+  const prep = buildDoctorQuestions(
+    {
+      symptomLogs: state.symptomLogs ?? [],
+      sleepLogs: state.sleepLogs ?? [],
+      pastCycles: state.pastCycles ?? [],
+      cyclePrediction: state.cyclePrediction,
+      healthCheck: state.healthCheck ?? {},
+      assessmentAnswers: state.assessmentAnswers ?? {},
+      sleepTarget,
+      pcosDiagnosed: pcos.diagnosed === 'yes',
+      pcosSigns: !!latestPcos && (latestPcos.acne >= 2 || latestPcos.bodyHair >= 2),
+    },
+    'en'
+  );
+  const questionRows = prep.questions
+    .map((q) => `<li style="margin-bottom:6px;">${escapeHtml(q.question)} <span style="color:#718096;">(${escapeHtml(q.because)})</span></li>`)
     .join('');
   const currentDate = new Date().toLocaleDateString('en-IN', {
     month: 'long',
@@ -231,7 +260,9 @@ export async function generateAndDownloadClinicalPDF(state: AppState): Promise<s
       <div class="section-title">Physician Consultation Notes & Precautions</div>
       <div style="font-size: 13px; color: #4A5568;">
         <p>• <strong>Predicted Next Menstrual Onset:</strong> ${nextPeriod}</p>
-        <p>• <strong>Questions the patient may want to ask:</strong> whether any tests are needed for the patterns above (for example iron studies for heavy bleeding, or hormone and thyroid tests for irregular cycles).</p>
+        <p>• <strong>Tummy symptoms (last 30 days, self-logged):</strong> ${escapeHtml(tummyLine)}</p>
+        <p>• <strong>Questions the patient wants to ask (prepared in SheSync from her logs):</strong></p>
+        <ol style="margin-top:4px;">${questionRows}</ol>
       </div>
 
       <div class="clinical-notes">
@@ -259,6 +290,7 @@ export async function generateAndDownloadClinicalPDF(state: AppState): Promise<s
     // On iOS & Android: Use Print.printAsync directly.
     // It opens the native system print sheet which has a built-in "Save as PDF" / "Share" option
     // and completely avoids Android FileProvider scoped cache permission rejections.
+    pauseAppLock(); // the print sheet is not "leaving" SheSync
     await Print.printAsync({ html });
     return 'print_sheet_opened';
   } catch (error) {

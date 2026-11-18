@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import { pauseAppLock } from '@/lib/appLock';
 
 /**
  * Saving and picking text files.
@@ -20,6 +21,7 @@ export async function saveTextFile(name: string, text: string, mimeType: string)
   }
   const { File, Paths } = await import('expo-file-system');
   const Sharing = await import('expo-sharing');
+  pauseAppLock(); // the share sheet is not "leaving" SheSync
   const file = new File(Paths.cache, name);
   if (file.exists) file.delete();
   file.create();
@@ -58,6 +60,7 @@ export async function pickTextFile(): Promise<PickedFile | null> {
     });
   }
   const { File } = await import('expo-file-system');
+  pauseAppLock(); // the file picker is not "leaving" SheSync
   const picked = await File.pickFileAsync({ mimeTypes: ['application/json', 'text/*', 'application/octet-stream'] });
   if (picked.canceled || !picked.result) return null;
   const file = picked.result;

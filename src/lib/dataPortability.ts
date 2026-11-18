@@ -58,10 +58,23 @@ const csvCell = (v: unknown): string => {
 const csv = (rows: unknown[][]) => rows.map((r) => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
 
 export function logsToCsv(logs: SymptomLog[]): string {
-  const head = ['date', 'time', 'mood (1-5)', 'energy', 'pain (0-10)', 'pain location', 'what helped', 'flow', 'flow colour', 'feelings', 'notes'];
+  const head = ['date', 'time', 'mood (1-5)', 'energy', 'pain (0-10)', 'pain location', 'what helped', 'flow', 'flow colour', 'tummy', 'feelings', 'notes'];
   const rows = [...logs]
     .sort((a, b) => (a.timestamp < b.timestamp ? -1 : 1))
-    .map((l) => [l.date, (l.timestamp || '').slice(11, 16), l.mood, l.energy, l.pain, l.painLocation, l.reliefMethods, l.flow, l.flowColor, l.tags, l.notes ?? l.transcript]);
+    .map((l) => [
+      l.date,
+      (l.timestamp || '').slice(11, 16),
+      l.mood,
+      l.energy,
+      l.pain,
+      l.painLocation,
+      l.reliefMethods,
+      l.flow,
+      l.flowColor,
+      l.digestive?.map((d) => d.replace('_', ' ')),
+      l.tags,
+      l.notes ?? l.transcript,
+    ]);
   return csv([head, ...rows]);
 }
 

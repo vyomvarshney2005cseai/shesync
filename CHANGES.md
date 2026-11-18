@@ -1,3 +1,59 @@
+# SheSync — Pad Care added + folder clean-up (18 Nov 2026)
+
+**Pad Care** (`/pad-care`, Home → Pad Care box; it moves next to YourGoGirl during her period or while the timer runs)
+- Change timer: tap “I just changed” and a ring shows how long it has been on (All good → Change soon → Time to change → Over 8 hours). It saves the start time, so it stays right when the app is closed.
+- Pad, cloth pad, tampon, menstrual cup and period underwear, each with its own safe wear time; “Going to sleep” sets one morning reminder.
+- Phone reminders are local notifications (expo-notifications, no server, no push token): one at her interval and one at the hard limit. Tapping one opens Pad Care. They work in Expo Go; the web has the timer but no reminders.
+- Heavy flow today → suggests every 3 h and shows when to see a doctor. 3+ changes within 2 h of each other in a day → a gentle check-with-a-doctor note.
+- 7-point “choosing a pad” checklist (incl. ISI mark / IS 5405), the 2022 Toxics Link finding (no brand named), private pad ratings with “your best so far”, hygiene basics, doctor signs and a Call 112 button for toxic-shock warning signs.
+- Log Flow offers the pad timer after a light, moderate or heavy flow. YourGoGirl’s app help mentions it (English, Hinglish, Hindi).
+- Works with the newer app: night mode, app lock (the notification permission prompt doesn’t lock the app) and the device storage used by the other stores. Sign-out wipes Pad Care and cancels its reminders.
+
+**Folder clean-up**
+- Removed 90+ duplicate copies (“file 2.tsx”, “tsconfig 3.json” …) — all older versions of files that are still here — plus the old patches and the two old copies of the app (`sheshync/`, the Expo starter, and `YourGoGirl/`, the pre-merge chat files). They are still in git history.
+- Papers, decks, flowcharts and paper scripts moved to `docs/`. TypeScript, ESLint, Metro and EAS uploads skip `docs/`.
+
+**Tested**: tsc + ESLint clean; 23 new Pad Care checks (timer states, night and tampon limits, heavy-flow suggestion, short gaps, double-tap guard, interval limits, ratings, sign-out reset) plus all earlier suites. Web, Android and iOS bundles build. Web click-through in light and night mode: Home box, start timer, switch product, checklist, rating, reload keeps the timer, Log Flow → Pad timer → heavy-flow card — no errors.
+
+---
+
+# SheSync — Voice journal, app lock, 10-second check-in, tummy symptoms, myth-buster, YourGoGirl in Hindi (18 Nov 2026)
+
+**Real voice journal** (`/voice-journal`)
+- Records her voice and turns it into text **on the phone** (expo-speech-recognition with on-device recognition: Apple Speech on iOS 17+, Android 13+ with the offline voice pack). Words appear live while she speaks; English (India) or हिन्दी.
+- The recording is saved in the app’s private `journal/` folder (only the file name goes in the entry; audio is never backed up to the cloud). Play it back, re-record, or delete it before saving. 10-minute limit; leaving the app stops the recording.
+- Past entries: read, listen, delete (text and audio).
+- Older phones (Android 12 and below), Expo Go and the web record audio only (expo-audio) and say so plainly; on Android 13+ without the offline pack it offers a one-tap download.
+
+**App lock** (Profile → App lock)
+- 4- or 6-digit PIN, plus fingerprint / Face ID (expo-local-authentication) — never falls back to the phone passcode.
+- Locks on launch and the moment she leaves the app; the iOS app-switcher preview is covered. Pickers, the share sheet and permission prompts don’t count as leaving.
+- PIN stored only as a salted SHA-256 hash in the phone’s secure storage (expo-secure-store). 5 free tries, then waits of 30 s, 1 min, 2 min… (survives restarts). “Forgot PIN?” signs out (backed-up data returns on sign-in). Sign-out and account switches turn the lock off.
+
+**10-second daily check-in** (`/check-in`, top of Home)
+- One sheet: mood, pain, flow and last night’s sleep as sliders, plus tummy chips; one tap saves. Only sliders she touches are saved (no made-up values). One check-in per day — opening it again edits today’s.
+- Strong pain or heavy flow shows what helps and when to get help the same day.
+
+**Digestive symptoms** — bloating, constipation, loose motions, nausea
+- Logged in the check-in; Report shows a “Tummy · last 30 days” card and how many days fell during or just before a period.
+- Pattern card when tummy symptoms show up on 3+ days; “bloating most days for 3 weeks” is flagged to check with a doctor. Included in the doctor PDF, CSV export (new `tummy` column) and cloud backup.
+
+**Daily myth-buster** (Home)
+- One card a day from 26 Indian period myths (pickle, bathing/hair-wash, exercise, kitchen, temples/“impure”, curd and sour food, cups for unmarried girls, PCOS and pregnancy, cloth pads in sunlight…). Tap to reveal the fact, the reason and the source (NHS, WHO, UNICEF India, Swim England, India Water Portal); share it.
+
+**YourGoGirl**
+- **Hindi & Hinglish replies** with a language switch (Auto · English · Hinglish · हिन्दी). All 68 answers, follow-up chips, buttons and labels are translated; Auto answers in the language she writes in. Hindi typed in Devanagari is now understood too (including safety phrases).
+- **Doctor-visit prep**: “Doctor visit prep” chip (or ask “what should I ask my gynaecologist?” / “doctor se kya puchu”) builds 5 questions from her logs and referral result, each saying which data it comes from; share them, open the report. The same 5 questions are printed in the doctor PDF.
+- **Chat export & delete**: ⋮ menu → export the chat as a .txt file or delete the whole chat; press and hold a message to copy or delete it.
+
+**New packages** (`npx expo install` versions for SDK 58): expo-audio, expo-speech-recognition, expo-local-authentication, expo-secure-store, expo-crypto, expo-clipboard. Permission texts for microphone, speech recognition and Face ID are set in app.json.
+
+**Build note**: speech-to-text and Face ID need a development or EAS build (`npx expo run:android` / `eas build`). In Expo Go everything else works and the journal records audio only.
+
+**Tested**: tsc + ESLint clean; 17 new tests (language detection, 27 Hindi/Hinglish messages incl. safety, translation completeness for all 68 answers × 10 situations, chips and buttons, Auto language, doctor prep in 3 languages, tummy summary, chat export, myths, speech merging, app-lock hashing/rate-limit/clear, check-in store); earlier suites still pass (447 YourGoGirl checks, referral, 12 export/import, 10 sync, database). Web + Android/iOS bundles build. Web click-through (light and night): check-in, myth reveal, report, app lock set-up/cold-start lock/wrong PIN/unlock, chat in Hindi/Hinglish/Auto, doctor prep, delete one message, export, delete all, voice recording and past entries — no errors.
+
+---
+
 # SheSync — PCOS Care, Confidence Booster, export/import, night mode (10 Nov 2026)
 
 **PCOS Care** (`/pcos`, new Home box)

@@ -21,6 +21,7 @@ import {
 import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { nextSyncHref, syncStepBadge } from '@/lib/syncDetails';
+import { ROUTES } from '@/lib/routes';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
 import type { FlowIntensity } from '@/types';
 
@@ -119,6 +120,21 @@ export default function LogFlowScreen() {
     if (isOnboarding) {
       router.push(nextSyncHref(useAppStore.getState()));
     } else {
+      const bleeding = selectedFlow === 'light' || selectedFlow === 'moderate' || selectedFlow === 'heavy' || selectedFlow === 'severe';
+      if (bleeding) {
+        // On a bleeding day, offer the pad change timer.
+        const msg = 'Flow entry logged in cycle history. Start the pad change timer?';
+        if (Platform.OS === 'web') {
+          if (window.confirm(msg)) router.replace(ROUTES.padCare);
+          else router.back();
+        } else {
+          Alert.alert('Logged', msg, [
+            { text: 'Not now', style: 'cancel', onPress: () => router.back() },
+            { text: 'Pad timer', onPress: () => router.replace(ROUTES.padCare) },
+          ]);
+        }
+        return;
+      }
       const msg = 'Flow entry logged in cycle history.';
       if (Platform.OS === 'web') {
         window.alert(msg);

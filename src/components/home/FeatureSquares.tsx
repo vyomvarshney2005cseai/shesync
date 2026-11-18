@@ -1,13 +1,15 @@
 import React, { useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { router, type Href } from 'expo-router';
-import { Dumbbell, Flower2, GraduationCap, HeartHandshake, MessageCircleHeart, Puzzle, Sparkles, Wind } from 'lucide-react-native';
+import { Dumbbell, Flower2, GraduationCap, HeartHandshake, MessageCircleHeart, Puzzle, ShieldCheck, Sparkles, Wind } from 'lucide-react-native';
 import { Theme, createStyles, themed } from '@/constants/theme';
 import { useFitnessStore } from '@/store/useFitnessStore';
 import { useStudyStore } from '@/store/useStudyStore';
 import { useGamesStore } from '@/store/useGamesStore';
 import { usePcosStore } from '@/store/usePcosStore';
 import { useConfidenceStore } from '@/store/useConfidenceStore';
+import { usePadCareStore } from '@/store/usePadCareStore';
+import { useAppStore } from '@/store/useAppStore';
 import { startOfWeekKey, todayKey } from '@/lib/dates';
 import { ROUTES } from '@/lib/routes';
 
@@ -33,6 +35,9 @@ export function FeatureSquares() {
     const n = (s.glow[today]?.length ?? 0) + (s.challenges[today] ? 1 : 0) + (s.levels[today] ? 1 : 0);
     return n;
   });
+  const padChanges = usePadCareStore((s) => s.changes);
+  const padTimerOn = usePadCareStore((s) => s.active !== null);
+  const onPeriod = useAppStore((s) => s.cycle.phase === 'menstrual');
 
   const stats = useMemo(() => {
     const week = startOfWeekKey();
@@ -41,10 +46,22 @@ export function FeatureSquares() {
       moveMinutes: sessions.filter((s) => s.date >= week).reduce((a, s) => a + s.minutes, 0),
       focusToday: focusSessions.filter((s) => s.date === today).reduce((a, s) => a + s.minutes, 0),
       gamesWeek: records.filter((r) => r.date >= week).length,
+      padToday: padChanges.filter((c) => c.date === today).length,
     };
-  }, [sessions, focusSessions, records]);
+  }, [sessions, focusSessions, records, padChanges]);
 
-  const squares: Square[] = [
+  const padCare: Square = {
+    id: 'padcare',
+    title: 'Pad Care',
+    sub: 'Change reminders & safer pads',
+    stat: padTimerOn ? `Timer on · ${stats.padToday} today` : onPeriod ? 'Start the change timer' : undefined,
+    href: ROUTES.padCare,
+    bg: themed('#FDECF4'),
+    ink: themed('#BE185D'),
+    icon: <ShieldCheck size={22} color={themed('#DB2777')} />,
+  };
+
+  const base: Square[] = [
     {
       id: 'ygg',
       title: 'YourGoGirl',
@@ -124,13 +141,25 @@ export function FeatureSquares() {
     },
   ];
 
+  // Pad Care comes right after YourGoGirl during her period or while its timer runs;
+  // otherwise it sits after PCOS Care.
+  const squares = [...base];
+  const at = onPeriod || padTimerOn ? 1 : squares.findIndex((s) => s.id === 'pcos') + 1;
+  squares.splice(at, 0, padCare);
+
   return (
     <View style={styles.grid}>
-      {squares.map((sq) => (
+      {squares.map((sq, i) => (
         <Pressable
           key={sq.id}
           onPress={() => router.push(sq.href)}
-          style={({ pressed }) => [styles.square, { backgroundColor: themed(sq.bg) }, pressed && styles.pressed]}
+          style={({ pressed }) => [
+            styles.square,
+            // An odd one out at the end spans the full row instead of sitting alone.
+            squares.length % 2 === 1 && i === squares.length - 1 && styles.wide,
+            { backgroundColor: themed(sq.bg) },
+            pressed && styles.pressed,
+          ]}
           accessibilityRole="button"
           accessibilityLabel={`${sq.title}. ${sq.sub}`}
         >
@@ -172,6 +201,7 @@ const styles = createStyles(() => ({
     borderColor: 'rgba(255,255,255,0.9)',
     ...Theme.shadows.card,
   },
+  wide: { width: '100%', aspectRatio: 2.4 },
   iconWrap: {
     width: 44,
     height: 44,

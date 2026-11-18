@@ -28,12 +28,13 @@ import { signOutSupabase } from '@/lib/supabaseService';
 import { daysBetweenKeys, daysSinceKey, lastNDaysKeys, todayKey } from '@/lib/dates';
 import { recommendWorkout } from '@/lib/fitness';
 import { recentLog, recentSignals } from '@/lib/recent';
-import { createInitialWelcomeMessage } from '@/lib/yourGoGirlEngine';
+import { cleanDigestive, joinSymptoms, summariseDigestive } from '@/lib/digestive';
 import { useFitnessStore } from './useFitnessStore';
 import { useStudyStore } from './useStudyStore';
 import { useGamesStore } from './useGamesStore';
 import { usePcosStore } from './usePcosStore';
 import { useConfidenceStore } from './useConfidenceStore';
+import { usePadCareStore } from './usePadCareStore';
 
 // ============================================================
 // Defaults for a brand-new account.
@@ -251,6 +252,27 @@ function buildPatterns(
       description:
         'If low mood, irritability or anxiety return in the week before most periods and ease once it starts, ask your doctor about PMS/PMDD. If you ever feel unsafe, call Tele-MANAS on 14416 (free, 24×7).',
       icon: '💜',
+    });
+  }
+
+  const tummy = summariseDigestive(logs, cycles, 30);
+  if (tummy.persistentBloating || tummy.days >= 3) {
+    const near =
+      tummy.days >= 3 && tummy.nearPeriodDays / tummy.days >= 0.6
+        ? ` ${tummy.nearPeriodDays} of them fell in the 5 days before or during your period — a common period pattern.`
+        : '';
+    if (tummy.persistentBloating) flags.push('Bloating most days');
+    anomalies.push({
+      id: 'pattern-digestive',
+      type: 'digestive',
+      severity: tummy.persistentBloating ? 'severe' : 'moderate',
+      title: tummy.persistentBloating
+        ? 'Bloating on most days for 3 weeks'
+        : `Tummy symptoms on ${tummy.days} days this month`,
+      description: tummy.persistentBloating
+        ? 'Bloating that lasts most days for 3 weeks or more should be checked by a doctor, even if it feels mild. Mention any change in appetite, weight or toilet habits.'
+        : `Mostly ${joinSymptoms(tummy.top.slice(0, 2))}.${near} See a doctor if you see blood in your stool, lose weight without trying, cannot keep fluids down, or symptoms carry on after your period.`,
+      icon: '🫄',
     });
   }
 
@@ -551,6 +573,27 @@ function resetFeatureStores() {
   useGamesStore.getState().reset();
   usePcosStore.getState().reset();
   useConfidenceStore.getState().reset();
+  usePadCareStore.getState().reset();
+  // Scheduled pad reminders belong to the person signing out too.
+  import('@/lib/padReminders')
+    .then((m) => m.cancelPadReminders())
+    .catch(() => {});
+}
+
+/** Voice recordings and the app lock belong to the person signing out. */
+async function clearPrivateDeviceData() {
+  try {
+    const { deleteAllJournalAudio } = await import('@/lib/journalAudio');
+    await deleteAllJournalAudio();
+  } catch (e) {
+    console.warn('[logout] could not remove journal audio', e);
+  }
+  try {
+    const { disableAppLock } = await import('@/lib/appLock');
+    await disableAppLock();
+  } catch (e) {
+    console.warn('[logout] could not clear app lock', e);
+  }
 }
 
 const initialUser = freshUserData();
@@ -615,6 +658,7 @@ export const useAppStore = create<AppState>()(
         if (!sameAccount) {
           // A different account on this device never sees the previous person's data.
           resetFeatureStores();
+          void clearPrivateDeviceData();
           const fresh = freshUserData();
           set({ ...fresh, ...derivedState(computeDerived(engineInput(fresh))) });
         }
@@ -628,6 +672,7 @@ export const useAppStore = create<AppState>()(
 
       signup: (name: string, email: string, focusAreas: string[] = [], options?: { offline?: boolean }) => {
         resetFeatureStores();
+        void clearPrivateDeviceData();
         const fresh = { ...freshUserData(), focusAreas };
         set({
           ...fresh,
@@ -643,6 +688,7 @@ export const useAppStore = create<AppState>()(
         await signOutSupabase();
         // Health data is personal: sign-out removes it from this device.
         resetFeatureStores();
+        await clearPrivateDeviceData();
         const fresh = freshUserData();
         set({ ...fresh, ...derivedState(computeDerived(engineInput(fresh))) });
       },
@@ -714,6 +760,35 @@ export const useAppStore = create<AppState>()(
         get().fineTuneAllAnalytics();
       },
 
+      saveCheckIn: (fields: Partial<SymptomLog>, sleepHours?: number) => {
+        const now = new Date();
+        const today = todayKey();
+        const clean: Partial<SymptomLog> = { ...fields };
+        if (clean.digestive !== undefined) clean.digestive = cleanDigestive(clean.digestive);
+        if (Object.keys(clean).length) {
+          set((state) => {
+            const existing = state.symptomLogs.find((l) => l.checkIn && l.date === today);
+            if (existing) {
+              // One check-in per day: saving again updates it (and it moves to the top as the newest log).
+              const updated: SymptomLog = { ...existing, ...clean, timestamp: now.toISOString() };
+              return { symptomLogs: [updated, ...state.symptomLogs.filter((l) => l.id !== existing.id)] };
+            }
+            const fresh: SymptomLog = { ...clean, checkIn: true, id: `log-${now.getTime()}`, date: today, timestamp: now.toISOString() };
+            return { symptomLogs: [fresh, ...state.symptomLogs].slice(0, 1500) };
+          });
+        }
+        if (typeof sleepHours === 'number') {
+          get().logSleep(sleepHours); // also refreshes analytics
+        } else {
+          get().fineTuneAllAnalytics();
+        }
+      },
+
+      deleteSymptomLog: (id: string) => {
+        set((state) => ({ symptomLogs: state.symptomLogs.filter((l) => l.id !== id) }));
+        get().fineTuneAllAnalytics();
+      },
+
       logSleep: (hours: number) => {
         const clean = Math.round(Math.max(0, Math.min(16, hours)) * 4) / 4;
         const today = todayKey();
@@ -733,12 +808,11 @@ export const useAppStore = create<AppState>()(
       setYourGoGirlMode: (mode: CounsellorMode) =>
         set({ yourGoGirlMode: mode }),
 
-      clearYourGoGirlChat: () =>
-        set((state) => ({
-          yourGoGirlMessages: [
-            createInitialWelcomeMessage(state.userName, state.cycle, state.biometrics),
-          ],
-        })),
+      deleteYourGoGirlMessage: (id: string) =>
+        set((state) => ({ yourGoGirlMessages: state.yourGoGirlMessages.filter((m) => m.id !== id) })),
+
+      // The chat screen adds a fresh welcome message in her language.
+      clearYourGoGirlChat: () => set({ yourGoGirlMessages: [] }),
 
       // ─── Details for Sync / referral / care team ─────
       saveHealthCheck: (answers: HealthCheckAnswers) =>

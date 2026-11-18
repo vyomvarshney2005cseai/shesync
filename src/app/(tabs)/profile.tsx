@@ -15,6 +15,8 @@ import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { ROUTES } from '@/lib/routes';
+import { pauseAppLock } from '@/lib/appLock';
+import { useLockStore } from '@/store/useLockStore';
 import { ASSESSMENT_QUESTIONS } from '@/constants/assessment';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { deleteAccountAndData, flushCloudSync, signOutAndClear, useSyncStatus } from '@/lib/sync';
@@ -29,6 +31,7 @@ import {
   Database,
   Sliders,
   CheckCircle2,
+  LockKeyhole,
 } from 'lucide-react-native';
 
 import * as ImagePicker from 'expo-image-picker';
@@ -47,12 +50,14 @@ export default function ProfileScreen() {
   const nightMode = useSettingsStore((s) => s.nightMode);
   const setNightMode = useSettingsStore((s) => s.setNightMode);
   const [busy, setBusy] = useState<'signout' | 'delete' | null>(null);
+  const lockOn = useLockStore((s) => s.enabled);
   const generateClinicalPDF = useAppStore((s) => s.generateClinicalPDF);
 
   const answeredCount = Object.keys(assessmentAnswers).length;
   const initial = (userName || 'M').charAt(0).toUpperCase();
 
   const handlePickImage = async () => {
+    pauseAppLock(); // the photo picker is not "leaving" SheSync
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
@@ -349,6 +354,18 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
+
+        {/* App lock */}
+        <TouchableOpacity style={styles.exportCard} onPress={() => router.push(ROUTES.appLock)} activeOpacity={0.8}>
+          <View style={styles.exportIconBox}>
+            <LockKeyhole size={20} color={Theme.colors.primaryDark} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.exportTitle}>App lock</Text>
+            <Text style={styles.exportSubtitle}>{lockOn ? 'On · PIN or fingerprint / Face ID' : 'Off · add a PIN or fingerprint / Face ID'}</Text>
+          </View>
+          <ChevronRight size={18} color={Theme.colors.textTertiary} />
+        </TouchableOpacity>
 
         {/* Clinical Report Export Link */}
         <TouchableOpacity

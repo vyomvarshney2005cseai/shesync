@@ -34,6 +34,39 @@
           "image": "./assets/images/shesync-logo.png",
           "imageWidth": 120
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "SheSync uses the microphone only while you record a voice journal entry.",
+          "enableBackgroundPlayback": false,
+          "enableBackgroundRecording": false
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "SheSync uses the microphone only while you record a voice journal entry.",
+          "speechRecognitionPermission": "SheSync turns your voice journal into text on this phone. Your voice is not uploaded.",
+          "androidSpeechServicePackages": [
+            "com.google.android.as",
+            "com.google.android.tts",
+            "com.google.android.googlequicksearchbox"
+          ]
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "SheSync uses Face ID to unlock the app and keep your health data private."
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "enableRemoteNotifications": false
+        }
       ]
     ],
     "experiments": {

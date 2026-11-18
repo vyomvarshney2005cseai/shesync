@@ -6,10 +6,20 @@ import { deviceStorage } from './storage';
 
 export type NightMode = 'off' | 'on' | 'auto';
 
+/** YourGoGirl's reply language. `auto` answers in the language she writes in. */
+export type ChatLanguageSetting = 'auto' | 'en' | 'hinglish' | 'hi';
+
+/** Language the voice journal listens for. */
+export type JournalSpeechLang = 'en-IN' | 'hi-IN';
+
 interface SettingsState {
   /** off = always light, on = always night, auto = night from 9 pm to 6 am. */
   nightMode: NightMode;
   setNightMode: (mode: NightMode) => void;
+  chatLanguage: ChatLanguageSetting;
+  setChatLanguage: (lang: ChatLanguageSetting) => void;
+  journalLang: JournalSpeechLang;
+  setJournalLang: (lang: JournalSpeechLang) => void;
 }
 
 /** Settings that belong to the phone, not the account: kept after sign-out. */
@@ -18,6 +28,10 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       nightMode: 'off',
       setNightMode: (nightMode) => set({ nightMode }),
+      chatLanguage: 'auto',
+      setChatLanguage: (chatLanguage) => set({ chatLanguage }),
+      journalLang: 'en-IN',
+      setJournalLang: (journalLang) => set({ journalLang }),
     }),
     { name: 'shesync.settings', version: 1, storage: deviceStorage() }
   )

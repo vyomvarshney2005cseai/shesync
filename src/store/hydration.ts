@@ -6,8 +6,10 @@ import { useGamesStore } from './useGamesStore';
 import { useSettingsStore } from './useSettingsStore';
 import { usePcosStore } from './usePcosStore';
 import { useConfidenceStore } from './useConfidenceStore';
+import { useLockStore } from './useLockStore';
+import { usePadCareStore } from './usePadCareStore';
 
-const stores = [useAppStore, useFitnessStore, useStudyStore, useGamesStore, useSettingsStore, usePcosStore, useConfidenceStore];
+const stores = [useAppStore, useFitnessStore, useStudyStore, useGamesStore, useSettingsStore, usePcosStore, useConfidenceStore, useLockStore, usePadCareStore];
 
 function subscribe(onChange: () => void) {
   const unsubs = stores.map((s) => s.persist.onFinishHydration(onChange));
