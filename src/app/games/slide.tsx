@@ -75,13 +75,13 @@ export default function SlidePuzzle() {
           >
             {t !== 0 ? (
               <View style={[styles.tile, isSlideSolved(tiles) && styles.tileDone]}>
-                <Text style={[styles.tileText, size === 4 && { fontSize: 22 }]}>{t}</Text>
+                <Text style={[styles.tileText, size === 4 && { fontSize: 20 }]}>{t}</Text>
               </View>
             ) : null}
           </Pressable>
         ))}
       </View>
-      <Text style={[uiStyles.muted, { textAlign: 'center', marginTop: 10 }]}>Tap a tile next to the empty space to slide it.</Text>
+      <Text style={[uiStyles.muted, { textAlign: 'center', marginTop: 12 }]}>Tap a tile next to the empty space to slide it.</Text>
       {doneAt ? (
         <GameResult
           title="Solved!"
@@ -105,16 +105,15 @@ const styles = createStyles(() => ({
     alignSelf: 'center',
     backgroundColor: Theme.colors.secondaryLight,
     borderRadius: Theme.radius.xl,
-    padding: 6,
+    padding: 8,
   },
   cell: { aspectRatio: 1, padding: 4 },
   tile: {
     flex: 1,
-    borderRadius: 14,
+    borderRadius: 16,
     backgroundColor: Theme.colors.secondary,
     alignItems: 'center',
     justifyContent: 'center',
-    ...Theme.shadows.soft,
   },
   tileDone: { backgroundColor: '#10B981' },
   tileText: { fontSize: 28, fontWeight: '800', color: '#FFFFFF' },

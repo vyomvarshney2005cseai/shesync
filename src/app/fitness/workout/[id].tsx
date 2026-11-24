@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useReducer, useState } from 'react';
-import { Platform, Pressable, Text, Vibration, View } from 'react-native';
+import { Platform, Text, Vibration, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import { Check, ChevronLeft, ChevronRight, Pause, Play, SkipForward, Square, Timer } from 'lucide-react-native';
 import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { Card, Chip, ProgressBar, SectionHeader, uiStyles } from '@/components/common/ui';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
+import { Button } from '@/components/ds';
 import { Theme, createStyles, themed } from '@/constants/theme';
 import { getLibraryWorkout, INTENSITY_LABELS, type LibraryWorkout } from '@/constants/fitnessLibrary';
 import { useFitnessStore, type WorkoutSession } from '@/store/useFitnessStore';
@@ -26,7 +26,7 @@ export default function WorkoutPlayerScreen() {
     return (
       <Screen>
         <ScreenHeader title="Workout not found" fallbackHref="/fitness" />
-        <PrimaryButton title="Back to Fitness" onPress={() => router.replace('/fitness')} fullWidth />
+        <Button title="Back to Fitness" onPress={() => router.replace('/fitness')} fullWidth />
       </Screen>
     );
   }
@@ -113,14 +113,14 @@ function Player({ workout }: { workout: LibraryWorkout }) {
               </View>
             ))}
           </Card>
-          <PrimaryButton
+          <Button
             title="Start workout"
             icon={<Play size={16} color={themed('#FFFFFF')} fill={themed('#FFFFFF')} />}
             onPress={() => dispatch({ type: 'start', now: now() })}
             fullWidth
-            style={{ marginTop: 18 }}
+            style={{ marginTop: 20 }}
           />
-          <Text style={[uiStyles.muted, { textAlign: 'center', marginTop: 10 }]}>
+          <Text style={[uiStyles.muted, { textAlign: 'center', marginTop: 12 }]}>
             Listen to your body — skip anything that hurts. Rest is part of training.
           </Text>
         </>
@@ -130,7 +130,7 @@ function Player({ workout }: { workout: LibraryWorkout }) {
         <>
           <View style={{ marginBottom: 12 }}>
             <ProgressBar value={progress} />
-            <Text style={[uiStyles.muted, { marginTop: 6 }]}>
+            <Text style={[uiStyles.muted, { marginTop: 8 }]}>
               Step {state.step + 1} of {workout.steps.length} · {formatClock(Math.max(0, (state.now - (state.startedAt ?? state.now) - state.pausedMs) / 1000))} elapsed
             </Text>
           </View>
@@ -185,7 +185,7 @@ function Player({ workout }: { workout: LibraryWorkout }) {
           </View>
 
           {state.phase === 'work' && left == null ? (
-            <PrimaryButton
+            <Button
               title={state.set < sets ? `Done — set ${state.set} of ${sets}` : 'Done — next exercise'}
               icon={<Check size={16} color={themed('#FFFFFF')} />}
               onPress={() => dispatch({ type: 'doneSet', now: now() })}
@@ -193,22 +193,22 @@ function Player({ workout }: { workout: LibraryWorkout }) {
               style={{ marginTop: 12 }}
             />
           ) : (
-            <PrimaryButton
+            <Button
               title={state.phase === 'rest' ? 'Skip rest' : 'Skip this set'}
-              variant="outline"
+              variant="secondary"
               icon={<SkipForward size={16} color={Theme.colors.textPrimary} />}
               onPress={() => dispatch({ type: 'skip', now: now() })}
               fullWidth
               style={{ marginTop: 12 }}
             />
           )}
-          <PrimaryButton
+          <Button
             title="End workout"
-            variant="dark"
+            variant="primary"
             icon={<Square size={14} color={themed('#FFFFFF')} />}
             onPress={() => dispatch({ type: 'finish', now: now() })}
             fullWidth
-            style={{ marginTop: 10 }}
+            style={{ marginTop: 12 }}
           />
         </>
       ) : null}
@@ -223,7 +223,7 @@ function Player({ workout }: { workout: LibraryWorkout }) {
             <Text style={[uiStyles.body, { textAlign: 'center', marginTop: 4 }]}>
               {minutes} active min · ~{kcal} kcal · {state.completedSteps}/{workout.steps.length} steps
             </Text>
-            <Text style={[uiStyles.muted, { textAlign: 'center', marginTop: 6 }]}>
+            <Text style={[uiStyles.muted, { textAlign: 'center', marginTop: 8 }]}>
               Calories are a rough estimate from activity type and your weight.
             </Text>
           </Card>
@@ -258,18 +258,18 @@ function Player({ workout }: { workout: LibraryWorkout }) {
                 <Text style={uiStyles.strong}>Saved to your week ✓</Text>
                 <Text style={uiStyles.muted}>It counts towards your weekly 150 active minutes.</Text>
               </Card>
-              <PrimaryButton title="Back to Fitness" onPress={() => router.replace('/fitness')} fullWidth style={{ marginTop: 14 }} />
+              <Button title="Back to Fitness" onPress={() => router.replace('/fitness')} fullWidth style={{ marginTop: 16 }} />
             </>
           ) : (
             <>
-              <PrimaryButton
+              <Button
                 title="Save to my log"
                 icon={<Timer size={16} color={themed('#FFFFFF')} />}
                 onPress={save}
                 fullWidth
-                style={{ marginTop: 18 }}
+                style={{ marginTop: 20 }}
               />
-              <PrimaryButton title="Discard" variant="outline" onPress={() => router.back()} fullWidth style={{ marginTop: 10 }} />
+              <Button title="Discard" variant="secondary" onPress={() => router.back()} fullWidth style={{ marginTop: 12 }} />
             </>
           )}
         </>
@@ -299,21 +299,12 @@ function ControlButton({
   disabled?: boolean;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      style={({ pressed }) => [styles.ctrl, disabled && { opacity: 0.4 }, pressed && { opacity: 0.7 }]}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      {icon}
-      <Text style={styles.ctrlText}>{label}</Text>
-    </Pressable>
+    <Button variant="secondary" size="sm" title={label} onPress={onPress} disabled={disabled} icon={icon} style={styles.ctrl} />
   );
 }
 
 const styles = createStyles(() => ({
-  stepRow: { flexDirection: 'row', gap: 12, paddingVertical: 10 },
+  stepRow: { flexDirection: 'row', gap: 12, paddingVertical: 12 },
   stepBorder: { borderTopWidth: 1, borderTopColor: Theme.colors.cardBorder },
   stepNum: {
     width: 24,
@@ -324,30 +315,23 @@ const styles = createStyles(() => ({
     fontWeight: '800',
     fontSize: 12,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 16,
     overflow: 'hidden',
   },
   stepName: { fontSize: 14, fontWeight: '800', color: Theme.colors.textPrimary },
-  easier: { fontSize: 11, color: '#047857', marginTop: 2, fontWeight: '600' },
+  easier: { fontSize: 14, color: '#047857', marginTop: 4, fontWeight: '600' },
   liveCard: { alignItems: 'center', paddingVertical: 24 },
-  liveLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1.2, color: '#FDA4AF' },
-  liveName: { fontSize: 22, fontWeight: '800', color: '#FFFFFF', textAlign: 'center', marginTop: 6 },
+  liveLabel: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2, color: '#FDA4AF' },
+  liveName: { fontSize: 20, fontWeight: '800', color: '#FFFFFF', textAlign: 'center', marginTop: 8 },
   bigTimer: { fontSize: 64, fontWeight: '800', color: '#FFFFFF', marginVertical: 8, fontVariant: ['tabular-nums'] },
-  bigReps: { fontSize: 44, fontWeight: '800', color: '#FFFFFF', marginVertical: 12 },
+  bigReps: { fontSize: 40, fontWeight: '800', color: '#FFFFFF', marginVertical: 12 },
   liveHow: { fontSize: 14, color: 'rgba(255,255,255,0.88)', textAlign: 'center', lineHeight: 20 },
-  liveTip: { fontSize: 12, color: '#FDE68A', textAlign: 'center', marginTop: 8, lineHeight: 17 },
-  controls: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  liveTip: { fontSize: 14, color: '#FDE68A', textAlign: 'center', marginTop: 8, lineHeight: 20 },
+  controls: { flexDirection: 'row', gap: 12, marginTop: 16 },
   ctrl: {
     flex: 1,
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 12,
-    borderRadius: Theme.radius.lg,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: Theme.colors.cardBorder,
   },
-  ctrlText: { fontSize: 12, fontWeight: '700', color: Theme.colors.textPrimary },
-  doneEmoji: { fontSize: 44 },
-  doneTitle: { fontSize: 22, fontWeight: '800', color: Theme.colors.textPrimary, marginTop: 6 },
+  ctrlText: { fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary },
+  doneEmoji: { fontSize: 40 },
+  doneTitle: { fontSize: 20, fontWeight: '800', color: Theme.colors.textPrimary, marginTop: 8 },
 }));

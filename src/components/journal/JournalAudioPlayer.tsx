@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
 import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
 import { Play, Pause } from 'lucide-react-native';
 import { Theme, createStyles, themed } from '@/constants/theme';
 import { formatClock } from '@/lib/dates';
+import { Button } from '@/components/ds';
 
 /** Play / pause a journal recording, with a progress bar. */
 export function JournalAudioPlayer({ uri, compact }: { uri: string; compact?: boolean }) {
@@ -25,15 +26,14 @@ export function JournalAudioPlayer({ uri, compact }: { uri: string; compact?: bo
 
   return (
     <View style={[styles.wrap, compact && styles.wrapCompact]}>
-      <TouchableOpacity
+      <Button
+        size="sm"
+        iconOnly
         onPress={toggle}
-        style={styles.btn}
-        activeOpacity={0.8}
-        accessibilityRole="button"
         accessibilityLabel={status.playing ? 'Pause recording' : 'Play recording'}
-      >
-        {status.playing ? <Pause size={16} color={themed('#FFFFFF')} /> : <Play size={16} color={themed('#FFFFFF')} />}
-      </TouchableOpacity>
+        icon={status.playing ? <Pause size={20} color={Theme.colors.onPrimary} /> : <Play size={20} color={Theme.colors.onPrimary} />}
+        style={styles.btn}
+      />
       <View style={styles.track}>
         <View style={[styles.fill, { width: `${progress * 100}%` }]} />
       </View>
@@ -48,23 +48,17 @@ const styles = createStyles(() => ({
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     backgroundColor: Theme.colors.backgroundAlt,
     borderRadius: Theme.radius.full,
-    paddingVertical: 6,
-    paddingLeft: 6,
-    paddingRight: 14,
+    paddingVertical: 8,
+    paddingLeft: 8,
+    paddingRight: 16,
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
   },
   wrapCompact: { paddingVertical: 4, paddingLeft: 4 },
   btn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   track: { flex: 1, height: 6, borderRadius: 3, backgroundColor: Theme.colors.backgroundMuted, overflow: 'hidden' },
   fill: { height: 6, borderRadius: 3, backgroundColor: Theme.colors.primary },

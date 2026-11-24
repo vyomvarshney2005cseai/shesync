@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import {
   ExternalLink,
@@ -16,7 +16,7 @@ import {
 import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { AuthGate } from '@/components/common/AuthGate';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
+import { Button, Card } from '@/components/ds';
 import { Chip } from '@/components/common/ui';
 import { Theme, createStyles, themed } from '@/constants/theme';
 import {
@@ -85,15 +85,12 @@ export default function CareConnectScreen() {
 
         {/* Status from the sync result */}
         {syncCompletedAt ? (
-          <Pressable
+          <Card
+            tone={result.referable ? 'amber' : 'mint'}
             onPress={() => router.push(ROUTES.syncResult)}
-            style={({ pressed }) => [
-              styles.status,
-              result.referable ? styles.statusRef : styles.statusOk,
-              pressed && { opacity: 0.88 },
-            ]}
+            style={styles.status}
           >
-            <Text style={[styles.statusLabel, { color: result.referable ? themed('#9A5A2E') : themed('#2F7D69') }]}>
+            <Text style={[styles.statusLabel, { color: result.referable ? Theme.colors.strainAmber : Theme.colors.strainOptimal }]}>
               YOUR SYNC RESULT · {result.referable ? 'REFERABLE' : 'NOT REFERABLE'}
             </Text>
             <Text style={styles.statusTitle}>{REFERRAL_LEVEL_TEXT[result.level].title}</Text>
@@ -102,7 +99,7 @@ export default function CareConnectScreen() {
             ) : (
               <Text style={styles.statusSub}>You can still talk to a doctor or counsellor any time you want to.</Text>
             )}
-          </Pressable>
+          </Card>
         ) : null}
 
         {/* ── Gynaecologist ── */}
@@ -118,12 +115,12 @@ export default function CareConnectScreen() {
               <Text style={styles.bulletText}>{item}</Text>
             </View>
           ))}
-          <PrimaryButton
+          <Button
             title="Download my SheSync doctor report"
             icon={<FileText size={16} color={themed('#FFFFFF')} />}
             onPress={() => generateClinicalPDF()}
             loading={isGenerating}
-            variant="dark"
+            variant="primary"
             fullWidth
             style={{ marginTop: 12 }}
           />
@@ -169,22 +166,24 @@ export default function CareConnectScreen() {
                 {ROLE_LABEL[c.role]} · {c.phone}
               </Text>
             </View>
-            <Pressable
+            <Button
+              variant="secondary"
+              size="sm"
+              iconOnly
               onPress={() => callNumber(c.phone, c.name)}
-              style={styles.iconBtn}
-              accessibilityRole="button"
               accessibilityLabel={`Call ${c.name}`}
-            >
-              <Phone size={17} color={Theme.colors.primary} />
-            </Pressable>
-            <Pressable
-              onPress={() => removeCareContact(c.id)}
+              icon={<Phone size={20} color={Theme.colors.primary} />}
               style={styles.iconBtn}
-              accessibilityRole="button"
+            />
+            <Button
+              variant="secondary"
+              size="sm"
+              iconOnly
+              onPress={() => removeCareContact(c.id)}
               accessibilityLabel={`Remove ${c.name}`}
-            >
-              <Trash2 size={16} color={Theme.colors.textTertiary} />
-            </Pressable>
+              icon={<Trash2 size={20} color={Theme.colors.textTertiary} />}
+              style={styles.iconBtn}
+            />
           </View>
         ))}
         {adding ? (
@@ -211,15 +210,15 @@ export default function CareConnectScreen() {
             </View>
             {formError ? <Text style={styles.formError}>{formError}</Text> : null}
             <View style={styles.formRow}>
-              <PrimaryButton title="Cancel" variant="outline" onPress={() => setAdding(false)} style={{ flex: 1 }} />
-              <PrimaryButton title="Save" onPress={saveContact} style={{ flex: 1 }} />
+              <Button title="Cancel" variant="secondary" onPress={() => setAdding(false)} style={{ flex: 1 }} />
+              <Button title="Save" onPress={saveContact} style={{ flex: 1 }} />
             </View>
           </View>
         ) : (
-          <PrimaryButton
+          <Button
             title="Add a doctor or counsellor"
             icon={<Plus size={16} color={Theme.colors.textPrimary} />}
-            variant="outline"
+            variant="secondary"
             onPress={() => setAdding(true)}
             fullWidth
           />
@@ -264,39 +263,20 @@ function ServiceCard({ service, tone }: { service: CareService; tone: 'rose' | '
       <Text style={styles.cardBody}>{service.what}</Text>
       <View style={styles.actions}>
         {service.call ? (
-          <Pressable
-            onPress={() => callNumber(service.call!, service.name)}
-            style={({ pressed }) => [styles.action, { backgroundColor: themed(accent) }, pressed && { opacity: 0.85 }]}
-            accessibilityRole="button"
-          >
-            <Phone size={15} color={themed('#FFFFFF')} />
-            <Text style={styles.actionText}>{service.callLabel ?? `Call ${service.call}`}</Text>
-          </Pressable>
+          <Button size="sm" title={service.callLabel ?? `Call ${service.call}`} onPress={() => callNumber(service.call!, service.name)} icon={<Phone size={16} color={Theme.colors.onPrimary} />} />
         ) : null}
         {service.whatsapp ? (
-          <Pressable
-            onPress={() => openUrl(`https://wa.me/${service.whatsapp}`)}
-            style={({ pressed }) => [styles.actionOutline, pressed && { opacity: 0.85 }]}
-            accessibilityRole="button"
-          >
-            <MessageCircle size={15} color={themed(accent)} />
-            <Text style={[styles.actionOutlineText, { color: themed(accent) }]}>WhatsApp</Text>
-          </Pressable>
+          <Button variant="secondary" size="sm" title="WhatsApp" onPress={() => openUrl(`https://wa.me/${service.whatsapp}`)} icon={<MessageCircle size={16} color={Theme.colors.textPrimary} />} />
         ) : null}
         {service.url ? (
-          <Pressable
+          <Button
+            variant={service.call ? 'secondary' : 'primary'}
+            size="sm"
+            title={service.urlLabel ?? 'Open'}
             onPress={() => openUrl(service.url!)}
-            style={({ pressed }) => [
-              service.call ? styles.actionOutline : [styles.action, { backgroundColor: themed(accent) }],
-              pressed && { opacity: 0.85 },
-            ]}
-            accessibilityRole="link"
-          >
-            <ExternalLink size={15} color={service.call ? accent : themed('#FFFFFF')} />
-            <Text style={service.call ? [styles.actionOutlineText, { color: themed(accent) }] : styles.actionText}>
-              {service.urlLabel ?? 'Open'}
-            </Text>
-          </Pressable>
+            accessibilityHint="Opens in your browser"
+            icon={<ExternalLink size={16} color={service.call ? Theme.colors.textPrimary : Theme.colors.onPrimary} />}
+          />
         ) : null}
       </View>
     </View>
@@ -304,80 +284,73 @@ function ServiceCard({ service, tone }: { service: CareService; tone: 'rose' | '
 }
 
 const styles = createStyles(() => ({
-  status: { borderRadius: 22, padding: 16, borderWidth: 1, marginBottom: 4 },
+  status: { marginBottom: 4 },
   statusRef: { backgroundColor: '#FFF3E6', borderColor: '#F4D6B5' },
   statusOk: { backgroundColor: '#E9F6F0', borderColor: '#BFE3D4' },
-  statusLabel: { fontSize: 10.5, fontWeight: '800', letterSpacing: 0.8 },
-  statusTitle: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary, marginTop: 3 },
-  statusSub: { fontSize: 12.5, color: Theme.colors.textSecondary, marginTop: 4, lineHeight: 18 },
-  sectionHead: { marginTop: 22, marginBottom: 10 },
+  statusLabel: { fontSize: 12, fontWeight: '800', letterSpacing: 0.8 },
+  statusTitle: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary, marginTop: 4 },
+  statusSub: { fontSize: 14, color: Theme.colors.textSecondary, marginTop: 4, lineHeight: 20 },
+  sectionHead: { marginTop: 24, marginBottom: 12 },
   sectionRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sectionTitle: { fontSize: 17, fontWeight: '800', color: Theme.colors.textPrimary, letterSpacing: -0.3 },
-  sectionSub: { fontSize: 12.5, color: Theme.colors.textSecondary, marginTop: 4, lineHeight: 18 },
+  sectionTitle: { fontSize: 18, fontWeight: '800', color: Theme.colors.textPrimary, letterSpacing: -0.3 },
+  sectionSub: { fontSize: 14, color: Theme.colors.textSecondary, marginTop: 4, lineHeight: 20 },
   card: {
     backgroundColor: 'rgba(255,255,255,0.93)',
-    borderRadius: 22,
+    borderRadius: 24,
     padding: 16,
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
-    marginBottom: 10,
-    ...Theme.shadows.card,
+    marginBottom: 12,
   },
   prepCard: { backgroundColor: '#FFF9F4', borderColor: '#F6E3D3' },
   contactCard: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   serviceHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  cardTitle: { fontSize: 15, fontWeight: '800', color: Theme.colors.textPrimary },
-  cardMeta: { fontSize: 12, fontWeight: '700', color: Theme.colors.textTertiary, marginTop: 2 },
-  cardBody: { fontSize: 13, color: Theme.colors.textSecondary, marginTop: 6, lineHeight: 19 },
-  freePill: { backgroundColor: '#E7F5F0', paddingHorizontal: 8, paddingVertical: 3, borderRadius: Theme.radius.full },
-  freeText: { fontSize: 10, fontWeight: '800', color: '#2F7D69', letterSpacing: 0.6 },
+  cardTitle: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary },
+  cardMeta: { fontSize: 12, fontWeight: '700', color: Theme.colors.textTertiary, marginTop: 4 },
+  cardBody: { fontSize: 14, color: Theme.colors.textSecondary, marginTop: 8, lineHeight: 20 },
+  freePill: { backgroundColor: '#E7F5F0', paddingHorizontal: 8, paddingVertical: 4, borderRadius: Theme.radius.full },
+  freeText: { fontSize: 12, fontWeight: '800', color: '#276C5C', letterSpacing: 0.6 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   action: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: Theme.radius.full,
   },
-  actionText: { color: '#FFFFFF', fontWeight: '800', fontSize: 13 },
+  actionText: { color: '#FFFFFF', fontWeight: '800', fontSize: 14 },
   actionOutline: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: Theme.radius.full,
     borderWidth: 1.5,
     borderColor: Theme.colors.cardBorder,
     backgroundColor: '#FFFFFF',
   },
-  actionOutlineText: { fontWeight: '800', fontSize: 13 },
-  bulletRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginTop: 8 },
-  bullet: { width: 6, height: 6, borderRadius: 3, backgroundColor: Theme.colors.peachDark, marginTop: 7 },
-  bulletText: { flex: 1, fontSize: 13, color: Theme.colors.textPrimary, lineHeight: 19 },
-  tip: { fontSize: 12, color: Theme.colors.textSecondary, lineHeight: 17, marginTop: 2, paddingHorizontal: 4 },
-  empty: { fontSize: 13, color: Theme.colors.textTertiary, marginBottom: 10 },
-  iconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: Theme.colors.backgroundAlt,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  actionOutlineText: { fontWeight: '800', fontSize: 14 },
+  bulletRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginTop: 8 },
+  bullet: { width: 6, height: 6, borderRadius: 3, backgroundColor: Theme.colors.peachDark, marginTop: 8 },
+  bulletText: { flex: 1, fontSize: 14, color: Theme.colors.textPrimary, lineHeight: 20 },
+  tip: { fontSize: 14, color: Theme.colors.textSecondary, lineHeight: 20, marginTop: 4, paddingHorizontal: 4 },
+  empty: { fontSize: 14, color: Theme.colors.textTertiary, marginBottom: 12 },
+  iconBtn: { width: 38 },
   input: {
+    minHeight: 48,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
     borderRadius: Theme.radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    fontSize: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
     color: Theme.colors.textPrimary,
   },
-  roleRow: { flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' },
-  formError: { color: '#A33B55', fontSize: 12.5, marginTop: 8, fontWeight: '600' },
+  roleRow: { flexDirection: 'row', gap: 8, marginTop: 12, flexWrap: 'wrap' },
+  formError: { color: '#A33B55', fontSize: 14, marginTop: 8, fontWeight: '600' },
   formRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
-  footnote: { fontSize: 11, color: Theme.colors.textTertiary, textAlign: 'center', marginTop: 18, lineHeight: 16 },
+  footnote: { fontSize: 12, color: Theme.colors.textTertiary, textAlign: 'center', marginTop: 20, lineHeight: 16 },
 }));

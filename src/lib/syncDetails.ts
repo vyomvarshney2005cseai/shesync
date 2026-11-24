@@ -20,7 +20,7 @@ export interface SyncStep {
 
 export const SYNC_STEPS: SyncStep[] = [
   { id: 'questions', number: 1, title: 'About your cycle', subtitle: '10 quick questions', route: '/assessment', emoji: '🌷' },
-  { id: 'period', number: 2, title: 'Period dates', subtitle: 'Tick your last periods', route: '/log-cycle', emoji: '📅' },
+  { id: 'period', number: 2, title: 'Period dates', subtitle: 'Start & end on one calendar', route: '/log-cycle', emoji: '📅' },
   { id: 'pain', number: 3, title: 'Pain check-in', subtitle: 'Cramps & where it hurts', route: '/log-pain', emoji: '🫶' },
   { id: 'flow', number: 4, title: 'Flow', subtitle: 'How heavy, colour', route: '/log-flow', emoji: '💧' },
   { id: 'mood', number: 5, title: 'Mood & energy', subtitle: 'How you feel today', route: '/log-mood', emoji: '🌙' },
@@ -32,7 +32,10 @@ export const SYNC_STEP_COUNT = SYNC_STEPS.length;
 type SyncInput = Pick<
   AppState,
   'isAssessmentCompleted' | 'pastCycles' | 'symptomLogs' | 'healthCheckCompleted' | 'syncCompletedAt'
->;
+> & {
+  /** Steps she chose to skip for now (sensible defaults are used instead). */
+  skippedSyncSteps?: string[];
+};
 
 export function isStepDone(step: SyncStepId, s: SyncInput): boolean {
   switch (step) {
@@ -51,23 +54,34 @@ export function isStepDone(step: SyncStepId, s: SyncInput): boolean {
   }
 }
 
+/** Done, or skipped for now: either way the setup moves past it. */
+export function isStepHandled(step: SyncStepId, s: SyncInput): boolean {
+  return isStepDone(step, s) || !!s.skippedSyncSteps?.includes(step);
+}
+
 export function syncProgress(s: SyncInput) {
-  const steps = SYNC_STEPS.map((step) => ({ ...step, done: isStepDone(step.id, s) }));
+  const steps = SYNC_STEPS.map((step) => {
+    const done = isStepDone(step.id, s);
+    return { ...step, done, skipped: !done && !!s.skippedSyncSteps?.includes(step.id) };
+  });
   const doneCount = steps.filter((x) => x.done).length;
+  const handled = steps.filter((x) => x.done || x.skipped).length;
   return {
     steps,
     doneCount,
     total: steps.length,
-    allStepsDone: doneCount === steps.length,
-    /** The setup counts as finished once she has seen her result. */
+    allStepsDone: handled === steps.length,
+    /** The setup counts as finished once she has seen her result (or skipped it). */
     isComplete: !!s.syncCompletedAt,
-    next: steps.find((x) => !x.done) ?? null,
+    next: steps.find((x) => !x.done && !x.skipped) ?? null,
+    /** Steps still worth doing to personalise SheSync. */
+    toPersonalise: steps.filter((x) => !x.done),
   };
 }
 
-/** Where the setup goes next: the first unfinished step, else the result window. */
+/** Where the setup goes next: the first step not done or skipped, else the result window. */
 export function nextSyncHref(s: SyncInput): Href {
-  const next = SYNC_STEPS.find((step) => !isStepDone(step.id, s));
+  const next = SYNC_STEPS.find((step) => !isStepHandled(step.id, s));
   return (next ? `${next.route}?onboarding=true` : '/sync-result') as Href;
 }
 

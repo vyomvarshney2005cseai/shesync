@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, Pressable, Image, Platform, Alert } from 'react-native';
-import { Bell } from 'lucide-react-native';
 import { Theme, createStyles } from '@/constants/theme';
 import { router } from 'expo-router';
 import { useAppStore } from '@/store/useAppStore';
+import { Button } from '@/components/ds/Button';
+import { BrandIcon } from '@/components/icons/BrandIcon';
 
 interface HeaderProps {
   title?: string;
@@ -51,17 +52,23 @@ export const Header: React.FC<HeaderProps> = ({
       </View>
 
       <View style={styles.rightCol}>
-        <Pressable
-          onPress={handleBellPress}
-          style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-        >
-          <Bell size={20} color={Theme.colors.textPrimary} />
-          {hasCycleData && nextPrecaution ? <View style={styles.notificationDot} /> : null}
-        </Pressable>
+        <View>
+          <Button
+            variant="secondary"
+            size="sm"
+            iconOnly
+            onPress={handleBellPress}
+            accessibilityLabel={hasCycleData && nextPrecaution ? 'Updates: 1 new' : 'Updates'}
+            icon={<BrandIcon name="bell" size={22} color={Theme.colors.textPrimary} accent={Theme.colors.primary} />}
+            style={styles.iconBtn}
+          />
+          {hasCycleData && nextPrecaution ? <View style={styles.notificationDot} pointerEvents="none" /> : null}
+        </View>
         <Pressable
           onPress={handleAvatarPress}
           style={({ pressed }) => [styles.avatarHalo, pressed && styles.pressed]}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Profile and settings"
         >
           <View style={styles.avatarInner}>
             {userPhoto ? (
@@ -81,78 +88,68 @@ const styles = createStyles(() => ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 16,
+    paddingHorizontal: Theme.space.md,
+    paddingTop: Theme.space.sm,
+    paddingBottom: Theme.space.md,
   },
   leftCol: {
     flex: 1,
     marginRight: 8,
   },
   title: {
-    fontSize: 22,
-    fontWeight: '800',
+    ...Theme.type.h2,
     color: Theme.colors.textPrimary,
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
     flexShrink: 1,
   },
   subtitle: {
-    fontSize: 13,
-    fontWeight: '500',
+    ...Theme.type.bodySm,
     color: Theme.colors.textSecondary,
-    marginTop: 2,
+    marginTop: 4,
   },
   rightCol: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Theme.colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Theme.colors.cardBorder,
-    ...Theme.shadows.soft,
-  },
+  iconBtn: { borderRadius: Theme.radius.full, borderColor: Theme.colors.cardBorder },
   notificationDot: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 7,
-    height: 7,
-    borderRadius: 4,
+    top: 8,
+    right: 8,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: Theme.colors.card,
     backgroundColor: Theme.colors.primary,
   },
   avatarHalo: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    padding: 2.5,
-    backgroundColor: 'rgba(201, 87, 140, 0.15)',
+    padding: 4,
+    backgroundColor: Theme.colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarInner: {
     width: '100%',
     height: '100%',
-    borderRadius: 20,
+    borderRadius: 24,
     backgroundColor: Theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    color: '#FFFFFF',
+    color: Theme.colors.onPrimary,
     fontWeight: '700',
     fontSize: 16,
   },
   avatarImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 20,
+    borderRadius: 24,
   },
   pressed: {
     opacity: 0.7,

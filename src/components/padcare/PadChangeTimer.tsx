@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Platform, Pressable, Switch, Text, View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Bell, BellOff, Moon, RotateCcw } from 'lucide-react-native';
 import { Theme, createStyles, themed } from '@/constants/theme';
 import { Card, Chip, Stepper, uiStyles } from '@/components/common/ui';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
+import { Button, SwitchRow } from '@/components/ds';
 import { PRODUCT_GUIDES, PRODUCT_ORDER } from '@/constants/padCare';
 import {
   HOUR_MS,
@@ -164,23 +164,23 @@ export function PadChangeTimer({ flow }: { flow: FlowIntensity | null }) {
         <Text style={styles.hint}>{guide.wearTime}</Text>
       )}
 
-      <PrimaryButton
+      <Button
         title={active ? 'I just changed' : `Start — fresh ${guide.noun} on`}
         icon={<RotateCcw size={16} color={themed('#FFFFFF')} />}
         onPress={() => begin('day')}
         fullWidth
-        style={{ marginTop: 14 }}
+        style={{ marginTop: 16 }}
       />
       <View style={styles.btnRow}>
-        <PrimaryButton
+        <Button
           title={active?.mode === 'night' ? 'Restart night' : 'Going to sleep'}
-          variant="outline"
+          variant="secondary"
           icon={<Moon size={15} color={Theme.colors.textPrimary} />}
           onPress={() => begin('night')}
           style={{ flex: 1 }}
         />
         {active ? (
-          <PrimaryButton title="Period over" variant="outline" onPress={stop} style={{ flex: 1 }} />
+          <Button title="Period over" variant="secondary" onPress={stop} style={{ flex: 1 }} />
         ) : null}
       </View>
       {product === 'tampon' ? (
@@ -189,7 +189,7 @@ export function PadChangeTimer({ flow }: { flow: FlowIntensity | null }) {
 
       <View style={styles.divider} />
 
-      <View style={[uiStyles.row, { justifyContent: 'space-between', gap: 10 }]}>
+      <View style={[uiStyles.row, { justifyContent: 'space-between', gap: 12 }]}>
         <View style={{ flex: 1 }}>
           <Text style={uiStyles.strong}>Remind me every</Text>
           <Text style={uiStyles.muted}>
@@ -210,59 +210,48 @@ export function PadChangeTimer({ flow }: { flow: FlowIntensity | null }) {
         />
       </View>
       {suggestion !== intervalHours ? (
-        <Pressable
+        <Button
+          variant="link"
+          title={`Suggested${flow === 'heavy' || flow === 'severe' ? ' for your heavy flow today' : ''}: every ${suggestion} h · tap to use`}
           onPress={() => {
             setIntervalHours(suggestion);
             if (active?.mode === 'day') syncPadReminders();
           }}
-          accessibilityRole="button"
           style={styles.suggestion}
-        >
-          <Text style={styles.suggestionText}>
-            Suggested{flow === 'heavy' || flow === 'severe' ? ' for your heavy flow today' : ''}: every {suggestion} h · tap to use
-          </Text>
-        </Pressable>
+        />
       ) : null}
 
-      <View style={[uiStyles.row, { justifyContent: 'space-between', gap: 10, marginTop: 14 }]}>
-        <View style={[uiStyles.row, { gap: 8, flex: 1 }]}>
-          {remindersOn ? <Bell size={18} color={Theme.colors.primary} /> : <BellOff size={18} color={Theme.colors.textTertiary} />}
-          <View style={{ flex: 1 }}>
-            <Text style={uiStyles.strong}>Phone reminders</Text>
-            <Text style={uiStyles.muted}>
-              {!remindersSupported
-                ? 'Available in the phone app. On the web, keep this page open.'
-                : remindersOn
-                ? active
-                  ? `Next at ${clockLabel(active.since + target * HOUR_MS)}`
-                  : 'On — start the timer to schedule one'
-                : 'Off'}
-            </Text>
-          </View>
-        </View>
-        <Switch
-          value={remindersOn && remindersSupported}
-          onValueChange={toggleReminders}
-          disabled={!remindersSupported}
-          trackColor={{ true: Theme.colors.primary, false: themed('#E5E7EB') }}
-          thumbColor={Platform.OS === 'android' ? themed('#FFFFFF') : undefined}
-          accessibilityLabel="Phone reminders"
-        />
-      </View>
+      <SwitchRow
+        bare
+        style={{ marginTop: 8 }}
+        icon={remindersOn ? <Bell size={20} color={Theme.colors.primary} /> : <BellOff size={20} color={Theme.colors.textTertiary} />}
+        title="Phone reminders"
+        subtitle={
+          !remindersSupported
+            ? 'Available in the phone app. On the web, keep this page open.'
+            : remindersOn
+            ? active
+              ? `Next at ${clockLabel(active.since + target * HOUR_MS)}`
+              : 'On — start the timer to schedule one'
+            : 'Off'
+        }
+        value={remindersOn && remindersSupported}
+        onValueChange={toggleReminders}
+        disabled={!remindersSupported}
+      />
       {permissionNote ? (
-        <Pressable
+        <Button
+          variant="link"
+          title={`${permissionNote} Tap to open settings.`}
           onPress={() => {
             pauseAppLock();
             openNotificationSettings();
           }}
-          accessibilityRole="button"
           style={styles.permissionNote}
-        >
-          <Text style={styles.permissionText}>{permissionNote} Tap to open settings.</Text>
-        </Pressable>
+        />
       ) : null}
 
-      <Text style={[uiStyles.muted, { marginTop: 14, textAlign: 'center' }]}>
+      <Text style={[uiStyles.muted, { marginTop: 16, textAlign: 'center' }]}>
         {todays.length
           ? `${todays.length} change${todays.length === 1 ? '' : 's'} logged today · last at ${clockLabel(todays[0].at)}`
           : 'No changes logged today yet'}
@@ -272,24 +261,20 @@ export function PadChangeTimer({ flow }: { flow: FlowIntensity | null }) {
 }
 
 const styles = createStyles(() => ({
-  ringWrap: { alignItems: 'center', justifyContent: 'center', marginTop: 16, marginBottom: 6 },
+  ringWrap: { alignItems: 'center', justifyContent: 'center', marginTop: 16, marginBottom: 8 },
   ringCenter: { position: 'absolute', alignItems: 'center', width: SIZE - 44 },
-  statusLabel: { fontSize: 11, fontWeight: '900', letterSpacing: 1.2, textAlign: 'center' },
+  statusLabel: { fontSize: 12, fontWeight: '900', letterSpacing: 1.2, textAlign: 'center' },
   elapsed: { fontSize: 40, fontWeight: '900', color: Theme.colors.textPrimary, fontVariant: ['tabular-nums'], letterSpacing: -1 },
-  ringSub: { fontSize: 11, fontWeight: '600', color: Theme.colors.textSecondary },
-  idleText: { fontSize: 13, fontWeight: '700', color: Theme.colors.textSecondary, textAlign: 'center', marginTop: 6, lineHeight: 18 },
-  hint: { fontSize: 13, color: Theme.colors.textSecondary, textAlign: 'center', lineHeight: 19, marginTop: 6 },
-  btnRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  ringSub: { fontSize: 14, fontWeight: '600', color: Theme.colors.textSecondary },
+  idleText: { fontSize: 14, fontWeight: '700', color: Theme.colors.textSecondary, textAlign: 'center', marginTop: 8, lineHeight: 20 },
+  hint: { fontSize: 14, color: Theme.colors.textSecondary, textAlign: 'center', lineHeight: 20, marginTop: 8 },
+  btnRow: { flexDirection: 'row', gap: 12, marginTop: 12 },
   divider: { height: 1, backgroundColor: Theme.colors.cardBorder, marginVertical: 16 },
   suggestion: {
-    marginTop: 10,
-    backgroundColor: Theme.colors.primaryLight,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    marginTop: 12,
     alignSelf: 'flex-start',
   },
-  suggestionText: { fontSize: 12, fontWeight: '700', color: Theme.colors.primaryDark },
-  permissionNote: { marginTop: 10, backgroundColor: '#FFFBEB', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#FDE68A' },
-  permissionText: { fontSize: 12, color: '#92400E', lineHeight: 17 },
+  suggestionText: { fontSize: 14, fontWeight: '700', color: Theme.colors.primaryDark },
+  permissionNote: { marginTop: 12, },
+  permissionText: { fontSize: 14, color: '#92400E', lineHeight: 20 },
 }));

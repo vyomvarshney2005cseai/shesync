@@ -1,8 +1,9 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { Theme, createStyles } from '@/constants/theme';
+import { Button } from '@/components/ds/Button';
 
 interface ScreenHeaderProps {
   title: string;
@@ -21,15 +22,15 @@ export function ScreenHeader({ title, subtitle, badge, fallbackHref = '/(tabs)',
 
   return (
     <View style={styles.container}>
-      <Pressable
+      <Button
+        variant="secondary"
+        size="sm"
+        iconOnly
         onPress={goBack}
-        style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
-        accessibilityRole="button"
         accessibilityLabel="Go back"
-        hitSlop={8}
-      >
-        <ChevronLeft size={22} color={Theme.colors.textPrimary} />
-      </Pressable>
+        icon={<ChevronLeft size={22} color={Theme.colors.textPrimary} />}
+        style={styles.backBtn}
+      />
       <View style={styles.textCol}>
         {badge ? (
           <Text style={styles.badgeText}>{badge}</Text>
@@ -50,23 +51,11 @@ const styles = createStyles(() => ({
     alignItems: 'flex-start',
     gap: 12,
     paddingTop: 12,
-    paddingBottom: 14,
+    paddingBottom: 16,
   },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Theme.colors.card,
-    borderWidth: 1,
-    borderColor: Theme.colors.cardBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-    ...Theme.shadows.soft,
-  },
-  pressed: { opacity: 0.7 },
+  backBtn: { borderRadius: Theme.radius.full, marginTop: 4, borderColor: Theme.colors.cardBorder },
   textCol: { flex: 1 },
-  badgeText: { fontSize: 11, fontWeight: '700', color: Theme.colors.primary, letterSpacing: 0.6, marginBottom: 4 },
-  title: { fontSize: 24, fontWeight: '800', color: Theme.colors.textPrimary, letterSpacing: -0.5 },
-  subtitle: { fontSize: 13, fontWeight: '500', color: Theme.colors.textSecondary, marginTop: 2, lineHeight: 18 },
+  badgeText: { ...Theme.type.caption, fontWeight: '800', color: Theme.colors.primaryDark, letterSpacing: 0.6, marginBottom: 4 },
+  title: { ...Theme.type.h2, color: Theme.colors.textPrimary, letterSpacing: -0.4 },
+  subtitle: { ...Theme.type.bodySm, color: Theme.colors.textSecondary, marginTop: 4 },
 }));

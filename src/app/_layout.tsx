@@ -1,6 +1,6 @@
 import "../global.css";
 import React, { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, usePathname, type ErrorBoundaryProps } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -11,24 +11,54 @@ import { startCloudSync } from '@/lib/sync';
 import { useNightActive } from '@/store/useSettingsStore';
 import { AppLockGate } from '@/components/lock/AppLockGate';
 import { usePadReminderTaps } from '@/lib/padReminders';
+import { FriendlyError } from '@/components/errors/FriendlyError';
+import { UpdateBanner } from '@/components/common/UpdateBanner';
+import { installCrashReporting, setCrashRoute } from '@/lib/crashReporter';
+import { LucideProvider } from 'lucide-react-native';
+import { useReduceMotion } from '@/lib/motion';
+import { syncReminders } from '@/lib/reminders';
+import { useAppStore } from '@/store/useAppStore';
+import { useSettingsStore } from '@/store/useSettingsStore';
 
 // Keep the splash visible until saved data has loaded from the device.
 // The navigator always renders (expo-router requires it on first render);
 // each screen waits for hydration before deciding where to send the user.
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-const sheet = { headerShown: false, animation: 'slide_from_bottom' } as const;
-const push = { headerShown: false, animation: 'slide_from_right' } as const;
+/** Any screen that throws shows this instead of a blank page. */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  return <FriendlyError error={error} retry={retry} />;
+}
+
+// Slides are skipped when the phone asks for reduced motion.
+const sheetMotion = { headerShown: false, animation: 'slide_from_bottom' } as const;
+const pushMotion = { headerShown: false, animation: 'slide_from_right' } as const;
+const still = { headerShown: false, animation: 'none' } as const;
 
 export default function RootLayout() {
   const hydrated = useStoresHydrated();
   const night = useNightActive();
   // Tapping a pad-change reminder opens Pad Care.
   usePadReminderTaps();
+  const pathname = usePathname();
+  useEffect(() => installCrashReporting(), []);
+  useEffect(() => setCrashRoute(pathname), [pathname]);
   // Set before any screen renders; the `key` below remounts the screens so
   // every style is rebuilt in the new palette.
   const themeMode = night ? 'dark' : 'light';
   setThemeMode(themeMode);
+  const reduceMotion = useReduceMotion();
+  const sheet = reduceMotion ? still : sheetMotion;
+  const push = reduceMotion ? still : pushMotion;
+  const fade = reduceMotion ? 'none' : 'fade';
+
+  // Web: the keyboard focus ring follows the theme (see global.css).
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      document.documentElement.style.setProperty('--focus-ring', Theme.colors.focusRing);
+      document.documentElement.style.colorScheme = themeMode;
+    }
+  }, [themeMode]);
 
   useEffect(() => {
     if (hydrated) SplashScreen.hideAsync().catch(() => {});
@@ -37,24 +67,34 @@ export default function RootLayout() {
   // Automatic cloud backup for online accounts (no-op in on-device mode).
   useEffect(() => startCloudSync(), []);
 
+  // Settings → Reminders follow the latest prediction and choices.
+  const daysUntil = useAppStore((s) => s.cyclePrediction?.daysUntilNextPeriod);
+  const signedIn = useAppStore((s) => s.isAuthenticated || s.isGuest);
+  const reminderPrefs = useSettingsStore((s) => `${s.checkInReminder}-${s.checkInReminderHour}-${s.periodReminder}`);
+  useEffect(() => {
+    if (hydrated) void syncReminders();
+  }, [hydrated, daysUntil, signedIn, reminderPrefs]);
+
   return (
     <SafeAreaProvider>
+      {/* Every utility icon draws with the same 1.75px stroke as SheSync's own icons. */}
+      <LucideProvider absoluteStrokeWidth>
       <View key={themeMode} style={styles.page}>
         <View style={styles.container}>
           <StatusBar style={night ? 'light' : 'dark'} />
           <Stack
-              screenOptions={{
+            screenOptions={{
                 headerShown: false,
                 contentStyle: { backgroundColor: Theme.colors.background },
-                animation: 'slide_from_right',
+                animation: reduceMotion ? 'none' : 'slide_from_right',
               }}
-            >
-              <Stack.Screen name="welcome" options={{ headerShown: false, animation: 'fade' }} />
+          >
+              <Stack.Screen name="welcome" options={{ headerShown: false, animation: fade }} />
               <Stack.Screen name="login" options={push} />
               <Stack.Screen name="signup" options={push} />
               <Stack.Screen name="forgot-password" options={push} />
               <Stack.Screen name="assessment" options={push} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'fade' }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: fade }} />
               <Stack.Screen name="log-cycle" options={sheet} />
               <Stack.Screen name="log-mood" options={sheet} />
               <Stack.Screen name="log-pain" options={sheet} />
@@ -72,14 +112,22 @@ export default function RootLayout() {
               <Stack.Screen name="data" options={push} />
               <Stack.Screen
                 name="check-in"
-                options={{ headerShown: false, presentation: 'transparentModal', animation: 'slide_from_bottom', contentStyle: { backgroundColor: 'transparent' } }}
+                options={{ headerShown: false, presentation: 'transparentModal', animation: reduceMotion ? 'none' : 'slide_from_bottom', contentStyle: { backgroundColor: 'transparent' } }}
               />
               <Stack.Screen name="app-lock" options={push} />
               <Stack.Screen name="pad-care" options={push} />
+              <Stack.Screen name="exams" options={push} />
+              <Stack.Screen name="leave-note" options={push} />
+              <Stack.Screen name="privacy" options={sheet} />
+              <Stack.Screen name="sos" options={{ headerShown: false, presentation: 'fullScreenModal', animation: fade }} />
+              <Stack.Screen name="settings" options={push} />
+              <Stack.Screen name="privacy-dashboard" options={push} />
             </Stack>
         </View>
+        <UpdateBanner />
         {hydrated && <AppLockGate />}
       </View>
+      </LucideProvider>
     </SafeAreaProvider>
   );
 }
@@ -100,7 +148,9 @@ const styles = createStyles(() => ({
           maxWidth: 500,
           marginHorizontal: 'auto',
           alignSelf: 'center',
-          boxShadow: '0 0 50px rgba(0, 0, 0, 0.08)',
+          borderLeftWidth: 1,
+          borderRightWidth: 1,
+          borderColor: Theme.colors.cardBorder,
           minHeight: '100vh',
           overflow: 'hidden',
         } as any)

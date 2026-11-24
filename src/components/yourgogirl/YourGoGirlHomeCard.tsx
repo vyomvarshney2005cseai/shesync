@@ -1,17 +1,18 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text } from 'react-native';
 import { MessageCircleHeart, ChevronRight } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { Theme, createStyles } from '@/constants/theme';
 import { ROUTES } from '@/lib/routes';
+import { Card } from '@/components/ds';
 
 /** Compact entry to the YourGoGirl chat on Home. */
 export const YourGoGirlHomeCard: React.FC = () => (
   <View style={styles.wrapper}>
-    <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+    <Card
+      tone="rose"
       onPress={() => router.push(ROUTES.yourGoGirl)}
-      accessibilityRole="button"
+      style={styles.card}
     >
       <View style={styles.iconCircle}>
         <MessageCircleHeart size={22} color={Theme.colors.primary} />
@@ -21,7 +22,7 @@ export const YourGoGirlHomeCard: React.FC = () => (
         <Text style={styles.subtitle}>Ask about periods, mood or focus — privately.</Text>
       </View>
       <ChevronRight size={18} color={Theme.colors.primary} />
-    </Pressable>
+    </Card>
   </View>
 );
 
@@ -31,11 +32,6 @@ const styles = createStyles(() => ({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#FDF0F6',
-    borderRadius: Theme.radius.xl,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#F3C9DA',
   },
   pressed: { opacity: 0.88 },
   iconCircle: {
@@ -48,5 +44,5 @@ const styles = createStyles(() => ({
   },
   textCol: { flex: 1 },
   title: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary },
-  subtitle: { fontSize: 12.5, lineHeight: 17, color: Theme.colors.textSecondary, marginTop: 2 },
+  subtitle: { fontSize: 14, lineHeight: 20, color: Theme.colors.textSecondary, marginTop: 4 },
 }));

@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { Dumbbell, GraduationCap, Puzzle, ChevronRight } from 'lucide-react-native';
+import { ChevronRight } from 'lucide-react-native';
 import { Theme, createStyles, themed } from '@/constants/theme';
 import { useFitnessStore } from '@/store/useFitnessStore';
 import { useStudyStore } from '@/store/useStudyStore';
 import { useGamesStore } from '@/store/useGamesStore';
 import { startOfWeekKey, todayKey } from '@/lib/dates';
+import { Card, IconBadge, badgeColors, type BadgeTone, type BrandIconName } from '@/components/ds';
 
 type HubId = 'fitness' | 'study' | 'games';
 
@@ -34,36 +35,32 @@ export function WellnessHub({ only, title = 'Your wellness dashboards' }: Wellne
     id: HubId;
     title: string;
     stat: string;
-    icon: React.ReactNode;
-    color: string;
-    bg: string;
+    icon: BrandIconName;
+    tone: BadgeTone;
     href: '/fitness' | '/study' | '/games';
   }[] = [
     {
       id: 'fitness',
       title: 'Fitness & Weight',
       stat: `${stats.moveMinutes}/150 active min this week`,
-      icon: <Dumbbell size={22} color={themed('#0F766E')} />,
-      color: themed('#0F766E'),
-      bg: themed('#E6F7F3'),
+      icon: 'fitness',
+      tone: 'mint',
       href: '/fitness',
     },
     {
       id: 'study',
       title: 'Study Focus',
       stat: `${stats.focusToday} focus min today`,
-      icon: <GraduationCap size={22} color={Theme.colors.secondaryDark} />,
-      color: Theme.colors.secondaryDark,
-      bg: Theme.colors.secondaryLight,
+      icon: 'study',
+      tone: 'lilac',
       href: '/study',
     },
     {
       id: 'games',
       title: 'Mind Games',
       stat: `${stats.gamesWeek} games this week`,
-      icon: <Puzzle size={22} color={Theme.colors.primaryDark} />,
-      color: Theme.colors.primaryDark,
-      bg: Theme.colors.primaryLight,
+      icon: 'games',
+      tone: 'rose',
       href: '/games',
     },
   ];
@@ -74,22 +71,16 @@ export function WellnessHub({ only, title = 'Your wellness dashboards' }: Wellne
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
       {shown.map((c) => (
-        <Pressable
-          key={c.id}
-          onPress={() => router.push(c.href)}
-          style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={`Open ${c.title}`}
-        >
-          <View style={[styles.iconWrap, { backgroundColor: themed(c.bg) }]}>{c.icon}</View>
+        <Card key={c.id} onPress={() => router.push(c.href)} accessibilityLabel={`Open ${c.title}. ${c.stat}`} style={styles.card}>
+          <IconBadge name={c.icon} tone={c.tone} size={48} />
           <View style={styles.textCol}>
             <Text style={styles.cardTitle}>{c.title}</Text>
-            <View style={[styles.statPill, { backgroundColor: themed(c.bg) }]}>
-              <Text style={[styles.statText, { color: themed(c.color) }]}>{c.stat}</Text>
+            <View style={[styles.statPill, { backgroundColor: badgeColors(c.tone).bg }]}>
+              <Text style={[styles.statText, { color: badgeColors(c.tone).fg }]}>{c.stat}</Text>
             </View>
           </View>
           <ChevronRight size={20} color={Theme.colors.textTertiary} />
-        </Pressable>
+        </Card>
       ))}
     </View>
   );
@@ -101,19 +92,12 @@ const styles = createStyles(() => ({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    backgroundColor: Theme.colors.card,
-    borderRadius: Theme.radius.xl,
-    padding: 16,
+    gap: 16,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: Theme.colors.cardBorder,
-    ...Theme.shadows.card,
   },
   pressed: { opacity: 0.85, transform: [{ scale: 0.99 }] },
-  iconWrap: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   textCol: { flex: 1 },
   cardTitle: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary, letterSpacing: -0.2 },
-  statPill: { alignSelf: 'flex-start', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3, marginTop: 8 },
-  statText: { fontSize: 11, fontWeight: '800' },
+  statPill: { alignSelf: 'flex-start', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4, marginTop: 8 },
+  statText: { fontSize: 14, fontWeight: '800' },
 }));

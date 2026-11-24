@@ -1,5 +1,4 @@
-// Small shared building blocks for the wellness dashboards, styled to
-// match SheSync's existing cards (rounded white glass, rose accents).
+// Small shared building blocks for the wellness dashboards, on the design-system tokens.
 import React from 'react';
 import { Pressable, Text, View, ViewStyle } from 'react-native';
 import { Theme, createStyles, themed, withAlpha } from '@/constants/theme';
@@ -28,59 +27,8 @@ export function SectionHeader({
   );
 }
 
-export function Card({
-  children,
-  style,
-  tone = 'default',
-}: {
-  children: React.ReactNode;
-  style?: ViewStyle | ViewStyle[];
-  tone?: 'default' | 'rose' | 'lilac' | 'dark' | 'mint' | 'amber';
-}) {
-  return <View style={[styles.card, toneStyles[tone], style as ViewStyle]}>{children}</View>;
-}
-
-const toneStyles = createStyles(() => ({
-  default: { backgroundColor: Theme.colors.card, borderColor: Theme.colors.cardBorder },
-  rose: { backgroundColor: '#FFF1F5', borderColor: 'rgba(201, 87, 140, 0.25)' },
-  lilac: { backgroundColor: Theme.colors.secondaryLight, borderColor: Theme.colors.secondaryBorder },
-  dark: { backgroundColor: Theme.colors.obsidian, borderColor: 'rgba(255,255,255,0.08)' },
-  mint: { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' },
-  amber: { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' },
-}));
-
-export function Chip({
-  label,
-  selected,
-  onPress,
-  color = Theme.colors.primary,
-  small,
-  accessibilityLabel,
-}: {
-  label: string;
-  selected?: boolean;
-  onPress?: () => void;
-  color?: string;
-  small?: boolean;
-  accessibilityLabel?: string;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected: !!selected }}
-      accessibilityLabel={accessibilityLabel ?? label}
-      style={({ pressed }) => [
-        styles.chip,
-        small && styles.chipSmall,
-        selected && { backgroundColor: color, borderColor: color },
-        pressed && { opacity: 0.8 },
-      ]}
-    >
-      <Text style={[styles.chipText, small && styles.chipTextSmall, selected && styles.chipTextSelected]}>{label}</Text>
-    </Pressable>
-  );
-}
+// One Card and one Chip for the whole app (see src/components/ds).
+export { Card, Chip } from '@/components/ds';
 
 export function ProgressBar({
   value,
@@ -159,7 +107,7 @@ export function MiniBars({
                 style={{
                   height: `${Math.max(v > 0 ? 8 : 0, (v / max) * 100)}%`,
                   width: '100%',
-                  borderRadius: 6,
+                  borderRadius: 8,
                   backgroundColor: isLast ? color : withAlpha(color, 0.53),
                 }}
               />
@@ -209,44 +157,27 @@ export function Stepper({
 export const uiStyles = createStyles(() => ({
   row: { flexDirection: 'row', alignItems: 'center' },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  muted: { fontSize: 12, color: Theme.colors.textSecondary, lineHeight: 17 },
-  body: { fontSize: 13, color: Theme.colors.textSecondary, lineHeight: 19 },
-  strong: { fontSize: 15, fontWeight: '800', color: Theme.colors.textPrimary },
-  label: { fontSize: 10, fontWeight: '800', letterSpacing: 1, color: Theme.colors.primary, textTransform: 'uppercase' },
+  muted: { ...Theme.type.bodySm, color: Theme.colors.textSecondary },
+  body: { ...Theme.type.bodySm, color: Theme.colors.textSecondary },
+  strong: { fontSize: 16, lineHeight: 22, fontWeight: '800', color: Theme.colors.textPrimary },
+  label: { ...Theme.type.caption, fontWeight: '800', letterSpacing: 0.8, color: Theme.colors.primaryDark, textTransform: 'uppercase' },
   input: {
-    backgroundColor: '#FFFFFF',
+    minHeight: 48,
+    backgroundColor: Theme.colors.card,
     borderWidth: 1,
-    borderColor: Theme.colors.cardBorder,
+    borderColor: Theme.colors.borderStrong,
     borderRadius: Theme.radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    fontSize: 14,
+    paddingHorizontal: Theme.space.md,
+    paddingVertical: Theme.space.sm,
+    fontSize: 16,
     color: Theme.colors.textPrimary,
   },
 }));
 
 const styles = createStyles(() => ({
-  sectionRow: { flexDirection: 'row', alignItems: 'flex-end', marginTop: 22, marginBottom: 10, gap: 8 },
-  sectionTitle: { fontSize: 17, fontWeight: '800', color: Theme.colors.textPrimary, letterSpacing: -0.3 },
-  sectionSubtitle: { fontSize: 12, color: Theme.colors.textSecondary, marginTop: 2, lineHeight: 17 },
-  card: {
-    borderRadius: Theme.radius.xl,
-    padding: 16,
-    borderWidth: 1,
-    ...Theme.shadows.card,
-  },
-  chip: {
-    paddingHorizontal: 13,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: Theme.colors.cardBorder,
-  },
-  chipSmall: { paddingHorizontal: 10, paddingVertical: 5 },
-  chipText: { fontSize: 12, fontWeight: '700', color: Theme.colors.textSecondary },
-  chipTextSmall: { fontSize: 11 },
-  chipTextSelected: { color: '#FFFFFF' },
+  sectionRow: { flexDirection: 'row', alignItems: 'flex-end', marginTop: Theme.space.lg, marginBottom: Theme.space.sm, gap: Theme.space.xs },
+  sectionTitle: { ...Theme.type.title, fontWeight: '800', color: Theme.colors.textPrimary, letterSpacing: -0.2 },
+  sectionSubtitle: { ...Theme.type.bodySm, color: Theme.colors.textSecondary, marginTop: Theme.space.xxs },
   track: { width: '100%', overflow: 'hidden' },
   statTile: {
     flex: 1,
@@ -257,22 +188,22 @@ const styles = createStyles(() => ({
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
   },
-  statIcon: { marginBottom: 6 },
-  statLabel: { fontSize: 10, fontWeight: '700', color: Theme.colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.6 },
-  statValue: { fontSize: 20, fontWeight: '800', marginTop: 2, letterSpacing: -0.4 },
-  statHint: { fontSize: 11, color: Theme.colors.textSecondary, marginTop: 2, lineHeight: 15 },
-  barsRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 110, paddingTop: 4 },
+  statIcon: { marginBottom: 8 },
+  statLabel: { fontSize: 12, fontWeight: '700', color: Theme.colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.6 },
+  statValue: { fontSize: 20, fontWeight: '800', marginTop: 4, letterSpacing: -0.4 },
+  statHint: { fontSize: 14, color: Theme.colors.textSecondary, marginTop: 4, lineHeight: 20 },
+  barsRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, height: 110, paddingTop: 4 },
   barCol: { flex: 1, alignItems: 'center', height: '100%' },
-  barValue: { fontSize: 9, fontWeight: '700', color: Theme.colors.textTertiary, height: 13 },
+  barValue: { fontSize: 12, fontWeight: '700', color: Theme.colors.textTertiary, height: 13 },
   barTrack: {
     flex: 1,
     width: '70%',
     maxWidth: 26,
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(201, 87, 140, 0.06)',
-    borderRadius: 6,
+    borderRadius: 8,
   },
-  barLabel: { fontSize: 10, fontWeight: '600', color: Theme.colors.textTertiary, marginTop: 4 },
+  barLabel: { fontSize: 12, fontWeight: '600', color: Theme.colors.textTertiary, marginTop: 4 },
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -282,7 +213,7 @@ const styles = createStyles(() => ({
     borderColor: Theme.colors.cardBorder,
     overflow: 'hidden',
   },
-  stepBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', backgroundColor: Theme.colors.primaryLight },
-  stepBtnText: { fontSize: 20, fontWeight: '800', color: Theme.colors.primary },
-  stepValue: { minWidth: 70, textAlign: 'center', fontSize: 15, fontWeight: '800', color: Theme.colors.textPrimary },
+  stepBtn: { width: Theme.touch, height: Theme.touch, alignItems: 'center', justifyContent: 'center', backgroundColor: Theme.colors.primaryLight },
+  stepBtnText: { fontSize: 20, fontWeight: '800', color: Theme.colors.primaryDark },
+  stepValue: { minWidth: 72, textAlign: 'center', fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary },
 }));

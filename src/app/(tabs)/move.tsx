@@ -3,16 +3,19 @@ import { Header } from '@/components/common/Header';
 import { AdaptationHistory } from '@/components/move/AdaptationHistory';
 import { AdaptiveWorkoutCard } from '@/components/move/AdaptiveWorkoutCard';
 import { InterventionBanner } from '@/components/move/InterventionBanner';
+import { useReduceMotion } from '@/lib/motion';
 import { Theme, createStyles } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { X } from 'lucide-react-native';
-import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { Modal, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTodayPlan } from '@/hooks/useTodayPlan';
 import { WellnessHub } from '@/components/common/WellnessHub';
+import { Button } from '@/components/ds';
 
 export default function MoveScreen() {
+  const reduceMotion = useReduceMotion();
   const plan = useTodayPlan();
   const todayWorkout = plan.card;
   const strainScore = useAppStore((s) => s.biometrics.strainScore);
@@ -55,16 +58,14 @@ export default function MoveScreen() {
         {/* Biological Reasoning Modal */}
         <Modal
           visible={showBiologicalReasoning}
-          animationType="slide"
+          animationType={reduceMotion ? 'none' : 'slide'}
           presentationStyle="pageSheet"
           onRequestClose={toggleBiologicalReasoning}
         >
           <SafeAreaView style={styles.modalSafe}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Why this session</Text>
-              <Pressable onPress={toggleBiologicalReasoning} style={styles.closeBtn}>
-                <X size={20} color={Theme.colors.textPrimary} />
-              </Pressable>
+              <Button variant="secondary" size="sm" iconOnly onPress={toggleBiologicalReasoning} accessibilityLabel="Close" icon={<X size={20} color={Theme.colors.textPrimary} />} style={styles.closeBtn} />
             </View>
             <ScrollView contentContainerStyle={styles.modalContent}>
               <View style={styles.reasonSection}>
@@ -142,14 +143,7 @@ const styles = createStyles(() => ({
     fontWeight: '800',
     color: Theme.colors.textPrimary,
   },
-  closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Theme.colors.backgroundMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  closeBtn: { width: 36 },
   modalContent: {
     padding: 20,
     paddingBottom: 40,
@@ -158,20 +152,20 @@ const styles = createStyles(() => ({
     marginBottom: 4,
   },
   reasonLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: Theme.colors.primary,
     letterSpacing: 1,
     marginBottom: 8,
   },
   reasonText: {
-    fontSize: 15,
-    lineHeight: 23,
+    fontSize: 14,
+    lineHeight: 20,
     color: Theme.colors.textPrimary,
     fontWeight: '500',
   },
   reasonOriginal: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: Theme.colors.strainHigh,
     textDecorationLine: 'line-through',
@@ -180,11 +174,11 @@ const styles = createStyles(() => ({
     fontSize: 16,
     fontWeight: '800',
     color: Theme.colors.strainOptimal,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   reasonDesc: {
     fontSize: 14,
-    lineHeight: 21,
+    lineHeight: 20,
     color: Theme.colors.textSecondary,
   },
   reasonDivider: {

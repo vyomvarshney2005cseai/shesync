@@ -1,96 +1,192 @@
 import { StyleSheet } from 'react-native';
 
 /**
- * SheSync "Soft Bloom" palette — calm blush, dusty rose, lavender and sage.
- * Saturation is kept low so screens feel soothing, while buttons and text
- * keep readable contrast (white on `primary` ≈ 4:1, body text ≈ 12:1).
+ * SheSync design tokens — "Soft Bloom".
+ *
+ * Every colour has a light and a dark value. Dark mode sits on deep slate
+ * (never pure black) with lighter surfaces for higher elevation:
+ *   background #0F172A → card #1E293B → raised #273449.
+ * Text and interactive colours meet WCAG AA (4.5:1) on the page, card and
+ * muted surfaces in both modes (checked in tests/unit/round8.test.ts).
+ *
+ * Spacing follows an 8-point grid with 4-point half steps; radius and type
+ * come from the small scales below. Cards use a 1px border, not shadows.
  */
+const LIGHT_COLORS = {
+  // Surfaces
+  background: '#FBF8FA', // page
+  backgroundAlt: '#F7F2F5', // subtle page tint
+  backgroundMuted: '#F4EEF2', // chips, tracks, input wells
+  card: '#FFFFFF', // surface (level 1)
+  cardGlass: '#FFFFFE', // translucent surfaces in old code — now solid
+  surfaceRaised: '#FFFFFD', // sheets, menus, pressed rows (level 2)
+  cardBorder: '#E8DEE5', // 1px card and input borders
+  cardBorderLight: '#F0E8EE', // hairline dividers
+  borderStrong: '#CDBDC8', // selected outlines, focus-adjacent borders
+
+  // Accent — dusty rose (white text on it ≥ 5.9:1)
+  primary: '#B0346B',
+  primaryDark: '#962A5A', // hover / pressed / strong accent text
+  primaryLight: '#FBEAF2', // soft accent background
+  primaryGlow: 'rgba(176, 52, 107, 0.18)',
+  onPrimary: '#FFFFFF',
+
+  // Second accent — lavender
+  secondary: '#6447B0',
+  secondaryDark: '#523896',
+  secondaryLight: '#F1EDFB',
+  secondaryBorder: '#DCD3F3',
+
+  // Text
+  textPrimary: '#221A29',
+  textSecondary: '#544A5E',
+  textTertiary: '#6B6175',
+  textRose: '#9C2D5E',
+  textLilac: '#523896',
+
+  // Status (each works as text on white and as a fill under white text)
+  strainHigh: '#B8324F',
+  strainAmber: '#9A5A00',
+  strainOptimal: '#1D7457',
+  strainTeal: '#1C6A86',
+  danger: '#B42318',
+  dangerLight: '#FDECEC',
+  warningLight: '#FFF4DD',
+  successLight: '#E6F4EE',
+  infoLight: '#E6F1F6',
+
+  // Brand tints
+  welcomePink: '#FDEFF5',
+  welcomePinkDark: '#F7E1EB',
+  feminismAccent: '#B0346B',
+  sageTeal: '#276C5C',
+  sageLight: '#E7F4EF',
+  roseGold: '#8E5446',
+  roseGoldLight: '#F8ECE9',
+  peach: '#FDEBDD',
+  peachDark: '#99522A',
+
+  // Inverse surfaces (dark in light mode, light in dark mode)
+  obsidian: '#2A2033',
+  black: '#221A29',
+  white: '#FFFFFF',
+
+  // Interaction
+  focusRing: '#7B3FD6',
+  overlay: 'rgba(34, 26, 41, 0.45)',
+  skeleton: '#EEE6EB',
+  skeletonHighlight: '#F7F2F5',
+};
+
+type ColorName = keyof typeof LIGHT_COLORS;
+
+/** The same names in dark mode. */
+const DARK_COLORS: Record<ColorName, string> = {
+  background: '#0F172A',
+  backgroundAlt: '#131C31',
+  backgroundMuted: '#273449',
+  card: '#1E293B',
+  cardGlass: '#1E293B',
+  surfaceRaised: '#273449',
+  cardBorder: '#334155',
+  cardBorderLight: '#2A3649',
+  borderStrong: '#55657E',
+
+  primary: '#F48FC0',
+  primaryDark: '#F7A8CF',
+  primaryLight: '#3A2236',
+  primaryGlow: 'rgba(244, 143, 192, 0.22)',
+  onPrimary: '#1E293B',
+
+  secondary: '#B9A7F5',
+  secondaryDark: '#CEC2F8',
+  secondaryLight: '#2A2647',
+  secondaryBorder: '#433C6E',
+
+  textPrimary: '#F1F5F9',
+  textSecondary: '#CBD5E1',
+  textTertiary: '#94A3B8',
+  textRose: '#F7A8CF',
+  textLilac: '#CEC2F8',
+
+  strainHigh: '#FF8FA6',
+  strainAmber: '#F5B95A',
+  strainOptimal: '#5FD3A8',
+  strainTeal: '#7DD3F0',
+  danger: '#FF8A80',
+  dangerLight: '#3B1F26',
+  warningLight: '#33281A',
+  successLight: '#14302A',
+  infoLight: '#142C3A',
+
+  welcomePink: '#2B2133',
+  welcomePinkDark: '#34273F',
+  feminismAccent: '#F48FC0',
+  sageTeal: '#5FD3A8',
+  sageLight: '#14302A',
+  roseGold: '#E3B1A4',
+  roseGoldLight: '#2E2421',
+  peach: '#33261C',
+  peachDark: '#F2B48A',
+
+  obsidian: '#E2E8F0',
+  black: '#F1F5F9',
+  white: '#1E293B',
+
+  focusRing: '#C4B5FD',
+  overlay: 'rgba(2, 6, 23, 0.6)',
+  skeleton: '#273449',
+  skeletonHighlight: '#334155',
+};
+
+/** 8-point grid with 4-point half steps. */
+const SPACE = { xxs: 4, xs: 8, sm: 12, md: 16, lg: 24, xl: 32, xxl: 40, xxxl: 48 } as const;
+
+const RADIUS = { sm: 8, md: 12, lg: 16, xl: 24, full: 9999 } as const;
+
+/** Type scale: 12 is only for captions and badges; body text is 14 or 16. */
+const TYPE = {
+  caption: { fontSize: 12, lineHeight: 16, fontWeight: '600' as const },
+  bodySm: { fontSize: 14, lineHeight: 20, fontWeight: '400' as const },
+  body: { fontSize: 16, lineHeight: 24, fontWeight: '400' as const },
+  label: { fontSize: 14, lineHeight: 20, fontWeight: '700' as const },
+  title: { fontSize: 18, lineHeight: 24, fontWeight: '700' as const },
+  h3: { fontSize: 20, lineHeight: 28, fontWeight: '800' as const },
+  h2: { fontSize: 24, lineHeight: 32, fontWeight: '800' as const },
+  h1: { fontSize: 28, lineHeight: 36, fontWeight: '800' as const },
+  display: { fontSize: 32, lineHeight: 40, fontWeight: '800' as const },
+} as const;
+
+/** Minimum touch target (points). */
+const TOUCH = 44;
+
+const NO_SHADOW = {
+  shadowColor: 'transparent',
+  shadowOffset: { width: 0, height: 0 },
+  shadowOpacity: 0,
+  shadowRadius: 0,
+  elevation: 0,
+};
+
 const LIGHT = {
-  colors: {
-    // Blush backgrounds
-    background: "#FFF7F9",
-    backgroundAlt: "#FDF1F5",
-    backgroundMuted: "#FAE8EF",
-
-    // Card & Surface
-    card: "rgba(255, 255, 255, 0.9)",
-    cardGlass: "rgba(255, 255, 255, 0.8)",
-    cardBorder: "#F5DCE6",
-    cardBorderLight: "rgba(240, 200, 218, 0.5)",
-
-    // Primary — dusty rose
-    primary: "#C9578C",
-    primaryDark: "#A8436F",
-    primaryLight: "#FBE7F0",
-    primaryGlow: "rgba(201, 87, 140, 0.22)",
-
-    // Secondary — lavender
-    secondary: "#8E74CF",
-    secondaryDark: "#6E55B5",
-    secondaryLight: "#F2EDFB",
-    secondaryBorder: "#DFD5F5",
-
-    // Text — soft plum ink instead of pure black
-    textPrimary: "#3A2E48",
-    textSecondary: "#6E6478",
-    textTertiary: "#A39AAE",
-    textRose: "#A8436F",
-    textLilac: "#6E55B5",
-
-    // Status colours (softened)
-    strainHigh: "#E07088",
-    strainAmber: "#E3A048",
-    strainOptimal: "#3E9E86",
-    strainTeal: "#4FA9BD",
-
-    // Brand
-    welcomePink: "#FFEEF4",
-    welcomePinkDark: "#F9E1EA",
-    feminismAccent: "#D9638F",
-    sageTeal: "#6FB4A5",
-    sageLight: "#E8F5F1",
-    roseGold: "#C68B7E",
-    roseGoldLight: "#F8ECE9",
-    peach: "#FDEBDD",
-    peachDark: "#C77B4A",
-
-    // Deep accents (dark pills & CTAs) — plum rather than black
-    obsidian: "#46375A",
-    black: "#2B2236",
-    white: "#FFFFFF",
-  },
-
+  colors: LIGHT_COLORS,
+  // Cards and buttons no longer cast shadows; only floating things do.
   shadows: {
-    soft: {
-      shadowColor: "#C9578C",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.07,
-      shadowRadius: 14,
-      elevation: 2,
-    },
-    glowing: {
-      shadowColor: "#C9578C",
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.16,
-      shadowRadius: 18,
-      elevation: 5,
-    },
-    card: {
-      shadowColor: "#3A2E48",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.04,
-      shadowRadius: 10,
-      elevation: 2,
+    soft: NO_SHADOW,
+    glowing: NO_SHADOW,
+    card: NO_SHADOW,
+    floating: {
+      shadowColor: '#221A29',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.12,
+      shadowRadius: 16,
+      elevation: 6,
     },
   },
-
-  radius: {
-    sm: 10,
-    md: 16,
-    lg: 22,
-    xl: 28,
-    full: 9999,
-  },
+  radius: RADIUS,
+  space: SPACE,
+  type: TYPE,
+  touch: TOUCH,
 };
 
 // ============================================================
@@ -159,33 +255,61 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
   return [f(h + 1 / 3) * 255, f(h) * 255, f(h - 1 / 3) * 255];
 }
 
-/** Light colour -> its calm night-time partner (deep plum surfaces, soft light text). */
+/** "rgba(r,g,b,a.aaa)": the exact format of converted colours (so they are never converted twice). */
+function toned(input: string): string {
+  const rgba = parse(input);
+  if (!rgba) return input;
+  return `rgba(${Math.round(rgba[0])},${Math.round(rgba[1])},${Math.round(rgba[2])},${rgba[3].toFixed(3)})`;
+}
+
+const key = (c: string) => c.trim().toUpperCase().replace(/\s+/g, '');
+
+/**
+ * Light colour -> its dark-mode partner, for colours that are not tokens
+ * (tokens use the DARK_COLORS table). Neutrals turn deep slate, soft tints
+ * become dark tinted surfaces, accents get lighter so they stay readable.
+ */
 function darken(input: string): string {
   const rgba = parse(input);
   if (!rgba) return input; // 'transparent', gradients, etc.
   const [h0, s, l] = rgbToHsl(rgba[0], rgba[1], rgba[2]);
   const grey = s < 0.12;
-  const h = grey ? 0.75 : h0; // neutral greys lean plum, like the rest of the app
+  const h = grey ? 0.6 : h0; // neutrals lean slate blue
   let L: number;
   let S: number;
   if (l >= 0.995) {
-    L = 0.165; S = 0.2; // white cards sit slightly above the page
+    L = 0.175; S = 0.33; // white cards → #1E293B-like surface
   } else if (l >= 0.9) {
-    L = Math.min(0.27, Math.max(0.105, 0.105 + (0.985 - l) * 3)); // page + soft tints
-    S = Math.min(s, 0.6) * 0.5 + 0.06;
+    L = Math.min(0.24, Math.max(0.13, 0.13 + (0.985 - l) * 1.2)); // page + soft tints
+    S = grey ? 0.3 : Math.min(s, 0.6) * 0.45 + 0.08;
   } else if (l >= 0.65) {
-    L = 0.27 + (0.9 - l) * 0.5; // borders, light mid-tones
-    S = s * 0.5;
+    L = 0.26 + (0.9 - l) * 0.4; // borders, light mid-tones
+    S = grey ? 0.2 : s * 0.45;
   } else if (l >= 0.4) {
-    L = l + (grey || s < 0.25 ? 0.2 : 0.09); // accents stay recognisable, a little brighter
+    L = Math.min(0.82, Math.max(0.66, l + 0.18)); // accents: lighter so they read on slate
     S = s * 0.85;
   } else {
-    L = 0.92 - l * 0.7; // dark ink -> soft light text
-    S = Math.min(s, 0.5) * 0.55;
+    L = Math.min(0.95, 0.93 - l * 0.6); // dark ink → soft light text
+    S = Math.min(s, 0.5) * 0.6;
   }
   const [r, g, b] = hslToRgb(h, grey ? Math.max(S, 0.08) : S, L);
   return `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},${rgba[3].toFixed(3)})`;
 }
+
+// Tokens convert to their designed dark values, not computed ones.
+for (const name of Object.keys(LIGHT_COLORS) as ColorName[]) {
+  const light = LIGHT_COLORS[name];
+  const dark = toned(DARK_COLORS[name]);
+  const k = key(light);
+  if (!toDark.has(k)) toDark.set(k, dark);
+  if (!toLight.has(dark)) toLight.set(dark, light);
+}
+
+/** The designed value of a token in a given mode (for tests and docs). */
+export function tokenValue(name: ColorName, which: ThemeMode): string {
+  return which === 'dark' ? DARK_COLORS[name] : LIGHT_COLORS[name];
+}
+export const COLOR_TOKENS = Object.keys(LIGHT_COLORS) as ColorName[];
 
 /**
  * Converts a colour for the current mode. Safe to call on any colour, any
@@ -196,13 +320,22 @@ export function themed<T>(color: T): T {
   if (typeof color !== 'string') return color;
   if (mode === 'light') return (toLight.get(color) ?? color) as T;
   if (TONED.test(color)) return color;
-  let out = toDark.get(color);
+  const k = key(color);
+  let out = toDark.get(k);
   if (out === undefined) {
     out = darken(color);
-    toDark.set(color, out);
-    if (out !== color) toLight.set(out, color);
+    toDark.set(k, out);
+    if (out !== color && !toLight.has(out)) toLight.set(out, color);
   }
   return out as T;
+}
+
+/**
+ * A colour that stays exactly the same in light and dark mode — for brand
+ * colours (YouTube red) and scrims over photos, which must not be converted.
+ */
+export function fixedColor(color: string): string {
+  return toned(color);
 }
 
 /** The same colour with a new opacity (works on light and night colours). */

@@ -1,15 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, TextInput, ScrollView, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Theme, createStyles, themed } from '@/constants/theme';
@@ -24,6 +14,7 @@ import {
   RefreshCw,
   ShieldCheck,
 } from 'lucide-react-native';
+import { Button } from '@/components/ds';
 
 export default function ForgotPasswordScreen() {
   const params = useLocalSearchParams<{ email?: string }>();
@@ -94,14 +85,15 @@ export default function ForgotPasswordScreen() {
           >
             {/* Top Bar Navigation */}
             <View style={styles.topBar}>
-              <TouchableOpacity
-                style={styles.backButton}
+              <Button
+                variant="secondary"
+                size="sm"
+                iconOnly
                 onPress={() => router.back()}
-                activeOpacity={0.7}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <ArrowLeft size={20} color={Theme.colors.textPrimary} />
-              </TouchableOpacity>
+                accessibilityLabel="Go back"
+                icon={<ArrowLeft size={20} color={Theme.colors.textPrimary} />}
+                style={styles.backButton}
+              />
 
               <View style={styles.brandRow}>
                 <Image
@@ -175,21 +167,15 @@ export default function ForgotPasswordScreen() {
                   </View>
 
                   {/* Send Reset Email Button */}
-                  <TouchableOpacity
-                    style={[styles.submitButton, loading && { opacity: 0.7 }]}
-                    activeOpacity={0.88}
+                  <Button
+                    size="lg"
+                    fullWidth
+                    title={loading ? 'Sending reset link' : 'Send Reset Link'}
+                    loading={loading}
                     onPress={handleSendResetEmail}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <ActivityIndicator size="small" color={themed('#FFFFFF')} style={{ marginRight: 8 }} />
-                    ) : (
-                      <Send size={18} color={themed('#FFFFFF')} style={{ marginRight: 8 }} />
-                    )}
-                    <Text style={styles.submitButtonText}>
-                      {loading ? 'Sending Reset Link...' : 'Send Reset Link'}
-                    </Text>
-                  </TouchableOpacity>
+                    icon={<Send size={20} color={loading ? Theme.colors.textTertiary : Theme.colors.onPrimary} />}
+                    style={styles.submitButton}
+                  />
                 </>
               ) : (
                 /* Success State */
@@ -215,40 +201,19 @@ export default function ForgotPasswordScreen() {
                   </Text>
 
                   {/* Resend Action */}
-                  <TouchableOpacity
-                    style={[
-                      styles.resendButton,
-                      (resendCooldown > 0 || loading) && styles.resendButtonDisabled,
-                    ]}
-                    activeOpacity={0.8}
+                  <Button
+                    variant="secondary"
+                    fullWidth
+                    title={resendCooldown > 0 ? `Resend available in ${resendCooldown}s` : loading ? 'Sending' : 'Resend reset email'}
+                    loading={loading}
+                    disabled={resendCooldown > 0}
                     onPress={handleSendResetEmail}
-                    disabled={resendCooldown > 0 || loading}
-                  >
-                    {loading ? (
-                      <ActivityIndicator size="small" color={Theme.colors.primaryDark} style={{ marginRight: 6 }} />
-                    ) : (
-                      <RefreshCw size={16} color={resendCooldown > 0 ? Theme.colors.textTertiary : Theme.colors.primaryDark} style={{ marginRight: 6 }} />
-                    )}
-                    <Text
-                      style={[
-                        styles.resendButtonText,
-                        resendCooldown > 0 && { color: Theme.colors.textTertiary },
-                      ]}
-                    >
-                      {resendCooldown > 0
-                        ? `Resend available in ${resendCooldown}s`
-                        : 'Resend Reset Email'}
-                    </Text>
-                  </TouchableOpacity>
+                    icon={<RefreshCw size={18} color={resendCooldown > 0 || loading ? Theme.colors.textTertiary : Theme.colors.textPrimary} />}
+                    style={styles.resendButton}
+                  />
 
                   {/* Return to Login */}
-                  <TouchableOpacity
-                    style={styles.submitButton}
-                    activeOpacity={0.88}
-                    onPress={() => router.replace('/login')}
-                  >
-                    <Text style={styles.submitButtonText}>Back to Log In</Text>
-                  </TouchableOpacity>
+                  <Button variant="tertiary" title="Back to Log In" onPress={() => router.replace('/login')} fullWidth />
                 </View>
               )}
             </View>
@@ -257,13 +222,7 @@ export default function ForgotPasswordScreen() {
             {!isSubmitted && (
               <View style={styles.footerRow}>
                 <Text style={styles.footerText}>Remember your password?</Text>
-                <TouchableOpacity
-                  onPress={() => router.back()}
-                  activeOpacity={0.7}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Text style={styles.footerLink}> Log In</Text>
-                </TouchableOpacity>
+                <Button variant="link" title="Log In" onPress={() => router.back()} />
               </View>
             )}
           </ScrollView>
@@ -301,17 +260,7 @@ const styles = createStyles(() => ({
     justifyContent: 'space-between',
     paddingVertical: 12,
   },
-  backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: Theme.radius.full,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#FFE2EB',
-    ...Theme.shadows.soft,
-  },
+  backButton: { width: 38 },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -341,7 +290,6 @@ const styles = createStyles(() => ({
     borderColor: '#FFD3E0',
     alignItems: 'center',
     justifyContent: 'center',
-    ...Theme.shadows.soft,
   },
   headerBlock: {
     marginTop: 8,
@@ -350,7 +298,7 @@ const styles = createStyles(() => ({
     paddingHorizontal: 12,
   },
   title: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '800',
     color: Theme.colors.textPrimary,
     letterSpacing: -0.5,
@@ -359,17 +307,16 @@ const styles = createStyles(() => ({
   subtitle: {
     fontSize: 14,
     color: Theme.colors.textSecondary,
-    lineHeight: 21,
-    marginTop: 6,
+    lineHeight: 20,
+    marginTop: 8,
     textAlign: 'center',
   },
   formContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: Theme.radius.xl,
-    padding: 22,
+    padding: 24,
     borderWidth: 1,
     borderColor: '#FFE2EB',
-    ...Theme.shadows.soft,
     gap: 16,
   },
   errorBanner: {
@@ -383,16 +330,16 @@ const styles = createStyles(() => ({
   },
   errorText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 14,
     color: Theme.colors.primaryDark,
     fontWeight: '600',
-    lineHeight: 18,
+    lineHeight: 20,
   },
   inputGroup: {
-    gap: 6,
+    gap: 8,
   },
   inputLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: Theme.colors.textSecondary,
     letterSpacing: 0.8,
@@ -407,12 +354,13 @@ const styles = createStyles(() => ({
     paddingHorizontal: 12,
   },
   inputIcon: {
-    marginRight: 10,
+    marginRight: 12,
   },
   input: {
+    minHeight: 48,
     flex: 1,
-    paddingVertical: 14,
-    fontSize: 15,
+    paddingVertical: 16,
+    fontSize: 16,
     color: Theme.colors.textPrimary,
   },
   infoBox: {
@@ -425,21 +373,11 @@ const styles = createStyles(() => ({
   },
   infoBoxText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 14,
     color: Theme.colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: 20,
   },
-  submitButton: {
-    backgroundColor: '#46375A',
-    borderRadius: Theme.radius.md,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-    ...Theme.shadows.card,
-  },
+  submitButton: { marginTop: 4 },
   submitButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
@@ -458,8 +396,8 @@ const styles = createStyles(() => ({
     backgroundColor: '#ECFDF5',
     borderWidth: 1,
     borderColor: '#A7F3D0',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: Theme.radius.full,
     alignSelf: 'center',
     marginBottom: 4,
@@ -478,39 +416,30 @@ const styles = createStyles(() => ({
     alignItems: 'center',
   },
   emailHighlightLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: Theme.colors.textSecondary,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   emailHighlightValue: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: Theme.colors.textPrimary,
   },
   instructionStep: {
-    fontSize: 13,
+    fontSize: 12,
     color: Theme.colors.textSecondary,
-    lineHeight: 19,
+    lineHeight: 16,
     paddingHorizontal: 4,
   },
   resendButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFF0F5',
-    borderWidth: 1,
-    borderColor: '#FFD3E0',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: Theme.radius.md,
-    marginTop: 6,
+    marginTop: 8,
   },
   resendButtonDisabled: {
     backgroundColor: '#F3F4F6',
     borderColor: '#E5E7EB',
   },
   resendButtonText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     color: Theme.colors.primaryDark,
   },

@@ -1,0 +1,20 @@
+# Fresh install → skip the 3-slide tour → "Try without an account".
+appId: com.vyomvarshney1234.shesync
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: "tour-skip"
+    timeout: 30000
+- tapOn:
+    id: "tour-skip"
+- tapOn:
+    id: "try-without-account"
+# Android may ask about notifications once; either answer is fine here.
+- tapOn:
+    text: "Don.t allow"
+    optional: true
+- extendedWaitUntil:
+    visible: "Details for Sync"
+    timeout: 15000

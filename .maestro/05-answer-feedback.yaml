@@ -1,0 +1,19 @@
+# 6. Thumbs on YourGoGirl answers.
+appId: com.vyomvarshney1234.shesync
+name: Helpful / not helpful
+---
+- runFlow: subflows/start-guest.yaml
+- tapOn: "GoGirl"
+- tapOn: "Ask anything.*"
+- inputText: "my period cramps are really bad"
+- hideKeyboard
+- tapOn: "Send"
+- extendedWaitUntil:
+    visible:
+      id: "answer-not-helpful"
+    timeout: 15000
+- tapOn:
+    id: "answer-not-helpful"
+- tapOn:
+    id: "answer-reason-too_long"
+- assertVisible: ".*helps YourGoGirl get better.*"

@@ -11,6 +11,10 @@ import { FeatureSquares } from '@/components/home/FeatureSquares';
 import { ReferralStatusCard } from '@/components/home/ReferralStatusCard';
 import { CheckInCard } from '@/components/home/CheckInCard';
 import { MythBusterCard } from '@/components/home/MythBusterCard';
+import { FocusAreasCard } from '@/components/home/FocusAreasCard';
+import { GuestBackupCard } from '@/components/home/GuestBackupCard';
+import { PersonaliseCard } from '@/components/home/PersonaliseCard';
+import { CardBoundary } from '@/components/errors/FriendlyError';
 import { router } from 'expo-router';
 import { useAppStore } from '@/store/useAppStore';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
@@ -30,7 +34,7 @@ export default function HomeScreen() {
   const cycle = useAppStore((s) => s.cycle);
   const userName = useAppStore((s) => s.userName);
   const isSynced = useAppStore((s) => !!s.syncCompletedAt);
-  const firstName = (userName || 'there').trim().split(' ')[0];
+  const firstName = (userName || '').trim().split(' ')[0];
 
   const handleQuickAction = (id: QuickActionId) => router.push(QUICK_ROUTES[id]);
 
@@ -44,34 +48,39 @@ export default function HomeScreen() {
         >
           <View style={styles.centeredWrapper}>
             <Header
-              title={`${timeOfDayGreeting()}, ${firstName}`}
+              title={firstName ? `${timeOfDayGreeting()}, ${firstName}` : timeOfDayGreeting()}
               subtitle={isSynced ? cycle.label : 'Let’s set up SheSync for you'}
             />
 
             {isSynced ? (
               // ─── Synced: the full dashboard ───
+              // Each card has its own error boundary: one broken card never blanks Home.
               <>
-                <CheckInCard />
-                <StrainGauge score={biometrics.strainScore} level={biometrics.strainLevel} />
-                <BiometricScroll biometrics={biometrics} cycle={cycle} />
-                <ReferralStatusCard />
-                <CyclePredictionBanner />
-                <QuickActionGrid onAction={handleQuickAction} />
-                <MythBusterCard />
+                <CardBoundary><CheckInCard /></CardBoundary>
+                <CardBoundary><PersonaliseCard /></CardBoundary>
+                <CardBoundary><StrainGauge score={biometrics.strainScore} level={biometrics.strainLevel} /></CardBoundary>
+                <CardBoundary><BiometricScroll biometrics={biometrics} cycle={cycle} /></CardBoundary>
+                <CardBoundary><ReferralStatusCard /></CardBoundary>
+                <CardBoundary><CyclePredictionBanner /></CardBoundary>
+                <CardBoundary><QuickActionGrid onAction={handleQuickAction} /></CardBoundary>
+                <CardBoundary><FocusAreasCard /></CardBoundary>
+                <CardBoundary><MythBusterCard /></CardBoundary>
                 <View style={styles.sectionHead}>
                   <Text style={styles.sectionTitle}>Explore SheSync</Text>
                 </View>
-                <FeatureSquares />
+                <CardBoundary><FeatureSquares /></CardBoundary>
+                <CardBoundary><GuestBackupCard /></CardBoundary>
               </>
             ) : (
               // ─── First run: Details for Sync + feature squares ───
               <>
-                <SyncDetailsCard />
-                <MythBusterCard />
+                <CardBoundary><SyncDetailsCard /></CardBoundary>
+                <CardBoundary><MythBusterCard /></CardBoundary>
                 <View style={styles.sectionHead}>
                   <Text style={styles.sectionTitle}>Explore SheSync</Text>
                 </View>
-                <FeatureSquares />
+                <CardBoundary><FeatureSquares /></CardBoundary>
+                <CardBoundary><GuestBackupCard /></CardBoundary>
               </>
             )}
           </View>
@@ -100,14 +109,12 @@ const styles = createStyles(() => ({
     alignSelf: 'center',
   },
   sectionHead: {
-    paddingHorizontal: 20,
-    marginTop: 22,
-    marginBottom: 12,
+    paddingHorizontal: Theme.space.md,
+    marginTop: Theme.space.lg,
+    marginBottom: Theme.space.sm,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: '800',
+    ...Theme.type.title,
     color: Theme.colors.textPrimary,
-    letterSpacing: -0.3,
   },
 }));

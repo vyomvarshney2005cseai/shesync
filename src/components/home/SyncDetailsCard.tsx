@@ -1,8 +1,10 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { router, type Href } from 'expo-router';
-import { Check, ChevronRight, Sparkles } from 'lucide-react-native';
-import { Theme, createStyles, themed } from '@/constants/theme';
+import { Check, ChevronRight } from 'lucide-react-native';
+import { Theme, createStyles } from '@/constants/theme';
+import { Button, Card, IconBadge, ListGroup, ListRow } from '@/components/ds';
+import { STEP_ICON } from './stepIcons';
 import { useAppStore } from '@/store/useAppStore';
 import { nextSyncHref, syncProgress } from '@/lib/syncDetails';
 
@@ -16,8 +18,10 @@ export function SyncDetailsCard() {
   const symptomLogs = useAppStore((s) => s.symptomLogs);
   const healthCheckCompleted = useAppStore((s) => s.healthCheckCompleted);
   const syncCompletedAt = useAppStore((s) => s.syncCompletedAt);
+  const skippedSyncSteps = useAppStore((s) => s.skippedSyncSteps);
+  const skipSetup = useAppStore((s) => s.skipSetup);
 
-  const input = { isAssessmentCompleted, pastCycles, symptomLogs, healthCheckCompleted, syncCompletedAt };
+  const input = { isAssessmentCompleted, pastCycles, symptomLogs, healthCheckCompleted, syncCompletedAt, skippedSyncSteps };
   const progress = syncProgress(input);
   const pct = Math.round((progress.doneCount / progress.total) * 100);
 
@@ -34,18 +38,14 @@ export function SyncDetailsCard() {
   };
 
   return (
-    <View style={styles.card} accessibilityLabel="Details for Sync">
+    <Card style={styles.card} padding="lg">
       <View style={styles.headRow}>
-        <View style={styles.headIcon}>
-          <Sparkles size={18} color={Theme.colors.primary} />
-        </View>
+        <IconBadge name="sparkle" tone="rose" size={44} />
         <View style={{ flex: 1 }}>
           <Text style={styles.title} accessibilityRole="header">
             Details for Sync
           </Text>
-          <Text style={styles.subtitle}>
-            Fill these once to personalise SheSync.
-          </Text>
+          <Text style={styles.subtitle}>Fill these once to personalise SheSync.</Text>
         </View>
         <View style={styles.countPill}>
           <Text style={styles.countText}>
@@ -58,138 +58,84 @@ export function SyncDetailsCard() {
         <View style={[styles.fill, { width: `${Math.max(4, pct)}%` }]} />
       </View>
 
-      <View style={styles.list}>
+      <ListGroup>
         {progress.steps.map((step) => (
-          <Pressable
+          <ListRow
             key={step.id}
+            icon={STEP_ICON[step.id].icon}
+            tone={step.done ? 'mint' : STEP_ICON[step.id].tone}
+            title={`${step.number}. ${step.title}`}
+            subtitle={step.done ? 'Done · tap to update' : step.skipped ? 'Skipped for now · tap to answer' : step.subtitle}
             onPress={() => openStep(step.route, step.done)}
-            style={({ pressed }) => [styles.row, step.done && styles.rowDone, pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel={`${step.title}${step.done ? ', done' : ''}`}
-          >
-            <View style={[styles.emojiWrap, step.done && styles.emojiWrapDone]}>
-              <Text style={styles.emoji}>{step.emoji}</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.rowTitle, step.done && styles.rowTitleDone]}>
-                {step.number}. {step.title}
-              </Text>
-              <Text style={styles.rowSub}>{step.done ? 'Done · tap to update' : step.subtitle}</Text>
-            </View>
-            {step.done ? (
-              <View style={styles.tick}>
-                <Check size={13} color={themed('#FFFFFF')} strokeWidth={3} />
-              </View>
-            ) : (
-              <ChevronRight size={18} color={Theme.colors.textTertiary} />
-            )}
-          </Pressable>
+            accessibilityLabel={`${step.title}${step.done ? ', done' : step.skipped ? ', skipped for now' : ''}`}
+            right={
+              step.done ? (
+                <View style={styles.tick}>
+                  <Check size={14} color={Theme.colors.onPrimary} />
+                </View>
+              ) : (
+                <ChevronRight size={20} color={Theme.colors.textTertiary} />
+              )
+            }
+          />
         ))}
-      </View>
+      </ListGroup>
 
-      <Pressable
+      <Button
+        title={ctaLabel}
         onPress={() => router.push(nextSyncHref(input))}
-        style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
-        accessibilityRole="button"
-      >
-        <Text style={styles.ctaText} numberOfLines={1}>
-          {ctaLabel}
-        </Text>
-        <ChevronRight size={18} color={themed('#FFFFFF')} />
-      </Pressable>
+        iconRight={<ChevronRight size={20} color={Theme.colors.onPrimary} />}
+        fullWidth
+        size="lg"
+        style={styles.cta}
+      />
+      <Button
+        variant="link"
+        title="Skip for now — use sensible defaults"
+        onPress={skipSetup}
+        testID="skip-setup"
+        accessibilityHint="Uses sensible defaults now. You can personalise SheSync later from Home or Profile."
+        style={styles.skip}
+      />
       <Text style={styles.footnote}>
-        At the end you’ll see if a gynaecologist visit is suggested.
+        At the end you’ll see if a gynaecologist visit is suggested. Skipped steps can be done any time.
       </Text>
-    </View>
+    </Card>
   );
 }
 
 const styles = createStyles(() => ({
-  card: {
-    marginHorizontal: 20,
-    marginTop: 6,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderRadius: 28,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: Theme.colors.cardBorder,
-    ...Theme.shadows.soft,
-  },
-  headRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  headIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  card: { marginHorizontal: Theme.space.md, marginTop: Theme.space.xs },
+  headRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Theme.space.sm },
+  title: { ...Theme.type.h3, color: Theme.colors.textPrimary, letterSpacing: -0.3 },
+  subtitle: { ...Theme.type.bodySm, color: Theme.colors.textSecondary, marginTop: 4 },
+  countPill: {
+    minWidth: 44,
+    paddingHorizontal: Theme.space.xs,
+    paddingVertical: 4,
+    borderRadius: Theme.radius.full,
     backgroundColor: Theme.colors.primaryLight,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  title: { fontSize: 19, fontWeight: '800', color: Theme.colors.textPrimary, letterSpacing: -0.3 },
-  subtitle: { fontSize: 12.5, lineHeight: 18, color: Theme.colors.textSecondary, marginTop: 3 },
-  countPill: {
-    backgroundColor: Theme.colors.secondaryLight,
-    borderRadius: Theme.radius.full,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: Theme.colors.secondaryBorder,
-  },
-  countText: { fontSize: 12, fontWeight: '800', color: Theme.colors.secondaryDark },
+  countText: { ...Theme.type.label, color: Theme.colors.primaryDark },
   track: {
     height: 8,
     borderRadius: 4,
     backgroundColor: Theme.colors.backgroundMuted,
-    marginTop: 14,
+    marginTop: Theme.space.md,
+    marginBottom: Theme.space.md,
     overflow: 'hidden',
   },
   fill: { height: 8, borderRadius: 4, backgroundColor: Theme.colors.primary },
-  list: { marginTop: 14, gap: 8 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 18,
-    backgroundColor: Theme.colors.backgroundAlt,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  rowDone: { backgroundColor: '#F1F8F5', borderColor: '#D5ECE3' },
-  emojiWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emojiWrapDone: { backgroundColor: '#FFFFFF' },
-  emoji: { fontSize: 17 },
-  rowTitle: { fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary },
-  rowTitleDone: { color: '#2F7D69' },
-  rowSub: { fontSize: 11.5, color: Theme.colors.textSecondary, marginTop: 1 },
   tick: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: Theme.colors.strainOptimal,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cta: {
-    marginTop: 16,
-    backgroundColor: Theme.colors.primary,
-    borderRadius: 20,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    ...Theme.shadows.glowing,
-  },
-  ctaText: { color: '#FFFFFF', fontSize: 15, fontWeight: '800', flexShrink: 1 },
-  footnote: { fontSize: 11, color: Theme.colors.textTertiary, textAlign: 'center', marginTop: 10, lineHeight: 15 },
-  pressed: { opacity: 0.85, transform: [{ scale: 0.99 }] },
+  cta: { marginTop: Theme.space.lg },
+  skip: { alignSelf: 'center', marginTop: Theme.space.xs },
+  footnote: { ...Theme.type.bodySm, color: Theme.colors.textSecondary, textAlign: 'center', marginTop: Theme.space.xxs },
 }));

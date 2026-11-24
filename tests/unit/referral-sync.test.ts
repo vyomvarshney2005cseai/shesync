@@ -1,0 +1,26 @@
+import { assessReferral } from '@/lib/referral';
+import { nextSyncHref, syncProgress } from '@/lib/syncDetails';
+import { todayKey } from '@/lib/dates';
+const base: any = { assessmentAnswers: {}, healthCheck: {}, symptomLogs: [], pastCycles: [], cyclePrediction: { regularityStatus: 'regular' } };
+let fail=0; const ok=(c:boolean,m:string)=>{ if(!c){fail++;console.log('FAIL',m);} };
+let r = assessReferral(base); ok(!r.referable && r.level==='none' && !r.counsellorSuggested, 'clean → not referable');
+r = assessReferral({ ...base, healthCheck: { hc_fever: true } }); ok(r.referable && r.level==='urgent', 'fever urgent');
+r = assessReferral({ ...base, healthCheck: { hc_soak: true } }); ok(r.level==='soon' && r.reasons[0].id==='heavy', 'soak soon');
+r = assessReferral({ ...base, assessmentAnswers: { q1: 'q1_opt4' } }); ok(r.level==='routine', 'irregular routine');
+r = assessReferral({ ...base, assessmentAnswers: { q1: 'q1_opt4' }, healthCheck: { hc_hair_acne: true } }); ok(r.level==='soon' && r.reasons.some(x=>x.id==='irregular'), 'irregular+hair → soon (PCOS)');
+r = assessReferral({ ...base, assessmentAnswers: { q1: 'q1_opt5' } }); ok(r.level==='soon', 'no period 3m soon');
+r = assessReferral({ ...base, healthCheck: { hc_self_harm: true } }); ok(r.crisis && r.counsellorSuggested && !r.referable, 'self-harm crisis');
+r = assessReferral({ ...base, healthCheck: { hc_pregnant: true } }); ok(r.pregnancyTestFirst && !r.referable, 'pregnant → test first, not referable alone');
+r = assessReferral({ ...base, healthCheck: { hc_pregnant: true, hc_between: true } }); ok(r.level==='urgent', 'pregnant + bleeding → urgent');
+r = assessReferral({ ...base, symptomLogs: [{ id:'1', date: todayKey(), timestamp:'', pain: 9 }] }); ok(r.level==='soon', 'logged pain 9 → soon');
+r = assessReferral({ ...base, assessmentAnswers: { q7: 'q7_opt4' } }); ok(r.counsellorSuggested && r.referable && r.level==='routine', 'PMDD → counsellor + routine gyn');
+r = assessReferral({ ...base, healthCheck: { hc_low_mood: true } }); ok(r.counsellorSuggested && !r.referable, 'low mood → counsellor only');
+// sync progress
+const s0: any = { isAssessmentCompleted:false, pastCycles:[], symptomLogs:[], healthCheckCompleted:false, syncCompletedAt:'' };
+ok(nextSyncHref(s0)==='/assessment?onboarding=true', 'next = assessment');
+const s1 = { ...s0, isAssessmentCompleted:true, pastCycles:[{}], symptomLogs:[{pain:3},{flow:'none'}] };
+ok(nextSyncHref(s1)==='/log-mood?onboarding=true', 'next = mood ('+nextSyncHref(s1)+')');
+const s2 = { ...s1, symptomLogs:[{pain:3},{flow:'none'},{mood:3}], healthCheckCompleted:true };
+ok(nextSyncHref(s2)==='/sync-result' && syncProgress(s2).allStepsDone && !syncProgress(s2).isComplete, 'all steps → result');
+console.log(fail ? `${fail} failed` : 'all referral/sync checks passed');
+process.exitCode = fail ? 1 : 0;

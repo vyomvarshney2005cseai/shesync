@@ -48,10 +48,11 @@ export async function callNumber(number: string, label?: string): Promise<void> 
 }
 
 /** Opens the SMS composer with a prefilled message (no recipient chosen). */
-export async function composeSms(body: string): Promise<void> {
+export async function composeSms(body: string, to = ''): Promise<void> {
   const encoded = encodeURIComponent(body);
+  const number = to.replace(/[^\d+]/g, '');
   // iOS uses "&body=", Android and others "?body=".
-  const url = Platform.OS === 'ios' ? `sms:&body=${encoded}` : `sms:?body=${encoded}`;
+  const url = Platform.OS === 'ios' ? `sms:${number}&body=${encoded}` : `sms:${number}?body=${encoded}`;
   try {
     if (Platform.OS === 'web') {
       if (typeof window !== 'undefined') window.location.href = url;

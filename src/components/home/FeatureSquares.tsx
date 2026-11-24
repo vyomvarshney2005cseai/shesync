@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { router, type Href } from 'expo-router';
-import { Dumbbell, Flower2, GraduationCap, HeartHandshake, MessageCircleHeart, Puzzle, ShieldCheck, Sparkles, Wind } from 'lucide-react-native';
-import { Theme, createStyles, themed } from '@/constants/theme';
+import { Theme, createStyles } from '@/constants/theme';
+import { Card, IconBadge, badgeColors, type BadgeTone } from '@/components/ds';
+import type { BrandIconName } from '@/components/icons/BrandIcon';
 import { useFitnessStore } from '@/store/useFitnessStore';
 import { useStudyStore } from '@/store/useStudyStore';
 import { useGamesStore } from '@/store/useGamesStore';
@@ -19,9 +20,8 @@ interface Square {
   sub: string;
   stat?: string;
   href: Href;
-  bg: string;
-  ink: string;
-  icon: React.ReactNode;
+  icon: BrandIconName;
+  tone: BadgeTone;
 }
 
 /** Square "experience boxes" for SheSync's features, shown on Home. */
@@ -37,6 +37,7 @@ export function FeatureSquares() {
   });
   const padChanges = usePadCareStore((s) => s.changes);
   const padTimerOn = usePadCareStore((s) => s.active !== null);
+  const examsAhead = useStudyStore((s) => s.exams.filter((e) => e.date >= todayKey()).length);
   const onPeriod = useAppStore((s) => s.cycle.phase === 'menstrual');
 
   const stats = useMemo(() => {
@@ -56,9 +57,8 @@ export function FeatureSquares() {
     sub: 'Change reminders & safer pads',
     stat: padTimerOn ? `Timer on · ${stats.padToday} today` : onPeriod ? 'Start the change timer' : undefined,
     href: ROUTES.padCare,
-    bg: themed('#FDECF4'),
-    ink: themed('#BE185D'),
-    icon: <ShieldCheck size={22} color={themed('#DB2777')} />,
+    icon: 'padCare',
+    tone: 'rose',
   };
 
   const base: Square[] = [
@@ -67,9 +67,8 @@ export function FeatureSquares() {
       title: 'YourGoGirl',
       sub: 'Ask about periods, mood & focus',
       href: ROUTES.yourGoGirl,
-      bg: themed('#FCE9F1'),
-      ink: Theme.colors.primaryDark,
-      icon: <MessageCircleHeart size={22} color={Theme.colors.primary} />,
+    icon: 'chat',
+    tone: 'rose',
     },
     {
       id: 'fitness',
@@ -77,9 +76,8 @@ export function FeatureSquares() {
       sub: 'Workouts for your cycle',
       stat: `${stats.moveMinutes}/150 min this week`,
       href: '/fitness',
-      bg: themed('#E7F5F0'),
-      ink: themed('#2F7D69'),
-      icon: <Dumbbell size={22} color={themed('#3E9E86')} />,
+    icon: 'fitness',
+    tone: 'mint',
     },
     {
       id: 'pcos',
@@ -87,9 +85,8 @@ export function FeatureSquares() {
       sub: 'Signs, food, exercise & doctor checklist',
       stat: pcosCheckins ? `${pcosCheckins} check-in${pcosCheckins === 1 ? '' : 's'}` : undefined,
       href: ROUTES.pcos,
-      bg: themed('#FCEEF3'),
-      ink: themed('#A8436F'),
-      icon: <Flower2 size={22} color={themed('#C9578C')} />,
+    icon: 'pcos',
+    tone: 'lilac',
     },
     {
       id: 'confidence',
@@ -97,18 +94,16 @@ export function FeatureSquares() {
       sub: 'Affirmations & glow habits',
       stat: confidenceToday ? `${confidenceToday} done today` : undefined,
       href: ROUTES.confidence,
-      bg: themed('#FFF1E8'),
-      ink: themed('#B0603A'),
-      icon: <Sparkles size={22} color={themed('#E07B4F')} />,
+    icon: 'confidence',
+    tone: 'peach',
     },
     {
       id: 'care',
       title: 'Care Connect',
       sub: 'Doctors & women counsellors',
       href: ROUTES.care,
-      bg: themed('#EFEAFB'),
-      ink: Theme.colors.secondaryDark,
-      icon: <HeartHandshake size={22} color={Theme.colors.secondary} />,
+    icon: 'care',
+    tone: 'lilac',
     },
     {
       id: 'study',
@@ -116,9 +111,17 @@ export function FeatureSquares() {
       sub: 'Focus timer & study plan',
       stat: `${stats.focusToday} focus min today`,
       href: '/study',
-      bg: themed('#FDF0E6'),
-      ink: themed('#9A5A2E'),
-      icon: <GraduationCap size={22} color={themed('#C77B4A')} />,
+    icon: 'study',
+    tone: 'amber',
+    },
+    {
+      id: 'exams',
+      title: 'Exam planner',
+      sub: 'Exams vs your period & PMS',
+      stat: examsAhead ? `${examsAhead} exam${examsAhead === 1 ? '' : 's'} ahead` : undefined,
+      href: ROUTES.exams,
+    icon: 'exam',
+    tone: 'sky',
     },
     {
       id: 'games',
@@ -126,18 +129,16 @@ export function FeatureSquares() {
       sub: 'Puzzles to reset your mind',
       stat: `${stats.gamesWeek} played this week`,
       href: '/games',
-      bg: themed('#E9F2FA'),
-      ink: themed('#3A6E94'),
-      icon: <Puzzle size={22} color={themed('#4F8DBA')} />,
+    icon: 'games',
+    tone: 'sky',
     },
     {
       id: 'breathe',
       title: 'Breathe',
       sub: 'One calm minute, any time',
       href: '/games/breathe',
-      bg: themed('#FFF4E3'),
-      ink: themed('#94672A'),
-      icon: <Wind size={22} color={themed('#D19A45')} />,
+    icon: 'breathe',
+    tone: 'mint',
     },
   ];
 
@@ -149,36 +150,33 @@ export function FeatureSquares() {
 
   return (
     <View style={styles.grid}>
-      {squares.map((sq, i) => (
-        <Pressable
-          key={sq.id}
-          onPress={() => router.push(sq.href)}
-          style={({ pressed }) => [
-            styles.square,
+      {squares.map((sq, i) => {
+        const wide = squares.length % 2 === 1 && i === squares.length - 1;
+        return (
+          <Card
+            key={sq.id}
+            onPress={() => router.push(sq.href)}
+            accessibilityLabel={`${sq.title}. ${sq.sub}${sq.stat ? `. ${sq.stat}` : ''}`}
             // An odd one out at the end spans the full row instead of sitting alone.
-            squares.length % 2 === 1 && i === squares.length - 1 && styles.wide,
-            { backgroundColor: themed(sq.bg) },
-            pressed && styles.pressed,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel={`${sq.title}. ${sq.sub}`}
-        >
-          <View style={styles.iconWrap}>{sq.icon}</View>
-          <View style={styles.textBlock}>
-            <Text style={[styles.title, { color: themed(sq.ink) }]} numberOfLines={2}>
-              {sq.title}
-            </Text>
-            <Text style={styles.sub} numberOfLines={2}>
-              {sq.sub}
-            </Text>
-          </View>
-          {sq.stat ? (
-            <Text style={[styles.stat, { color: themed(sq.ink) }]} numberOfLines={1}>
-              {sq.stat}
-            </Text>
-          ) : null}
-        </Pressable>
-      ))}
+            style={[styles.square, wide && styles.wide]}
+          >
+            <IconBadge name={sq.icon} tone={sq.tone} size={48} />
+            <View style={styles.textBlock}>
+              <Text style={styles.title} numberOfLines={2}>
+                {sq.title}
+              </Text>
+              <Text style={styles.sub} numberOfLines={2}>
+                {sq.sub}
+              </Text>
+              {sq.stat ? (
+                <Text style={[styles.stat, { color: badgeColors(sq.tone).fg }]} numberOfLines={1}>
+                  {sq.stat}
+                </Text>
+              ) : null}
+            </View>
+          </Card>
+        );
+      })}
     </View>
   );
 }
@@ -188,31 +186,13 @@ const styles = createStyles(() => ({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    rowGap: 12,
-    paddingHorizontal: 20,
+    rowGap: Theme.space.sm,
+    paddingHorizontal: Theme.space.md,
   },
-  square: {
-    width: '48.2%',
-    aspectRatio: 1,
-    borderRadius: 26,
-    padding: 14,
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
-    ...Theme.shadows.card,
-  },
-  wide: { width: '100%', aspectRatio: 2.4 },
-  iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  textBlock: { gap: 2 },
-  title: { fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
-  sub: { fontSize: 11.5, lineHeight: 15, color: Theme.colors.textSecondary },
-  stat: { fontSize: 10.5, fontWeight: '700', opacity: 0.85 },
-  pressed: { opacity: 0.88, transform: [{ scale: 0.98 }] },
+  square: { width: '48.5%', minHeight: 176, justifyContent: 'space-between', gap: Theme.space.sm },
+  wide: { width: '100%', minHeight: 0, flexDirection: 'row', alignItems: 'center' },
+  textBlock: { gap: 4, flexShrink: 1 },
+  title: { ...Theme.type.label, fontSize: 16, lineHeight: 22, color: Theme.colors.textPrimary },
+  sub: { ...Theme.type.bodySm, color: Theme.colors.textSecondary },
+  stat: { ...Theme.type.caption, fontWeight: '700', marginTop: 2 },
 }));

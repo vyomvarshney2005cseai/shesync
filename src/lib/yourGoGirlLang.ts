@@ -294,6 +294,8 @@ const ACTION_LABELS: Record<string, { hinglish: string; hi: string }> = {
   'Log pain': { hinglish: 'Dard log karo', hi: 'दर्द लॉग करें' },
   'Log flow': { hinglish: 'Flow log karo', hi: 'फ़्लो लॉग करें' },
   'Start a breathing exercise': { hinglish: 'Breathing exercise shuru karo', hi: 'साँस की एक्सरसाइज़ शुरू करें' },
+  'Open SOS': { hinglish: 'SOS kholo', hi: 'SOS खोलें' },
+  'Plan exams around my cycle': { hinglish: 'Exams ko cycle ke hisaab se plan karo', hi: 'परीक्षाएँ चक्र के हिसाब से प्लान करें' },
   'Open Study Focus': { hinglish: 'Study Focus kholo', hi: 'Study Focus खोलें' },
   'Open Fitness': { hinglish: 'Fitness kholo', hi: 'Fitness खोलें' },
   'Share these questions': { hinglish: 'Yeh sawaal share karo', hi: 'ये सवाल शेयर करें' },

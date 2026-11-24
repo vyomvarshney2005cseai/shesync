@@ -92,7 +92,7 @@ export default function FocusGrid() {
           );
         })}
       </View>
-      <Text style={[uiStyles.muted, { textAlign: 'center', marginTop: 10 }]}>
+      <Text style={[uiStyles.muted, { textAlign: 'center', marginTop: 12 }]}>
         Tip: keep your eyes on the centre and let your side vision find the next number.
       </Text>
       {doneAt ? (
@@ -117,7 +117,7 @@ const styles = createStyles(() => ({
     alignSelf: 'center',
     aspectRatio: 1,
   },
-  cell: { aspectRatio: 1, padding: 3 },
+  cell: { aspectRatio: 1, padding: 4 },
   inner: {
     flex: 1,
     borderRadius: 12,

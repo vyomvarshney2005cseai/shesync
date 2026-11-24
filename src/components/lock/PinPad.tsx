@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, Platform, Animated } from 'react-native';
 import { Delete, ScanFace } from 'lucide-react-native';
+import { reduceMotionNow } from '@/lib/motion';
 import { Theme, createStyles } from '@/constants/theme';
+import { Button } from '@/components/ds';
 
 interface PinPadProps {
   length: number;
@@ -38,6 +40,8 @@ export function PinPad({
 
   useEffect(() => {
     if (!errorKey) return;
+    // Reduced motion: no shake; the error text below the dots still explains what went wrong.
+    if (reduceMotionNow()) return;
     Animated.sequence(
       [10, -10, 8, -8, 0].map((toValue) => Animated.timing(shake, { toValue, duration: 55, useNativeDriver: Platform.OS !== 'web' }))
     ).start();
@@ -79,26 +83,26 @@ export function PinPad({
           <Key key={k} label={k} onPress={() => press(k)} disabled={disabled} />
         ))}
         {biometricLabel && onBiometric ? (
-          <Pressable
+          <Button
+            variant="secondary"
+            size="sm"
+            iconOnly
             onPress={onBiometric}
-            style={({ pressed }) => [styles.key, styles.keyGhost, pressed && styles.keyPressed]}
-            accessibilityRole="button"
             accessibilityLabel={`Use ${biometricLabel}`}
-          >
-            <ScanFace size={26} color={Theme.colors.primaryDark} />
-          </Pressable>
+            icon={<ScanFace size={20} color={Theme.colors.primaryDark} />}
+          />
         ) : (
           <View style={[styles.key, styles.keyEmpty]} />
         )}
         <Key label="0" onPress={() => press('0')} disabled={disabled} />
-        <Pressable
+        <Button
+          variant="secondary"
+          size="sm"
+          iconOnly
           onPress={back}
-          style={({ pressed }) => [styles.key, styles.keyGhost, pressed && styles.keyPressed]}
-          accessibilityRole="button"
           accessibilityLabel="Delete"
-        >
-          <Delete size={24} color={Theme.colors.textSecondary} />
-        </Pressable>
+          icon={<Delete size={20} color={Theme.colors.textSecondary} />}
+        />
       </View>
     </View>
   );
@@ -120,7 +124,7 @@ function Key({ label, onPress, disabled }: { label: string; onPress: () => void;
 
 const styles = createStyles(() => ({
   wrap: { alignItems: 'center', width: '100%' },
-  dots: { flexDirection: 'row', gap: 14, marginBottom: 28, height: 18, alignItems: 'center' },
+  dots: { flexDirection: 'row', gap: 16, marginBottom: 28, height: 18, alignItems: 'center' },
   dot: {
     width: 14,
     height: 14,
@@ -135,10 +139,9 @@ const styles = createStyles(() => ({
     flexWrap: 'wrap',
     justifyContent: 'center',
     width: 282,
-    gap: 18,
+    gap: 20,
   },
   key: {
-    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {}),
     width: 74,
     height: 74,
     borderRadius: 37,

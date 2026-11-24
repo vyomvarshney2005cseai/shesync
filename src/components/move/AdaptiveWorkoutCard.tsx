@@ -3,7 +3,7 @@ import { View, Text } from 'react-native';
 import { Timer, Zap, Leaf, ArrowRight } from 'lucide-react-native';
 import { Theme, createStyles } from '@/constants/theme';
 import { PillBadge } from '@/components/common/PillBadge';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
+import { Button } from '@/components/ds';
 import type { AdaptiveWorkout } from '@/types';
 
 interface AdaptiveWorkoutCardProps {
@@ -69,16 +69,16 @@ export const AdaptiveWorkoutCard: React.FC<AdaptiveWorkoutCardProps> = ({
 
       {/* Action buttons */}
       <View style={styles.buttonStack}>
-        <PrimaryButton
+        <Button
           title={`Start ${workout.type.toLowerCase()} · ${workout.duration}`}
-          variant="rose"
-          icon={<ArrowRight size={16} color="#FFFFFF" />}
+          variant="primary"
+          icon={<ArrowRight size={18} color={Theme.colors.onPrimary} />}
           onPress={onStartFlow}
           fullWidth
         />
-        <PrimaryButton
+        <Button
           title="Why this session?"
-          variant="outline"
+          variant="secondary"
           onPress={onViewReasoning}
           fullWidth
           style={styles.reasoningBtn}
@@ -97,13 +97,12 @@ const styles = createStyles(() => ({
     marginTop: 16,
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
-    ...Theme.shadows.card,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 14,
+    marginBottom: 16,
   },
   iconCircle: {
     width: 48,
@@ -117,14 +116,14 @@ const styles = createStyles(() => ({
     flex: 1,
   },
   label: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: Theme.colors.strainOptimal,
     letterSpacing: 1,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   title: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '800',
     color: Theme.colors.textPrimary,
     letterSpacing: -0.3,
@@ -137,24 +136,24 @@ const styles = createStyles(() => ({
   metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
   },
   metaText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: Theme.colors.textSecondary,
   },
   tagRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 8,
     marginBottom: 12,
   },
   description: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 14,
+    lineHeight: 20,
     color: Theme.colors.textSecondary,
-    marginBottom: 14,
+    marginBottom: 16,
   },
   overrideNotice: {
     flexDirection: 'row',
@@ -167,13 +166,13 @@ const styles = createStyles(() => ({
     marginBottom: 16,
   },
   overrideLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: Theme.colors.strainHigh,
     letterSpacing: 0.6,
   },
   overrideValue: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: Theme.colors.textSecondary,
     textDecorationLine: 'line-through',

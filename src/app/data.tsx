@@ -5,7 +5,7 @@ import { Theme, createStyles, themed } from '@/constants/theme';
 import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { AuthGate } from '@/components/common/AuthGate';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
+import { Button } from '@/components/ds';
 import { Card, SectionHeader } from '@/components/common/ui';
 import { useAppStore } from '@/store/useAppStore';
 import { applyLocal, getLocal } from '@/lib/sync';
@@ -109,7 +109,7 @@ export default function DataScreen() {
           />
           <View style={styles.divider} />
           <ExportRow
-            icon={<FileSpreadsheet size={18} color={themed('#2F7D69')} />}
+            icon={<FileSpreadsheet size={18} color={themed('#276C5C')} />}
             title="Daily logs (CSV)"
             text="Mood, pain, flow and notes — opens in Excel or Google Sheets."
             action="Save logs"
@@ -150,9 +150,9 @@ export default function DataScreen() {
               <Text style={styles.stepBold}>Other apps: </Text>any JSON or CSV export with period dates usually works.
             </Text>
           </View>
-          <PrimaryButton
+          <Button
             title="Choose a file"
-            variant="outline"
+            variant="secondary"
             icon={<Upload size={16} color={Theme.colors.textPrimary} />}
             loading={busy === 'pick'}
             onPress={choose}
@@ -169,19 +169,19 @@ export default function DataScreen() {
               Found {pending.summary.foundPeriods} period{pending.summary.foundPeriods === 1 ? '' : 's'}
               {pending.summary.from ? ` from ${shortDateLabel(pending.summary.from)} to ${shortDateLabel(pending.summary.to)}` : ''}.
             </Text>
-            <Text style={[styles.body, { marginTop: 6 }]}>
+            <Text style={[styles.body, { marginTop: 8 }]}>
               {pending.summary.newPeriods || pending.summary.newLogs
                 ? `${pending.summary.newPeriods} new period${pending.summary.newPeriods === 1 ? '' : 's'}${pending.summary.newLogs ? ` and ${pending.summary.newLogs} new log${pending.summary.newLogs === 1 ? '' : 's'}` : ''} will be added.`
                 : 'You already have all of these in SheSync.'}
             </Text>
             {pending.result.notes.map((n) => (
-              <Text key={n} style={[styles.help, { marginTop: 6 }]}>
+              <Text key={n} style={[styles.help, { marginTop: 8 }]}>
                 {n}
               </Text>
             ))}
             <View style={styles.confirmRow}>
-              <PrimaryButton title="Cancel" variant="outline" onPress={() => setPending(null)} style={{ flex: 1 }} />
-              <PrimaryButton
+              <Button title="Cancel" variant="secondary" onPress={() => setPending(null)} style={{ flex: 1 }} />
+              <Button
                 title={pending.summary.newPeriods || pending.summary.newLogs ? 'Import' : 'Done'}
                 icon={<Download size={16} color={themed('#FFFFFF')} />}
                 onPress={pending.summary.newPeriods || pending.summary.newLogs ? confirmImport : () => setPending(null)}
@@ -212,14 +212,14 @@ function ExportRow(props: { icon: React.ReactNode; title: string; text: string; 
       <View style={{ flex: 1 }}>
         <Text style={styles.cardTitle}>{props.title}</Text>
         <Text style={styles.help}>{props.text}</Text>
-        <PrimaryButton title={props.action} variant="outline" loading={props.loading} onPress={props.onPress} style={styles.exportBtn} />
+        <Button title={props.action} variant="secondary" loading={props.loading} onPress={props.onPress} style={styles.exportBtn} />
       </View>
     </View>
   );
 }
 
 const styles = createStyles(() => ({
-  gap: { marginBottom: 14 },
+  gap: { marginBottom: 16 },
   divider: { height: 1, backgroundColor: Theme.colors.cardBorder, marginVertical: 12 },
   exportRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   exportIcon: {
@@ -230,14 +230,14 @@ const styles = createStyles(() => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  exportBtn: { alignSelf: 'flex-start', paddingVertical: 9, marginTop: 10 },
-  cardTitle: { fontSize: 15, fontWeight: '800', color: Theme.colors.textPrimary, marginBottom: 2 },
-  kicker: { fontSize: 11, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase', color: Theme.colors.secondaryDark, marginBottom: 4 },
-  body: { fontSize: 13, lineHeight: 19, color: Theme.colors.textSecondary },
-  help: { fontSize: 12, lineHeight: 17, color: Theme.colors.textSecondary },
-  steps: { marginTop: 10, gap: 8 },
-  step: { fontSize: 12.5, lineHeight: 18, color: Theme.colors.textSecondary },
+  exportBtn: { alignSelf: 'flex-start', paddingVertical: 8, marginTop: 12 },
+  cardTitle: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary, marginBottom: 4 },
+  kicker: { fontSize: 12, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase', color: Theme.colors.secondaryDark, marginBottom: 4 },
+  body: { fontSize: 14, lineHeight: 20, color: Theme.colors.textSecondary },
+  help: { fontSize: 14, lineHeight: 20, color: Theme.colors.textSecondary },
+  steps: { marginTop: 12, gap: 8 },
+  step: { fontSize: 12, lineHeight: 16, color: Theme.colors.textSecondary },
   stepBold: { fontWeight: '800', color: Theme.colors.textPrimary },
-  confirmRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  note: { fontSize: 12, lineHeight: 17, color: Theme.colors.textSecondary, marginBottom: 16, paddingHorizontal: 4 },
+  confirmRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
+  note: { fontSize: 14, lineHeight: 20, color: Theme.colors.textSecondary, marginBottom: 16, paddingHorizontal: 4 },
 }));

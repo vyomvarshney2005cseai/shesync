@@ -65,6 +65,8 @@ const LOG_PERIOD: YourGoGirlAction = { label: 'Add period dates', kind: 'route',
 const LOG_PAIN: YourGoGirlAction = { label: 'Log pain', kind: 'route', value: '/log-pain' };
 const LOG_FLOW: YourGoGirlAction = { label: 'Log flow', kind: 'route', value: '/log-flow' };
 const BREATHE: YourGoGirlAction = { label: 'Start a breathing exercise', kind: 'route', value: '/games/breathe' };
+const SOS: YourGoGirlAction = { label: 'Open SOS', kind: 'route', value: '/sos' };
+const EXAMS: YourGoGirlAction = { label: 'Plan exams around my cycle', kind: 'route', value: '/exams' };
 const STUDY: YourGoGirlAction = { label: 'Open Study Focus', kind: 'route', value: '/study' };
 const FITNESS: YourGoGirlAction = { label: 'Open Fitness', kind: 'route', value: '/fitness' };
 
@@ -110,7 +112,7 @@ const SAFETY: Intent[] = [
         'Move away from anything you could use to hurt yourself, and stay somewhere with other people around.',
         'Breathe slowly with me: in for 4 counts, out for 6 counts, ten times. You only have to get through the next few minutes.',
       ],
-      actions: [CALL_TELEMANAS, CALL_112, CARE],
+      actions: [CALL_TELEMANAS, SOS, CALL_112, CARE],
     }),
     followUps: ['Walk me through a quick grounding exercise', 'I want to talk to a counsellor'],
   },
@@ -281,7 +283,7 @@ const GENERAL: Intent[] = [
     ],
     examples: ['how do i log my period', 'how to use this app', 'how do i add my period dates', 'where is my doctor report'],
     reply: () => ({
-      text: `Here's where things live in SheSync:\n\n• **Period dates** — Home → Log Period (or the calendar). Tick the first and last day of each period.\n• **Pain, flow, mood** — Home → 10-second check-in (or the quick log buttons). Logging even 10 seconds a day makes predictions and advice much better.\n• **Doctor report** — the Report tab makes a PDF of your last 90 days to show a gynaecologist.\n• **Pad change reminders** — Home → Pad Care. Tap “I just changed” and it reminds you when it's time.\n• **Care Connect** — free helplines and ways to find a gynaecologist or counsellor.`,
+      text: `Here's where things live in SheSync:\n\n• **Period dates** — Home → Log Period (or the calendar). Tick the first and last day of each period.\n• **Pain, flow, mood** — Home → 10-second check-in (or the quick log buttons). Logging even 10 seconds a day makes predictions and advice much better.\n• **Doctor report** — the Report tab makes a PDF of your last 90 days to show a gynaecologist.\n• **Pad change reminders** — Home → Pad Care. Tap “I just changed” and it reminds you when it's time.\n• **Exams** — Home → Exam planner shows which exams fall on heavy or PMS days, with a prep plan. Study Focus also makes a polite leave note.\n• **SOS** — Mind tab → SOS: grounding, breathing and one-tap calls to someone you trust or Tele-MANAS 14416.\n• **Care Connect** — free helplines and ways to find a gynaecologist or counsellor.`,
       actions: [LOG_PERIOD, LOG_PAIN, CARE],
     }),
     followUps: ['When is my next period?', 'When should I see a gynaecologist?'],
@@ -1135,7 +1137,7 @@ const MIND: Intent[] = [
         why: 'A long exhale activates the vagus nerve, which slows the heart and tells the brain you are safe.',
         doctor: 'If anxiety is most days, stops you doing things, or you get frequent panic attacks, talking to a counsellor really helps — Tele-MANAS (14416) is free and 24×7.',
         affirmation: 'I am safe in this moment. This feeling will pass.',
-        actions: [BREATHE, CALL_TELEMANAS],
+        actions: [SOS, BREATHE, CALL_TELEMANAS],
       };
     },
     followUps: ['Walk me through a quick grounding exercise', 'Help me reframe a negative thought', 'I want to talk to a counsellor'],
@@ -1338,7 +1340,7 @@ const MIND: Intent[] = [
         'One bad paper does not define you.',
       ],
       affirmation: 'I am prepared, I am capable, and I will do my best — that is enough.',
-      actions: [STUDY, BREATHE],
+      actions: [EXAMS, STUDY, BREATHE],
     }),
     followUps: ['Which painkiller is safe for period pain?', 'Help me calm down with a breathing exercise', 'I can’t focus on studying'],
   },

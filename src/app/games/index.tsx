@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { Brain, Calculator, Grid3x3, LayoutGrid, Puzzle, Wind } from 'lucide-react-native';
+import { Brain, Calculator, Grid3x3, LayoutGrid, Puzzle, Wind, type LucideIcon } from 'lucide-react-native';
 import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { Card, SectionHeader, StatTile, uiStyles } from '@/components/common/ui';
+import { badgeColors, type BadgeTone } from '@/components/ds';
 import { Theme, createStyles, themed } from '@/constants/theme';
 import { useGamesStore, type GameId } from '@/store/useGamesStore';
 import { startOfWeekKey, formatClock } from '@/lib/dates';
@@ -14,8 +15,8 @@ interface GameTile {
   id: GameId;
   name: string;
   benefit: string;
-  icon: React.ReactNode;
-  bg: string;
+  icon: LucideIcon;
+  tone: BadgeTone;
   best: (b?: { bestScore?: number; bestMoves?: number; bestSeconds?: number; plays: number }) => string;
 }
 
@@ -24,48 +25,48 @@ const GAMES: GameTile[] = [
     id: 'breathe',
     name: 'Calm Breathing',
     benefit: 'Slow your breath, settle your body',
-    icon: <Wind size={22} color="#047857" />,
-    bg: '#D1FAE5',
+    icon: Wind,
+    tone: 'mint',
     best: (b) => (b?.plays ? `${b.plays} session${b.plays > 1 ? 's' : ''}` : 'Start in 1 tap'),
   },
   {
     id: 'memory',
     name: 'Memory Match',
     benefit: 'Gentle focus & short-term memory',
-    icon: <LayoutGrid size={22} color={Theme.colors.primaryDark} />,
-    bg: Theme.colors.primaryLight,
+    icon: LayoutGrid,
+    tone: 'rose',
     best: (b) => (b?.bestMoves ? `Best: ${b.bestMoves} moves` : 'Not played yet'),
   },
   {
     id: 'maths',
     name: 'Quick Maths',
     benefit: 'Wake up a foggy brain with mental maths',
-    icon: <Calculator size={22} color="#B45309" />,
-    bg: '#FEF3C7',
+    icon: Calculator,
+    tone: 'amber',
     best: (b) => (b?.bestScore != null ? `Best: ${b.bestScore} correct` : 'Not played yet'),
   },
   {
     id: 'slide',
     name: 'Sliding Puzzle',
     benefit: 'Planning & problem solving',
-    icon: <Puzzle size={22} color={Theme.colors.secondaryDark} />,
-    bg: Theme.colors.secondaryLight,
+    icon: Puzzle,
+    tone: 'lilac',
     best: (b) => (b?.bestMoves ? `Best: ${b.bestMoves} moves` : 'Not played yet'),
   },
   {
     id: 'sudoku',
     name: 'Mini Sudoku',
     benefit: 'Logic without the stress — 4×4 or 6×6',
-    icon: <Grid3x3 size={22} color="#0E7490" />,
-    bg: '#CFFAFE',
+    icon: Grid3x3,
+    tone: 'sky',
     best: (b) => (b?.bestSeconds != null ? `Best: ${formatClock(b.bestSeconds)}` : 'Not played yet'),
   },
   {
     id: 'schulte',
     name: 'Focus Grid',
     benefit: 'Tap 1→25 in order to train attention',
-    icon: <Brain size={22} color="#A8436F" />,
-    bg: '#FCE7F3',
+    icon: Brain,
+    tone: 'peach',
     best: (b) => (b?.bestSeconds != null ? `Best: ${formatClock(b.bestSeconds)}` : 'Not played yet'),
   },
 ];
@@ -109,7 +110,7 @@ export default function GamesDashboard() {
         <StatTile label="Streak" value={`${stats.streak}d`} hint="days in a row" color={Theme.colors.secondary} />
       </View>
       {stats.calmerPct != null ? (
-        <Card tone="mint" style={{ marginTop: 10 }}>
+        <Card tone="mint" style={{ marginTop: 12 }}>
           <Text style={[uiStyles.body, { color: themed('#065F46') }]}>
             You felt okay or calmer after {stats.calmerPct}% of your recent sessions. 💚
           </Text>
@@ -119,20 +120,21 @@ export default function GamesDashboard() {
       <SectionHeader title="Pick a game" subtitle="Each one takes 1–5 minutes. No ads, no pressure." />
       <View style={styles.grid}>
         {GAMES.map((g) => (
-          <Pressable
+          <Card
             key={g.id}
             onPress={() => router.push(`/games/${g.id}`)}
-            style={({ pressed }) => [styles.card, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
-            accessibilityRole="button"
             accessibilityLabel={`${g.name}. ${g.benefit}`}
+            style={styles.card}
           >
-            <View style={[styles.icon, { backgroundColor: themed(g.bg) }]}>{g.icon}</View>
+            <View style={[styles.icon, { backgroundColor: badgeColors(g.tone).bg }]}>
+              <g.icon size={24} color={badgeColors(g.tone).fg} />
+            </View>
             <Text style={styles.name}>{g.name}</Text>
             <Text style={styles.benefit} numberOfLines={2}>
               {g.benefit}
             </Text>
             <Text style={styles.bestText}>{g.best(bestFor(best, g.id))}</Text>
-          </Pressable>
+          </Card>
         ))}
       </View>
 
@@ -148,20 +150,14 @@ export default function GamesDashboard() {
 }
 
 const styles = createStyles(() => ({
-  tiles: { flexDirection: 'row', gap: 10 },
+  tiles: { flexDirection: 'row', gap: 12 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   card: {
     width: '47.5%',
     flexGrow: 1,
-    backgroundColor: Theme.colors.card,
-    borderRadius: Theme.radius.xl,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: Theme.colors.cardBorder,
-    ...Theme.shadows.card,
   },
-  icon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  name: { fontSize: 15, fontWeight: '800', color: Theme.colors.textPrimary },
-  benefit: { fontSize: 12, color: Theme.colors.textSecondary, marginTop: 3, lineHeight: 16, minHeight: 32 },
-  bestText: { fontSize: 11, fontWeight: '800', color: Theme.colors.primary, marginTop: 8 },
+  icon: { width: 44, height: 44, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  name: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary },
+  benefit: { fontSize: 14, color: Theme.colors.textSecondary, marginTop: 4, lineHeight: 20, minHeight: 32 },
+  bestText: { fontSize: 14, fontWeight: '800', color: Theme.colors.primary, marginTop: 8 },
 }));

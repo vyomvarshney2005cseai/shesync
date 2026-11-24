@@ -1,0 +1,23 @@
+# 1. Skip the questionnaire: sensible defaults now, "Personalise" later.
+appId: com.vyomvarshney1234.shesync
+name: Skip setup and personalise later
+tags:
+  - smoke
+---
+- runFlow: subflows/start-guest.yaml
+- scrollUntilVisible:
+    element:
+      id: "skip-setup"
+    direction: DOWN
+- tapOn:
+    id: "skip-setup"
+- scrollUntilVisible:
+    element: "Personalise SheSync"
+    direction: UP
+- tapOn:
+    id: "personalise-not-now"
+- assertNotVisible: "Personalise SheSync"
+# No made-up period: the prediction asks for a date instead.
+- scrollUntilVisible:
+    element: "Add the first day of your last period.*"
+    direction: DOWN

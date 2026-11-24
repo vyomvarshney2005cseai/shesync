@@ -2,6 +2,7 @@ import React from 'react';
 import { Redirect } from 'expo-router';
 import { useAppStore } from '@/store/useAppStore';
 import { useStoresHydrated } from '@/store/hydration';
+import { ScreenSkeleton } from '@/components/ds';
 
 /**
  * Wraps screens that need a signed-in user. Waits for saved data to load,
@@ -11,7 +12,7 @@ import { useStoresHydrated } from '@/store/hydration';
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const hydrated = useStoresHydrated();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
-  if (!hydrated) return null;
+  if (!hydrated) return <ScreenSkeleton />;
   // "/welcome", not "/": the Home tab also lives at "/", so redirecting to "/"
   // from inside the tabs resolved back to the tabs and looped forever.
   if (!isAuthenticated) return <Redirect href="/welcome" />;

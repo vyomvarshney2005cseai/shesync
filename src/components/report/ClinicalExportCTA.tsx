@@ -6,9 +6,10 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { FileDown, Check, Loader } from 'lucide-react-native';
+import { FileDown, Check } from 'lucide-react-native';
+import { reduceMotionNow } from '@/lib/motion';
 import { Theme, createStyles } from '@/constants/theme';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
+import { Button, SkeletonCard } from '@/components/ds';
 
 interface ClinicalExportCTAProps {
   isGenerating: boolean;
@@ -25,7 +26,7 @@ export const ClinicalExportCTA: React.FC<ClinicalExportCTAProps> = ({
 
   useEffect(() => {
     if (generatedAt) {
-      successOpacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) });
+      successOpacity.value = reduceMotionNow() ? 1 : withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) });
     } else {
       successOpacity.value = 0;
     }
@@ -38,7 +39,7 @@ export const ClinicalExportCTA: React.FC<ClinicalExportCTAProps> = ({
   return (
     <View style={styles.container}>
       {/* Main CTA */}
-      <PrimaryButton
+      <Button
         title={
           isGenerating
             ? 'Preparing report…'
@@ -46,14 +47,12 @@ export const ClinicalExportCTA: React.FC<ClinicalExportCTAProps> = ({
             ? 'Report ready'
             : 'Download doctor report (PDF)'
         }
-        variant={generatedAt ? 'lilac' : 'dark'}
+        variant={generatedAt ? 'secondary' : 'primary'}
         icon={
-          isGenerating ? (
-            <Loader size={18} color="#FFFFFF" />
-          ) : generatedAt ? (
-            <Check size={18} color="#FFFFFF" />
+          generatedAt ? (
+            <Check size={20} color={Theme.colors.strainOptimal} />
           ) : (
-            <FileDown size={18} color="#FFFFFF" />
+            <FileDown size={20} color={Theme.colors.onPrimary} />
           )
         }
         loading={isGenerating}
@@ -62,8 +61,11 @@ export const ClinicalExportCTA: React.FC<ClinicalExportCTAProps> = ({
         style={styles.ctaButton}
       />
 
+      {/* While the PDF is being prepared: a grey preview of the report, no spinner. */}
+      {isGenerating ? <SkeletonCard lines={3} label="Preparing your report" /> : null}
+
       {/* Success message */}
-      {generatedAt && (
+      {generatedAt && !isGenerating && (
         <Animated.View style={[styles.successBanner, successStyle]}>
           <Check size={16} color={Theme.colors.strainOptimal} />
           <View style={styles.successText}>
@@ -90,16 +92,16 @@ const styles = createStyles(() => ({
     paddingBottom: 40,
   },
   ctaButton: {
-    paddingVertical: 18,
+    paddingVertical: 20,
     borderRadius: Theme.radius.xl,
   },
   successBanner: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
     backgroundColor: 'rgba(16, 185, 129, 0.08)',
     borderRadius: Theme.radius.lg,
-    padding: 14,
-    marginTop: 14,
+    padding: 16,
+    marginTop: 16,
     borderWidth: 1,
     borderColor: 'rgba(16, 185, 129, 0.2)',
   },
@@ -107,19 +109,19 @@ const styles = createStyles(() => ({
     flex: 1,
   },
   successTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     color: Theme.colors.strainOptimal,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   successSubtitle: {
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 14,
+    lineHeight: 20,
     color: Theme.colors.textSecondary,
   },
   disclaimer: {
-    fontSize: 11,
-    lineHeight: 16,
+    fontSize: 14,
+    lineHeight: 20,
     color: Theme.colors.textTertiary,
     textAlign: 'center',
     marginTop: 16,

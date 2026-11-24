@@ -1,21 +1,13 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  Linking,
-  ScrollView,
-  Platform,
-  Alert,
-} from 'react-native';
+import { View, Text, Image, Linking, ScrollView, Platform, Alert, Pressable } from 'react-native';
 import {
   Play,
   ExternalLink,
   Clock,
 } from 'lucide-react-native';
-import { Theme, createStyles } from '@/constants/theme';
+import { Theme, createStyles, fixedColor } from '@/constants/theme';
 import type { YouTubeVideoSession } from '@/types';
+import { Card, Button, Chip } from '@/components/ds';
 
 export const SOMATIC_YOUTUBE_VIDEOS: YouTubeVideoSession[] = [
   {
@@ -153,22 +145,23 @@ export const SomaticVideoLibrary: React.FC<SomaticVideoLibraryProps> = ({
 
           {/* Duration Badge */}
           <View style={styles.durationPill}>
-            <Clock size={12} color="#FFFFFF" />
+            <Clock size={14} color={fixedColor('#FFFFFF')} />
             <Text style={styles.durationText}>{selectedVideo.duration}</Text>
           </View>
 
           {/* Center Play Button Overlay */}
-          <TouchableOpacity
+          <Pressable
             style={styles.playOverlayButton}
-            activeOpacity={0.85}
+            accessibilityRole="link"
+            accessibilityLabel={`Play ${selectedVideo.title} on YouTube`}
             onPress={() =>
               handleOpenYouTube(selectedVideo.youtubeUrl, selectedVideo.title)
             }
           >
             <View style={styles.playButtonInner}>
-              <Play size={26} color="#FFFFFF" fill="#FFFFFF" style={{ marginLeft: 3 }} />
+              <Play size={26} color={fixedColor('#FFFFFF')} fill={fixedColor('#FFFFFF')} style={{ marginLeft: 4 }} />
             </View>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {/* Video Info */}
@@ -184,21 +177,14 @@ export const SomaticVideoLibrary: React.FC<SomaticVideoLibraryProps> = ({
           <Text style={styles.featuredDescription}>{selectedVideo.description}</Text>
 
           {/* Big Action CTA: Watch on YouTube */}
-          <TouchableOpacity
+          <Button
+            title="Watch on YouTube"
+            onPress={() => handleOpenYouTube(selectedVideo.youtubeUrl, selectedVideo.title)}
+            accessibilityHint="Opens YouTube"
+            icon={<Play size={18} color={Theme.colors.onPrimary} fill={Theme.colors.onPrimary} />}
+            fullWidth
             style={styles.watchButton}
-            activeOpacity={0.88}
-            onPress={() =>
-              handleOpenYouTube(selectedVideo.youtubeUrl, selectedVideo.title)
-            }
-          >
-            <View style={styles.watchButtonContent}>
-              <View style={styles.redYtPill}>
-                <View style={styles.smallTriangle} />
-              </View>
-              <Text style={styles.watchButtonText}>Watch on YouTube</Text>
-              <ExternalLink size={16} color="#FFFFFF" style={{ marginLeft: 6 }} />
-            </View>
-          </TouchableOpacity>
+          />
         </View>
       </View>
 
@@ -218,24 +204,7 @@ export const SomaticVideoLibrary: React.FC<SomaticVideoLibraryProps> = ({
           ].map((tab) => {
             const isActive = activeFilter === tab.id;
             return (
-              <TouchableOpacity
-                key={tab.id}
-                onPress={() => setActiveFilter(tab.id)}
-                activeOpacity={0.75}
-                style={[
-                  styles.filterChip,
-                  isActive && styles.filterChipActive,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    isActive && styles.filterChipTextActive,
-                  ]}
-                >
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
+              <Chip key={tab.id} small label={tab.label} selected={isActive} onPress={() => setActiveFilter(tab.id)} accessibilityRole="radio" />
             );
           })}
         </ScrollView>
@@ -247,14 +216,13 @@ export const SomaticVideoLibrary: React.FC<SomaticVideoLibraryProps> = ({
         {filteredVideos.map((video) => {
           const isCurrent = video.id === selectedVideo.id;
           return (
-            <TouchableOpacity
+            <Card
+              padding="sm"
               key={video.id}
-              activeOpacity={0.85}
-              style={[
-                styles.videoItemCard,
-                isCurrent && styles.videoItemCardSelected,
-              ]}
               onPress={() => handleSelect(video)}
+              accessibilityLabel={video.title}
+              accessibilityState={{ selected: isCurrent }}
+              style={[styles.videoItemCard, isCurrent && styles.videoItemCardSelected]}
             >
               {/* Mini Thumbnail */}
               <View style={styles.miniThumbWrap}>
@@ -266,7 +234,7 @@ export const SomaticVideoLibrary: React.FC<SomaticVideoLibraryProps> = ({
                   resizeMode="cover"
                 />
                 <View style={styles.miniPlayIcon}>
-                  <Play size={12} color="#FFFFFF" fill="#FFFFFF" style={{ marginLeft: 1 }} />
+                  <Play size={12} color={fixedColor('#FFFFFF')} fill={fixedColor('#FFFFFF')} style={{ marginLeft: 1 }} />
                 </View>
               </View>
 
@@ -287,14 +255,15 @@ export const SomaticVideoLibrary: React.FC<SomaticVideoLibraryProps> = ({
               </View>
 
               {/* Open Link Button */}
-              <TouchableOpacity
-                style={styles.directLinkBtn}
+              <Button
+                variant="tertiary"
+                size="sm"
+                iconOnly
                 onPress={() => handleOpenYouTube(video.youtubeUrl, video.title)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <ExternalLink size={16} color={Theme.colors.primary} />
-              </TouchableOpacity>
-            </TouchableOpacity>
+                accessibilityLabel={`Open ${video.title} on YouTube`}
+                icon={<ExternalLink size={20} color={Theme.colors.primaryDark} />}
+              />
+            </Card>
           );
         })}
       </View>
@@ -304,10 +273,10 @@ export const SomaticVideoLibrary: React.FC<SomaticVideoLibraryProps> = ({
 
 const styles = createStyles(() => ({
   container: {
-    marginVertical: 10,
+    marginVertical: 12,
   },
   sectionHeader: {
-    marginBottom: 14,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 20,
@@ -316,9 +285,9 @@ const styles = createStyles(() => ({
     letterSpacing: -0.4,
   },
   sectionSubtitle: {
-    fontSize: 13,
+    fontSize: 14,
     color: Theme.colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: 20,
     marginTop: 4,
   },
   featuredCard: {
@@ -327,14 +296,14 @@ const styles = createStyles(() => ({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(201, 87, 140, 0.2)',
-    ...Theme.shadows.card,
     marginBottom: 16,
   },
   thumbnailContainer: {
     position: 'relative',
     width: '100%',
     height: 190,
-    backgroundColor: '#1E1B2E',
+    // Grey placeholder until the thumbnail loads.
+    backgroundColor: Theme.colors.skeleton,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -348,7 +317,7 @@ const styles = createStyles(() => ({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(20, 15, 30, 0.35)',
+    backgroundColor: fixedColor('rgba(20,15,30,0.35)'),
   },
   durationPill: {
     position: 'absolute',
@@ -357,15 +326,15 @@ const styles = createStyles(() => ({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: fixedColor('rgba(15,23,42,0.82)'),
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   durationText: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: fixedColor('#FFFFFF'),
   },
   playOverlayButton: {
     position: 'absolute',
@@ -375,10 +344,12 @@ const styles = createStyles(() => ({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#FF0000',
+    // YouTube red, a shade deeper so the white play mark reads (5.9:1); the same in both modes.
+    backgroundColor: fixedColor('#CC0000'),
     justifyContent: 'center',
     alignItems: 'center',
-    ...Theme.shadows.glowing,
+    borderWidth: 2,
+    borderColor: fixedColor('rgba(255,255,255,0.9)'),
   },
   featuredBody: {
     padding: 16,
@@ -392,40 +363,33 @@ const styles = createStyles(() => ({
   categoryPill: {
     backgroundColor: Theme.colors.secondaryLight,
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   categoryPillText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: Theme.colors.secondaryDark,
   },
   channelText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: Theme.colors.textSecondary,
   },
   featuredTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '800',
     color: Theme.colors.textPrimary,
     lineHeight: 22,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   featuredDescription: {
-    fontSize: 13,
+    fontSize: 14,
     color: Theme.colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: 20,
     marginBottom: 12,
   },
   watchButton: {
-    backgroundColor: '#FF0000',
-    borderRadius: Theme.radius.md,
-    paddingVertical: 13,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Theme.shadows.soft,
   },
   watchButtonContent: {
     flexDirection: 'row',
@@ -457,7 +421,7 @@ const styles = createStyles(() => ({
     borderTopColor: 'transparent',
   },
   watchButtonText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 0.2,
@@ -472,8 +436,8 @@ const styles = createStyles(() => ({
   },
   filterChip: {
     paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
+    paddingVertical: 8,
+    borderRadius: 24,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
@@ -483,7 +447,7 @@ const styles = createStyles(() => ({
     borderColor: Theme.colors.primary,
   },
   filterChipText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: Theme.colors.textSecondary,
   },
@@ -503,17 +467,11 @@ const styles = createStyles(() => ({
   videoItemCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: Theme.radius.lg,
-    padding: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: Theme.colors.cardBorder,
-    ...Theme.shadows.card,
+    marginBottom: 12,
   },
   videoItemCardSelected: {
     borderColor: Theme.colors.primary,
-    backgroundColor: '#FFF8FA',
+    backgroundColor: Theme.colors.primaryLight,
   },
   miniThumbWrap: {
     width: 80,
@@ -521,7 +479,7 @@ const styles = createStyles(() => ({
     borderRadius: 8,
     overflow: 'hidden',
     position: 'relative',
-    backgroundColor: '#000000',
+    backgroundColor: Theme.colors.skeleton,
   },
   miniThumb: {
     width: '100%',
@@ -534,7 +492,7 @@ const styles = createStyles(() => ({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: 'rgba(255, 0, 0, 0.85)',
+    backgroundColor: fixedColor('#CC0000'),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -547,33 +505,28 @@ const styles = createStyles(() => ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 3,
+    marginBottom: 4,
   },
   videoItemTag: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: Theme.colors.secondary,
     textTransform: 'uppercase',
   },
   videoItemDuration: {
-    fontSize: 10,
+    fontSize: 14,
     fontWeight: '600',
     color: Theme.colors.textTertiary,
   },
   videoItemTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     color: Theme.colors.textPrimary,
-    lineHeight: 17,
-    marginBottom: 2,
+    lineHeight: 20,
+    marginBottom: 4,
   },
   videoItemChannel: {
-    fontSize: 11,
+    fontSize: 14,
     color: Theme.colors.textSecondary,
-  },
-  directLinkBtn: {
-    padding: 8,
-    backgroundColor: Theme.colors.primaryLight,
-    borderRadius: 8,
   },
 }));

@@ -1,29 +1,15 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, TextInput, ScrollView, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { isOfflineAuthError, signInWithSupabase } from '@/lib/supabaseService';
 import { pullCloudData } from '@/lib/sync';
-import {
-  ArrowLeft,
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  CheckCircle2,
-} from 'lucide-react-native';
+import { useSettingsStore } from '@/store/useSettingsStore';
+import { PasswordField } from '@/components/auth/PasswordField';
+import { ArrowLeft, Mail, CheckCircle2, Info } from 'lucide-react-native';
+import { Button, CheckRow } from '@/components/ds';
 
 export default function LoginScreen() {
   const login = useAppStore((s) => s.login);
@@ -31,10 +17,12 @@ export default function LoginScreen() {
 
   // Profile's "Sign in to back up" passes her email along.
   const params = useLocalSearchParams<{ email?: string }>();
-  const [email, setEmail] = useState(typeof params.email === 'string' ? params.email : '');
+  const rememberedEmail = useSettingsStore((s) => s.rememberedEmail);
+  const setRememberedEmail = useSettingsStore((s) => s.setRememberedEmail);
+  const guestWithData = useAppStore((s) => s.isGuest && s.isAuthenticated && (s.symptomLogs.length > 0 || s.pastCycles.length > 0));
+  const [email, setEmail] = useState(typeof params.email === 'string' && params.email ? params.email : rememberedEmail);
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberEmail, setRememberEmail] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -53,6 +41,9 @@ export default function LoginScreen() {
     setLoading(true);
     setErrorMsg('');
 
+    // Remember (or forget) the email on this phone only after a good sign-in.
+    const remember = () => setRememberedEmail(rememberEmail ? cleanEmail : '');
+
     const goNext = () => {
       // Always land on Home: unfinished "Details for Sync" are shown there.
       router.replace('/(tabs)');
@@ -62,6 +53,7 @@ export default function LoginScreen() {
       const res = await signInWithSupabase(cleanEmail, password);
       const name = res.user?.user_metadata?.full_name || currentUserName || cleanEmail.split('@')[0];
       login(cleanEmail, name);
+      remember();
       // Bring back her saved data on this phone (waits a few seconds at most).
       await pullCloudData();
       goNext();
@@ -69,6 +61,7 @@ export default function LoginScreen() {
       if (isOfflineAuthError(err)) {
         // No server reachable (or none configured): sign in on this device only.
         login(cleanEmail, currentUserName || cleanEmail.split('@')[0], { offline: true });
+        remember();
         goNext();
       } else {
         // The server answered: wrong password, unconfirmed email, etc. Never let these through.
@@ -100,14 +93,15 @@ export default function LoginScreen() {
           >
           {/* Top Bar Navigation */}
           <View style={styles.topBar}>
-            <TouchableOpacity
-              style={styles.backButton}
+            <Button
+              variant="secondary"
+              size="sm"
+              iconOnly
               onPress={() => router.back()}
-              activeOpacity={0.7}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <ArrowLeft size={20} color={Theme.colors.textPrimary} />
-            </TouchableOpacity>
+              accessibilityLabel="Go back"
+              icon={<ArrowLeft size={20} color={Theme.colors.textPrimary} />}
+              style={styles.backButton}
+            />
 
             <View style={styles.brandRow}>
               <Image
@@ -126,6 +120,19 @@ export default function LoginScreen() {
             <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>Log in to continue.</Text>
           </View>
+
+          {guestWithData ? (
+            <View style={styles.guestNote}>
+              <Info size={16} color={Theme.colors.secondaryDark} />
+              <Text style={styles.guestNoteText}>
+                You’re using SheSync without an account. Logging in opens that account instead of what you logged here — to keep it,{' '}
+                <Text style={styles.guestLink} onPress={() => router.replace('/signup')}>
+                  create an account
+                </Text>
+                .
+              </Text>
+            </View>
+          ) : null}
 
           {/* Form Fields */}
           <View style={styles.formContainer}>
@@ -156,84 +163,43 @@ export default function LoginScreen() {
             </View>
 
             {/* Password Field */}
-            <View style={styles.inputGroup}>
-              <View style={styles.passwordLabelRow}>
-                <Text style={styles.inputLabel}>PASSWORD</Text>
-                <TouchableOpacity
-                  activeOpacity={0.7}
+            <PasswordField
+              label="PASSWORD"
+              placeholder="Enter your password"
+              value={password}
+              onChangeText={(val) => {
+                setPassword(val);
+                if (errorMsg) setErrorMsg('');
+              }}
+              autoComplete="current-password"
+              textContentType="password"
+              onSubmitEditing={handleLogin}
+              labelRight={
+                <Button
+                  variant="link"
+                  title="Forgot?"
+                  accessibilityLabel="Forgot password?"
                   onPress={() =>
                     router.push({
                       pathname: '/forgot-password',
                       params: email ? { email } : undefined,
                     })
                   }
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Text style={styles.forgotText}>Forgot?</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.inputWrapper}>
-                <Lock size={18} color={Theme.colors.textTertiary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your password"
-                  placeholderTextColor={Theme.colors.textTertiary}
-                  value={password}
-                  onChangeText={(val) => {
-                    setPassword(val);
-                    if (errorMsg) setErrorMsg('');
-                  }}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
                 />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeButton}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  {showPassword ? (
-                    <EyeOff size={18} color={Theme.colors.textSecondary} />
-                  ) : (
-                    <Eye size={18} color={Theme.colors.textSecondary} />
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
+              }
+            />
 
-            {/* Remember Me */}
-            <TouchableOpacity
-              style={styles.rememberRow}
-              onPress={() => setRememberMe(!rememberMe)}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.checkbox, rememberMe && styles.checkboxActive]}>
-                {rememberMe && <CheckCircle2 size={16} color={themed('#FFFFFF')} />}
-              </View>
-              <Text style={styles.rememberText}>Keep me logged in</Text>
-            </TouchableOpacity>
+            {/* Remember email */}
+            <CheckRow label="Remember my email on this phone" checked={rememberEmail} onToggle={() => setRememberEmail(!rememberEmail)} style={styles.rememberRow} />
 
             {/* Log In Button */}
-            <TouchableOpacity
-              style={[styles.submitButton, loading && { opacity: 0.7 }]}
-              activeOpacity={0.88}
-              onPress={handleLogin}
-              disabled={loading}
-            >
-              {loading ? <ActivityIndicator size="small" color={themed('#FFFFFF')} style={{ marginRight: 8 }} /> : null}
-              <Text style={styles.submitButtonText}>{loading ? 'Logging in…' : 'Log In'}</Text>
-            </TouchableOpacity>
+            <Button size="lg" fullWidth title={loading ? 'Logging in' : 'Log In'} loading={loading} onPress={handleLogin} style={styles.submitButton} />
           </View>
 
           {/* Footer Link to Sign Up */}
           <View style={styles.footerRow}>
             <Text style={styles.footerText}>Don’t have an account yet?</Text>
-            <TouchableOpacity
-              onPress={() => router.push('/signup')}
-              activeOpacity={0.7}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Text style={styles.footerLink}> Sign Up</Text>
-            </TouchableOpacity>
+            <Button variant="link" title="Sign Up" onPress={() => router.push('/signup')} />
           </View>
         </ScrollView>
         </View>
@@ -243,6 +209,16 @@ export default function LoginScreen() {
 }
 
 const styles = createStyles(() => ({
+  guestNote: {
+    flexDirection: 'row',
+    gap: 8,
+    backgroundColor: Theme.colors.secondaryLight,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 16,
+  },
+  guestNoteText: { flex: 1, fontSize: 14, lineHeight: 20, color: Theme.colors.secondaryDark },
+  guestLink: { fontWeight: '800', textDecorationLine: 'underline' },
   safeArea: {
     flex: 1,
     backgroundColor: '#FFF4F7',
@@ -270,17 +246,7 @@ const styles = createStyles(() => ({
     justifyContent: 'space-between',
     paddingVertical: 12,
   },
-  backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: Theme.radius.full,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#FFE2EB',
-    ...Theme.shadows.soft,
-  },
+  backButton: { width: 38 },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -318,26 +284,25 @@ const styles = createStyles(() => ({
     padding: 20,
     borderWidth: 1,
     borderColor: '#FFE2EB',
-    ...Theme.shadows.soft,
     gap: 16,
   },
   errorBanner: {
     backgroundColor: '#FFE4E8',
-    padding: 10,
+    padding: 12,
     borderRadius: Theme.radius.md,
     borderWidth: 1,
     borderColor: '#FFA6BA',
   },
   errorText: {
-    fontSize: 13,
+    fontSize: 14,
     color: Theme.colors.primaryDark,
     fontWeight: '600',
   },
   inputGroup: {
-    gap: 6,
+    gap: 8,
   },
   inputLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: Theme.colors.textSecondary,
     letterSpacing: 0.8,
@@ -348,7 +313,7 @@ const styles = createStyles(() => ({
     alignItems: 'center',
   },
   forgotText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: Theme.colors.primaryDark,
   },
@@ -362,27 +327,28 @@ const styles = createStyles(() => ({
     paddingHorizontal: 12,
   },
   inputIcon: {
-    marginRight: 10,
+    marginRight: 12,
   },
   input: {
+    minHeight: 48,
     flex: 1,
-    paddingVertical: 14,
-    fontSize: 15,
+    paddingVertical: 16,
+    fontSize: 16,
     color: Theme.colors.textPrimary,
   },
   eyeButton: {
-    padding: 6,
+    padding: 8,
   },
   rememberRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 2,
+    marginTop: 4,
   },
   checkbox: {
     width: 20,
     height: 20,
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 1.5,
     borderColor: '#FFADC4',
     alignItems: 'center',
@@ -394,20 +360,12 @@ const styles = createStyles(() => ({
     borderColor: Theme.colors.feminismAccent,
   },
   rememberText: {
-    fontSize: 13,
+    fontSize: 14,
     color: Theme.colors.textSecondary,
     fontWeight: '500',
   },
   submitButton: {
-    backgroundColor: '#46375A',
-    borderRadius: Theme.radius.md,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 6,
-    ...Theme.shadows.card,
+    marginTop: 8,
   },
   submitButtonText: {
     color: '#FFFFFF',

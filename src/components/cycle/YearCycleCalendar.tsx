@@ -14,9 +14,20 @@ import {
   Trash2,
   Info,
 } from 'lucide-react-native';
-import { addDaysToKey, daysAgoKey, shortDateLabel } from '@/lib/dates';
-import { Theme, createStyles } from '@/constants/theme';
+import { addDaysToKey, shortDateLabel, todayKey } from '@/lib/dates';
+import {
+  MONTH_PART_LABEL,
+  approximateLabel,
+  approximateStart,
+  nextRange,
+  rangeDays,
+  removePeriod,
+  savePeriod,
+  type MonthPart,
+} from '@/lib/periodDates';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import type { PastCycleRecord } from '@/types';
+import { Button, Card, Chip } from '@/components/ds';
 
 const MONTH_NAMES = [
   'January',
@@ -71,27 +82,21 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
   const [selectedMonth, setSelectedMonth] = useState<number>(currentMonthIdx);
   const [viewMode, setViewMode] = useState<'detail' | 'fullYear'>('detail');
 
-  // Active selection target: 'start' or 'end'
-  const [selectionTarget, setSelectionTarget] = useState<'start' | 'end'>('start');
+  // The range being picked: first tap = first day, second tap = last day.
+  const [activeStart, setActiveStart] = useState<string | null>(null);
+  const [activeEnd, setActiveEnd] = useState<string | null>(null);
 
-  // Temporary staging for period currently being selected or edited
-  const [activeStart, setActiveStart] = useState<string | null>(
-    pastCycles[0]?.startDate ?? daysAgoKey(14)
-  );
-  const [activeEnd, setActiveEnd] = useState<string | null>(() => {
-    if (pastCycles[0]?.endDate) return pastCycles[0].endDate;
-    if (pastCycles[0]?.startDate) {
-      const dur = pastCycles[0].periodDurationDays || 5;
-      return addDaysToKey(pastCycles[0].startDate, dur - 1);
-    }
-    return daysAgoKey(9);
-  });
+  // "I don't remember exactly": month + early/mid/late + about how many days.
+  const [approxOpen, setApproxOpen] = useState(false);
+  const [approxMonth, setApproxMonth] = useState(0); // 0 = this month, 1 = last month…
+  const [approxPart, setApproxPart] = useState<MonthPart>('mid');
+  const [approxLen, setApproxLen] = useState(5);
 
   // Set of all logged period dates across all pastCycles: YYYY-MM-DD -> { cycleId, isStart, isEnd, isMiddle }
   const periodDateMap = useMemo(() => {
     const map = new Map<
       string,
-      { cycleId: string; isStart: boolean; isEnd: boolean; isPeriod: boolean }
+      { cycleId: string; isStart: boolean; isEnd: boolean; isPeriod: boolean; approximate: boolean }
     >();
 
     pastCycles.forEach((c) => {
@@ -114,6 +119,7 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
           isStart: dayOffset === 0,
           isEnd: dayOffset === dur - 1,
           isPeriod: true,
+          approximate: !!c.approximate,
         });
       }
     });
@@ -149,135 +155,51 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
     return counts;
   }, [periodDateMap, selectedYear]);
 
-  // Handle date tap on calendar
+  // One calendar, one range: tap the first day, then the last day.
   const handleDatePress = (dateStr: string) => {
-    if (selectionTarget === 'start') {
-      setActiveStart(dateStr);
-      // If activeEnd is before new start, automatically set end to start + 4 days
-      if (!activeEnd || activeEnd < dateStr) {
-        setActiveEnd(addDaysToKey(dateStr, 4));
-      }
-      setSelectionTarget('end');
-    } else {
-      // Selecting end date
-      if (activeStart && dateStr < activeStart) {
-        // Tapped before start date: treat as new start date
-        setActiveStart(dateStr);
-        setSelectionTarget('end');
-      } else {
-        setActiveEnd(dateStr);
-        setSelectionTarget('start');
-      }
-    }
+    if (dateStr > todayKey()) return; // a period can't be logged for the future
+    const next = nextRange({ start: activeStart, end: activeEnd }, dateStr);
+    setActiveStart(next.start);
+    setActiveEnd(next.end);
   };
 
-  // Quick duration presets (e.g. 4d, 5d, 6d, 7d)
+  // "It lasted 5 days": sets the last day from the first.
   const applyDurationPreset = (days: number) => {
     if (!activeStart) return;
-    const parts = activeStart.split('-').map(Number);
-    const startObj = new Date(parts[0], parts[1] - 1, parts[2]);
-    const endObj = new Date(startObj.getTime() + (days - 1) * 86400000);
-    const endStr = `${endObj.getFullYear()}-${String(endObj.getMonth() + 1).padStart(2, '0')}-${String(endObj.getDate()).padStart(2, '0')}`;
-    setActiveEnd(endStr);
+    setActiveEnd(addDaysToKey(activeStart, days - 1));
   };
 
-  // Save current active start & end to pastCycles
-  const handleSaveActiveRange = () => {
-    if (!activeStart || !activeEnd) return;
-
-    const startParts = activeStart.split('-').map(Number);
-    const endParts = activeEnd.split('-').map(Number);
-    const sDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
-    const eDate = new Date(endParts[0], endParts[1] - 1, endParts[2]);
-
-    const dur = Math.max(1, Math.round((eDate.getTime() - sDate.getTime()) / 86400000) + 1);
-    const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const daysAgo = Math.max(0, Math.round((todayMid.getTime() - sDate.getTime()) / 86400000));
-
-    // Check if modifying cycle 1 or adding a cycle
-    const updated = [...pastCycles];
-    if (updated.length > 0) {
-      updated[0] = {
-        ...updated[0],
-        startDate: activeStart,
-        endDate: activeEnd,
-        daysAgo,
-        periodDurationDays: dur,
-      };
-    } else {
-      updated.push({
-        id: `cycle-${Date.now()}`,
-        cycleNumber: 1,
-        startDate: activeStart,
-        endDate: activeEnd,
-        daysAgo,
-        lengthDays: 28,
-        periodDurationDays: dur,
-      });
-    }
-
-    // Re-sort cycles chronologically descending
-    updated.sort((a, b) => (b.startDate > a.startDate ? 1 : -1));
-
-    // Recalculate cycle length between consecutive starts
-    for (let i = 0; i < updated.length - 1; i++) {
-      const cCurrent = new Date(updated[i].startDate);
-      const cPrevious = new Date(updated[i + 1].startDate);
-      const diffDays = Math.round((cCurrent.getTime() - cPrevious.getTime()) / 86400000);
-      if (diffDays > 10 && diffDays < 120) {
-        updated[i + 1].lengthDays = diffDays;
-      }
-    }
-
-    onCyclesChange(updated);
+  const clearSelection = () => {
+    setActiveStart(null);
+    setActiveEnd(null);
   };
 
-  // Add another past period in the year
-  const handleAddAnotherPeriod = () => {
+  // Saves the picked range. An overlapping saved period is replaced (an edit).
+  const handleSavePeriod = () => {
     if (!activeStart || !activeEnd) return;
+    onCyclesChange(savePeriod(pastCycles, { start: activeStart, end: activeEnd }, todayKey()));
+    clearSelection();
+  };
 
-    const startParts = activeStart.split('-').map(Number);
-    const endParts = activeEnd.split('-').map(Number);
-    const sDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
-    const eDate = new Date(endParts[0], endParts[1] - 1, endParts[2]);
-
-    const dur = Math.max(1, Math.round((eDate.getTime() - sDate.getTime()) / 86400000) + 1);
-    const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const daysAgo = Math.max(0, Math.round((todayMid.getTime() - sDate.getTime()) / 86400000));
-
-    const newRecord: PastCycleRecord = {
-      id: `cycle-${Date.now()}`,
-      cycleNumber: pastCycles.length + 1,
-      startDate: activeStart,
-      endDate: activeEnd,
-      daysAgo,
-      lengthDays: 28,
-      periodDurationDays: dur,
-    };
-
-    const merged = [newRecord, ...pastCycles.filter((c) => c.startDate !== activeStart)];
-    merged.sort((a, b) => (b.startDate > a.startDate ? 1 : -1));
-
-    // Update cycle numbers & lengths
-    merged.forEach((c, idx) => {
-      c.cycleNumber = idx + 1;
-      if (idx < merged.length - 1) {
-        const curr = new Date(c.startDate);
-        const prev = new Date(merged[idx + 1].startDate);
-        const len = Math.round((curr.getTime() - prev.getTime()) / 86400000);
-        if (len >= 15 && len <= 100) {
-          merged[idx + 1].lengthDays = len;
-        }
-      }
+  const approxMonths = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      return { year: d.getFullYear(), month: d.getMonth(), label: MONTH_SHORT[d.getMonth()] };
     });
+  }, []);
+  const approxStartKey = approximateStart(approxMonths[approxMonth].year, approxMonths[approxMonth].month, approxPart, todayKey());
 
-    onCyclesChange(merged);
+  const handleSaveApproximate = () => {
+    const start = approxStartKey;
+    onCyclesChange(savePeriod(pastCycles, { start, end: addDaysToKey(start, approxLen - 1), approximate: true }, todayKey()));
+    setApproxOpen(false);
+    clearSelection();
   };
 
   // Delete a specific logged cycle
   const handleDeleteCycle = (cycleId: string) => {
-    const filtered = pastCycles.filter((c) => c.id !== cycleId);
-    onCyclesChange(filtered);
+    onCyclesChange(removePeriod(pastCycles, cycleId, todayKey()));
   };
 
   // Generate calendar days for a specific year and month
@@ -313,16 +235,10 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
     [selectedYear, selectedMonth]
   );
 
-  // Active duration calculation
-  const activeDurationDays = useMemo(() => {
-    if (!activeStart || !activeEnd) return 5;
-    const s = new Date(activeStart);
-    const e = new Date(activeEnd);
-    return Math.max(1, Math.round((e.getTime() - s.getTime()) / 86400000) + 1);
-  }, [activeStart, activeEnd]);
+  const activeDurationDays = activeStart && activeEnd ? rangeDays(activeStart, activeEnd) : 0;
 
   return (
-    <View style={styles.calendarContainer}>
+    <Card style={styles.calendarContainer}>
       {/* Calendar Header with Year Selector & View Mode Switcher */}
       <View style={styles.headerBar}>
         <View style={styles.headerLeft}>
@@ -332,61 +248,17 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
 
         {/* Year Stepper */}
         <View style={styles.yearStepper}>
-          <TouchableOpacity
-            style={styles.yearBtn}
-            onPress={() => setSelectedYear((y) => y - 1)}
-            activeOpacity={0.7}
-          >
-            <ChevronLeft size={16} color={Theme.colors.textPrimary} />
-          </TouchableOpacity>
+          <Button variant="tertiary" size="sm" iconOnly onPress={() => setSelectedYear((y) => y - 1)} accessibilityLabel="Previous year" icon={<ChevronLeft size={20} color={Theme.colors.textPrimary} />} />
           <Text style={styles.yearText}>{selectedYear}</Text>
-          <TouchableOpacity
-            style={styles.yearBtn}
-            onPress={() => setSelectedYear((y) => y + 1)}
-            activeOpacity={0.7}
-          >
-            <ChevronRight size={16} color={Theme.colors.textPrimary} />
-          </TouchableOpacity>
+          <Button variant="tertiary" size="sm" iconOnly onPress={() => setSelectedYear((y) => y + 1)} accessibilityLabel="Next year" icon={<ChevronRight size={20} color={Theme.colors.textPrimary} />} />
         </View>
       </View>
 
       {/* View Mode Toggle: Single Month vs Full Year Overview */}
       <View style={styles.viewModeToggleRow}>
-        <TouchableOpacity
-          style={[
-            styles.viewModeBtn,
-            viewMode === 'detail' && styles.viewModeBtnActive,
-          ]}
-          onPress={() => setViewMode('detail')}
-          activeOpacity={0.8}
-        >
-          <Text
-            style={[
-              styles.viewModeBtnText,
-              viewMode === 'detail' && styles.viewModeBtnTextActive,
-            ]}
-          >
-            Month
-          </Text>
-        </TouchableOpacity>
+        <Chip label="Month" selected={viewMode === 'detail'} onPress={() => setViewMode('detail')} accessibilityRole="tab" style={styles.viewModeBtn} />
 
-        <TouchableOpacity
-          style={[
-            styles.viewModeBtn,
-            viewMode === 'fullYear' && styles.viewModeBtnActive,
-          ]}
-          onPress={() => setViewMode('fullYear')}
-          activeOpacity={0.8}
-        >
-          <Text
-            style={[
-              styles.viewModeBtnText,
-              viewMode === 'fullYear' && styles.viewModeBtnTextActive,
-            ]}
-          >
-            Year
-          </Text>
-        </TouchableOpacity>
+        <Chip label="Year" selected={viewMode === 'fullYear'} onPress={() => setViewMode('fullYear')} accessibilityRole="tab" style={styles.viewModeBtn} />
       </View>
 
       {/* Horizontal Month Switcher (12 Months) */}
@@ -400,32 +272,17 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
           const isSelected = selectedMonth === idx;
           const periodCount = monthPeriodCount[idx];
           return (
-            <TouchableOpacity
+            <Chip
               key={name}
-              style={[
-                styles.monthPill,
-                isSelected && styles.monthPillSelected,
-              ]}
+              small
+              label={periodCount > 0 ? `${name} · ${periodCount}d` : name}
+              selected={isSelected}
               onPress={() => {
                 setSelectedMonth(idx);
                 setViewMode('detail');
               }}
-              activeOpacity={0.75}
-            >
-              <Text
-                style={[
-                  styles.monthPillText,
-                  isSelected && styles.monthPillTextSelected,
-                ]}
-              >
-                {name}
-              </Text>
-              {periodCount > 0 && (
-                <View style={styles.periodCountBadge}>
-                  <Text style={styles.periodCountBadgeText}>{periodCount}d</Text>
-                </View>
-              )}
-            </TouchableOpacity>
+              accessibilityLabel={`${MONTH_NAMES[idx]}${periodCount > 0 ? `, ${periodCount} period days` : ''}`}
+            />
           );
         })}
       </ScrollView>
@@ -433,84 +290,43 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
       {/* ─── Mode 1: Month Interactive Detail ───────────────── */}
       {viewMode === 'detail' && (
         <View style={styles.monthDetailCard}>
-          {/* Active Period Selection Bar */}
+          {/* One range, one line: what is picked so far and what to tap next */}
           <View style={styles.selectionActionBar}>
-            <View style={styles.datesDisplayRow}>
-              <TouchableOpacity
-                style={[
-                  styles.datePill,
-                  selectionTarget === 'start' && styles.datePillActive,
-                ]}
-                onPress={() => setSelectionTarget('start')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.datePillLabel}>Start</Text>
-                <Text style={styles.datePillValue}>
-                  {activeStart ? shortDateLabel(activeStart) : 'Tap Date'}
-                </Text>
-              </TouchableOpacity>
-
-              <View style={styles.dateArrowBox}>
-                <Text style={styles.durationPillText}>
-                  {activeDurationDays} Days
-                </Text>
-                <ChevronRight size={14} color={Theme.colors.textSecondary} />
-              </View>
-
-              <TouchableOpacity
-                style={[
-                  styles.datePill,
-                  selectionTarget === 'end' && styles.datePillActive,
-                ]}
-                onPress={() => setSelectionTarget('end')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.datePillLabel}>End</Text>
-                <Text style={styles.datePillValue}>
-                  {activeEnd ? shortDateLabel(activeEnd) : 'Tap Date'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Quick Helper Banner */}
-            <View style={styles.instructionBox}>
-              <Info size={13} color={Theme.colors.primary} />
-              <Text style={styles.instructionText}>
-                {selectionTarget === 'start'
-                  ? 'Tap the day your period started'
-                  : 'Tap the day it ended'}
+            <View style={styles.rangeSummary} accessibilityLiveRegion="polite">
+              <Text style={styles.rangeSummaryText}>
+                {!activeStart
+                  ? 'Tap the first day of your period'
+                  : !activeEnd
+                  ? `${shortDateLabel(activeStart)} → now tap the last day`
+                  : `${shortDateLabel(activeStart)} – ${shortDateLabel(activeEnd)} · ${activeDurationDays} day${activeDurationDays === 1 ? '' : 's'}`}
               </Text>
+              {activeStart ? (
+                <Button variant="link" title="Clear" onPress={clearSelection} accessibilityLabel="Clear the picked dates" />
+              ) : null}
             </View>
 
-            {/* Duration Presets */}
-            <View style={styles.presetsRow}>
-              <Text style={styles.presetsLabel}>Length:</Text>
-              {[3, 4, 5, 6, 7].map((days) => (
-                <TouchableOpacity
-                  key={days}
-                  style={[
-                    styles.presetChip,
-                    activeDurationDays === days && styles.presetChipActive,
-                  ]}
-                  onPress={() => applyDurationPreset(days)}
-                >
-                  <Text
-                    style={[
-                      styles.presetChipText,
-                      activeDurationDays === days && styles.presetChipTextActive,
-                    ]}
-                  >
-                    {days}d
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {activeStart ? (
+              <View style={styles.presetsRow}>
+                <Text style={styles.presetsLabel}>Lasted:</Text>
+                {[3, 4, 5, 6, 7].map((days) => (
+                  <Chip key={days} small label={`${days}d`} selected={activeDurationDays === days} onPress={() => applyDurationPreset(days)} accessibilityLabel={`Lasted ${days} days`} accessibilityRole="radio" />
+                ))}
+              </View>
+            ) : (
+              <View style={styles.instructionBox}>
+                <Info size={13} color={Theme.colors.primary} />
+                <Text style={styles.instructionText}>Then tap the day it ended — both on this calendar.</Text>
+              </View>
+            )}
           </View>
 
           {/* Current Month Name & Navigation */}
           <View style={styles.calendarMonthHeader}>
-            <TouchableOpacity
-              style={styles.monthNavBtn}
+            <Button
+              variant="secondary"
+              size="sm"
+              iconOnly
+              icon={<ChevronLeft size={20} color={Theme.colors.textPrimary} />}
               onPress={() => {
                 if (selectedMonth === 0) {
                   setSelectedMonth(11);
@@ -519,16 +335,19 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
                   setSelectedMonth((m) => m - 1);
                 }
               }}
-            >
-              <ChevronLeft size={18} color={Theme.colors.textPrimary} />
-            </TouchableOpacity>
+              accessibilityLabel="Previous month"
+              testID="calendar-prev-month"
+            />
 
             <Text style={styles.calendarMonthTitle}>
               {MONTH_NAMES[selectedMonth]} {selectedYear}
             </Text>
 
-            <TouchableOpacity
-              style={styles.monthNavBtn}
+            <Button
+              variant="secondary"
+              size="sm"
+              iconOnly
+              icon={<ChevronRight size={20} color={Theme.colors.textPrimary} />}
               onPress={() => {
                 if (selectedMonth === 11) {
                   setSelectedMonth(0);
@@ -537,9 +356,9 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
                   setSelectedMonth((m) => m + 1);
                 }
               }}
-            >
-              <ChevronRight size={18} color={Theme.colors.textPrimary} />
-            </TouchableOpacity>
+              accessibilityLabel="Next month"
+              testID="calendar-next-month"
+            />
           </View>
 
           {/* Day of Week Headers */}
@@ -577,7 +396,10 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
                 dateStr >= activeStart &&
                 dateStr <= activeEnd;
 
-              const isLogged = periodDateMap.has(dateStr);
+              const logged = periodDateMap.get(dateStr);
+              const isLogged = !!logged;
+              const isApprox = !!logged?.approximate;
+              const isFuture = dateStr > todayKey();
               const isPredicted = predictedDatesSet.has(dateStr);
               const isToday =
                 dateStr ===
@@ -592,11 +414,17 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
                       isStart && styles.dayCellStart,
                       isEnd && styles.dayCellEnd,
                       isLogged && !inActiveRange && styles.dayCellLogged,
+                      isApprox && !inActiveRange && styles.dayCellApprox,
                       isPredicted && !inActiveRange && styles.dayCellPredicted,
                       isToday && !inActiveRange && styles.dayCellToday,
                     ]}
                     onPress={() => handleDatePress(dateStr)}
                     activeOpacity={0.7}
+                    disabled={isFuture}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: !!(isStart || isEnd || inActiveRange) }}
+                    testID={`day-${dateStr}`}
+                    accessibilityLabel={`${shortDateLabel(dateStr)}${isStart ? ', first day' : ''}${isEnd ? ', last day' : ''}${isLogged ? (isApprox ? ', saved period, approximate' : ', saved period') : ''}`}
                   >
                     <Text
                       style={[
@@ -611,8 +439,8 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
                     </Text>
 
                     {/* Micro Indicators */}
-                    {isStart && <Text style={styles.endpointLabel}>START</Text>}
-                    {isEnd && !isStart && <Text style={styles.endpointLabel}>END</Text>}
+                    {isStart && <Text style={styles.endpointLabel}>FIRST</Text>}
+                    {isEnd && !isStart && <Text style={styles.endpointLabel}>LAST</Text>}
                     {isLogged && !inActiveRange && (
                       <View style={styles.loggedDot} />
                     )}
@@ -625,26 +453,44 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
             })}
           </View>
 
-          {/* Action Row: Apply & Add More */}
+          {/* Save the picked range */}
           <View style={styles.calendarActionsRow}>
-            <TouchableOpacity
-              style={styles.applyBtn}
-              onPress={handleSaveActiveRange}
-              activeOpacity={0.85}
-            >
-              <Check size={16} color="#FFFFFF" />
-              <Text style={styles.applyBtnText}>Set Period for Cycle 1</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.addPeriodBtn}
-              onPress={handleAddAnotherPeriod}
-              activeOpacity={0.85}
-            >
-              <Plus size={15} color={Theme.colors.primary} />
-              <Text style={styles.addPeriodBtnText}>Save period</Text>
-            </TouchableOpacity>
+            <Button
+              title={activeStart && activeEnd ? 'Save this period' : 'Pick the first and last day'}
+              onPress={handleSavePeriod}
+              disabled={!(activeStart && activeEnd)}
+              icon={<Check size={20} color={activeStart && activeEnd ? Theme.colors.onPrimary : Theme.colors.textTertiary} />}
+              fullWidth
+            />
           </View>
+
+          {/* "I don't remember exactly" */}
+          <Button variant="link" title={approxOpen ? 'Hide' : 'I don’t remember exactly'} onPress={() => setApproxOpen((o) => !o)} testID="approx-toggle" style={styles.approxToggle} />
+          {approxOpen ? (
+            <View style={styles.approxPanel}>
+              <Text style={styles.approxTitle}>Roughly when did it start?</Text>
+              <View style={styles.approxChips}>
+                {approxMonths.map((m, i) => (
+                  <Chip key={`${m.year}-${m.month}`} small label={m.label} selected={approxMonth === i} onPress={() => setApproxMonth(i)} testID={`approx-month-${i}`} accessibilityRole="radio" />
+                ))}
+              </View>
+              <View style={styles.approxChips}>
+                {(['early', 'mid', 'late'] as MonthPart[]).map((part) => (
+                  <Chip key={part} small label={MONTH_PART_LABEL[part]} selected={approxPart === part} onPress={() => setApproxPart(part)} testID={`approx-${part}`} accessibilityRole="radio" />
+                ))}
+              </View>
+              <Text style={styles.approxTitle}>About how many days?</Text>
+              <View style={styles.approxChips}>
+                {[3, 4, 5, 6, 7].map((d) => (
+                  <Chip key={d} small label={`${d}d`} selected={approxLen === d} onPress={() => setApproxLen(d)} accessibilityLabel={`About ${d} days`} accessibilityRole="radio" />
+                ))}
+              </View>
+              <Text style={styles.approxNote}>
+                Saved as {approximateLabel(approxStartKey)}. Predictions use a wider margin until you log a period on the day.
+              </Text>
+              <Button variant="secondary" title="Save approximate period" onPress={handleSaveApproximate} testID="approx-save" icon={<Plus size={20} color={Theme.colors.textPrimary} />} fullWidth style={styles.addPeriodBtn} />
+            </View>
+          ) : null}
         </View>
       )}
 
@@ -660,17 +506,18 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
               const matrix = getMonthMatrix(selectedYear, mIdx);
               const pCount = monthPeriodCount[mIdx];
               return (
-                <TouchableOpacity
+                <Card
                   key={mName}
-                  style={[
-                    styles.miniMonthCard,
-                    selectedMonth === mIdx && styles.miniMonthCardSelected,
-                  ]}
+                  padding="none"
+                  tone={selectedMonth === mIdx ? 'rose' : 'default'}
+                  style={styles.miniMonthCard}
                   onPress={() => {
                     setSelectedMonth(mIdx);
                     setViewMode('detail');
                   }}
-                  activeOpacity={0.8}
+                  accessibilityLabel={`${MONTH_NAMES[mIdx]} ${selectedYear}${pCount > 0 ? `, ${pCount} period days` : ''}`}
+                  accessibilityHint="Opens this month"
+                  accessibilityState={{ selected: selectedMonth === mIdx }}
                 >
                   <View style={styles.miniMonthHeader}>
                     <Text style={styles.miniMonthTitle}>{MONTH_SHORT[mIdx]}</Text>
@@ -699,7 +546,7 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
                       );
                     })}
                   </View>
-                </TouchableOpacity>
+                </Card>
               );
             })}
           </View>
@@ -719,27 +566,27 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
                 <View style={styles.cycleNumberBadge}>
                   <Text style={styles.cycleNumberText}>#{idx + 1}</Text>
                 </View>
-                <View>
+                <View style={{ flex: 1 }}>
                   <Text style={styles.cycleDateRange}>
-                    {cycle.startDate}
-                    {cycle.endDate ? ` → ${cycle.endDate}` : ''}
+                    {cycle.approximate
+                      ? `≈ Started ${approximateLabel(cycle.startDate)}`
+                      : `${shortDateLabel(cycle.startDate)}${cycle.endDate ? ` – ${shortDateLabel(cycle.endDate)}` : ''}`}
                   </Text>
                   <Text style={styles.cycleSubtext}>
-                    {cycle.periodDurationDays}d period • {cycle.lengthDays}d cycle length
-                    {cycle.daysAgo !== undefined ? ` • ${cycle.daysAgo}d ago` : ''}
+                    {cycle.periodDurationDays}d period • {cycle.lengthDays}d cycle
+                    {cycle.approximate ? ' • approximate' : ''}
                   </Text>
                 </View>
               </View>
 
-              {idx > 0 && (
-                <TouchableOpacity
-                  style={styles.deleteCycleBtn}
-                  onPress={() => handleDeleteCycle(cycle.id)}
-                  activeOpacity={0.7}
-                >
-                  <Trash2 size={15} color="#EF4444" />
-                </TouchableOpacity>
-              )}
+              <Button
+                variant="tertiary"
+                size="sm"
+                iconOnly
+                onPress={() => handleDeleteCycle(cycle.id)}
+                accessibilityLabel="Delete this period"
+                icon={<Trash2 size={20} color={Theme.colors.danger} />}
+              />
             </View>
           );
         })}
@@ -761,28 +608,20 @@ export const YearCycleCalendar: React.FC<YearCycleCalendarProps> = ({
           <Text style={styles.legendText}>Predicted Next</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: '#3B82F6' }]} />
+          <View style={[styles.legendDot, styles.legendApprox]} />
+          <Text style={styles.legendText}>Approximate</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: themed('#3B82F6') }]} />
           <Text style={styles.legendText}>Today</Text>
         </View>
       </View>
-    </View>
+    </Card>
   );
 };
 
 const styles = createStyles(() => ({
-  calendarContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
+  calendarContainer: { marginBottom: 20 },
   headerBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -807,7 +646,7 @@ const styles = createStyles(() => ({
     borderWidth: 1,
     borderColor: '#E2E8F0',
     paddingHorizontal: 4,
-    paddingVertical: 2,
+    paddingVertical: 4,
   },
   yearBtn: {
     padding: 4,
@@ -820,27 +659,12 @@ const styles = createStyles(() => ({
   },
   viewModeToggleRow: {
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 12,
-    padding: 3,
-    marginBottom: 12,
+    gap: Theme.space.xs,
+    marginBottom: Theme.space.sm,
   },
-  viewModeBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-    borderRadius: 9,
-  },
-  viewModeBtnActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 1,
-  },
+  viewModeBtn: { flex: 1 },
   viewModeBtnText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: Theme.colors.textSecondary,
   },
@@ -849,29 +673,29 @@ const styles = createStyles(() => ({
     fontWeight: '700',
   },
   monthScrollView: {
-    marginBottom: 14,
+    marginBottom: 16,
   },
   monthScrollContent: {
-    paddingRight: 10,
-    gap: 6,
+    paddingRight: 12,
+    gap: 8,
   },
   monthPill: {
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderRadius: 12,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   monthPillSelected: {
     backgroundColor: Theme.colors.primary,
     borderColor: Theme.colors.primary,
   },
   monthPillText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: Theme.colors.textSecondary,
   },
@@ -882,26 +706,26 @@ const styles = createStyles(() => ({
   periodCountBadge: {
     backgroundColor: 'rgba(236, 72, 153, 0.25)',
     borderRadius: 8,
-    paddingHorizontal: 5,
+    paddingHorizontal: 4,
     paddingVertical: 1,
   },
   periodCountBadgeText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: '#A8436F',
   },
   monthDetailCard: {
     backgroundColor: '#FAFAFA',
     borderRadius: 16,
-    padding: 14,
+    padding: 16,
     borderWidth: 1,
     borderColor: '#F1F5F9',
   },
   selectionActionBar: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 12,
-    marginBottom: 14,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
@@ -914,7 +738,7 @@ const styles = createStyles(() => ({
   datePill: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 8,
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
@@ -924,13 +748,13 @@ const styles = createStyles(() => ({
     backgroundColor: '#FDF2F8',
   },
   datePillLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: Theme.colors.textSecondary,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   datePillValue: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: Theme.colors.textPrimary,
   },
@@ -939,37 +763,59 @@ const styles = createStyles(() => ({
     paddingHorizontal: 8,
   },
   durationPillText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: Theme.colors.primary,
   },
+  rangeSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    backgroundColor: Theme.colors.primaryLight,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
+  rangeSummaryText: { flex: 1, fontSize: 14, fontWeight: '800', color: Theme.colors.primaryDark },
+  clearText: { fontSize: 14, fontWeight: '700', color: Theme.colors.textSecondary, textDecorationLine: 'underline' },
+  applyBtnOff: { opacity: 0.5 },
+  dayCellApprox: { borderWidth: 1.5, borderStyle: 'dashed', borderColor: Theme.colors.primary, backgroundColor: 'transparent' },
+  approxToggle: { alignSelf: 'center', marginTop: Theme.space.sm },
+  approxToggleText: { fontSize: 14, fontWeight: '700', color: Theme.colors.secondaryDark, textDecorationLine: 'underline' },
+  approxPanel: { marginTop: Theme.space.xs, backgroundColor: Theme.colors.secondaryLight, borderRadius: Theme.radius.lg, padding: Theme.space.md, gap: Theme.space.sm },
+  approxTitle: { fontSize: 14, fontWeight: '800', color: Theme.colors.textPrimary },
+  approxChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  approxNote: { fontSize: 14, lineHeight: 20, color: Theme.colors.textSecondary },
+  legendApprox: { backgroundColor: 'transparent', borderWidth: 1.5, borderStyle: 'dashed', borderColor: Theme.colors.primary },
   instructionBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     backgroundColor: '#EFF6FF',
     borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     marginBottom: 8,
   },
   instructionText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: '#1E40AF',
   },
   presetsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   presetsLabel: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '600',
     color: Theme.colors.textSecondary,
   },
   presetChip: {
-    paddingHorizontal: 9,
+    paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
     backgroundColor: '#F1F5F9',
@@ -981,7 +827,7 @@ const styles = createStyles(() => ({
     borderColor: Theme.colors.primary,
   },
   presetChipText: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '700',
     color: Theme.colors.textSecondary,
   },
@@ -992,17 +838,17 @@ const styles = createStyles(() => ({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   monthNavBtn: {
-    padding: 6,
+    padding: 8,
     borderRadius: 8,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
   calendarMonthTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: Theme.colors.textPrimary,
   },
@@ -1014,50 +860,50 @@ const styles = createStyles(() => ({
   dayLabelText: {
     width: '14.285%',
     textAlign: 'center',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     color: Theme.colors.textSecondary,
   },
   weekendText: {
-    color: '#94A3B8',
+    color: Theme.colors.textTertiary,
   },
   daysGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     width: '100%',
     justifyContent: 'flex-start',
-    marginBottom: 14,
+    marginBottom: 16,
   },
   dayCellWrap: {
     width: '14.285%',
-    height: 44,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 2,
+    marginVertical: 4,
   },
   dayCellEmpty: {
-    width: 38,
+    width: 44,
     height: 40,
   },
   dayCell: {
-    width: 38,
-    height: 42,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 10,
+    borderRadius: 12,
   },
   dayCellInRange: {
     backgroundColor: 'rgba(236, 72, 153, 0.22)',
   },
   dayCellStart: {
     backgroundColor: Theme.colors.primary,
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
   },
   dayCellEnd: {
     backgroundColor: '#A8436F',
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
   },
   dayCellLogged: {
     backgroundColor: 'rgba(236, 72, 153, 0.15)',
@@ -1073,7 +919,7 @@ const styles = createStyles(() => ({
     borderColor: '#3B82F6',
   },
   dayCellText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: Theme.colors.textPrimary,
   },
@@ -1094,7 +940,7 @@ const styles = createStyles(() => ({
     fontWeight: '800',
   },
   endpointLabel: {
-    fontSize: 7,
+    fontSize: 14,
     fontWeight: '800',
     color: '#FFFFFF',
     marginTop: 1,
@@ -1104,14 +950,14 @@ const styles = createStyles(() => ({
     height: 4,
     borderRadius: 2,
     backgroundColor: Theme.colors.primary,
-    marginTop: 2,
+    marginTop: 4,
   },
   predictedDot: {
     width: 4,
     height: 4,
     borderRadius: 2,
     backgroundColor: '#C084FC',
-    marginTop: 2,
+    marginTop: 4,
   },
   calendarActionsRow: {
     flexDirection: 'row',
@@ -1122,30 +968,20 @@ const styles = createStyles(() => ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 8,
     backgroundColor: Theme.colors.primary,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 12,
   },
   applyBtnText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
   },
   addPeriodBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    backgroundColor: '#FDF2F8',
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#FBCFE8',
   },
   addPeriodBtnText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     color: Theme.colors.primary,
   },
@@ -1156,7 +992,7 @@ const styles = createStyles(() => ({
     marginBottom: 12,
   },
   fullYearNotice: {
-    fontSize: 12,
+    fontSize: 14,
     color: Theme.colors.textSecondary,
     marginBottom: 12,
     textAlign: 'center',
@@ -1169,15 +1005,7 @@ const styles = createStyles(() => ({
   },
   miniMonthCard: {
     width: '31%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 6,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  miniMonthCardSelected: {
-    borderColor: Theme.colors.primary,
-    backgroundColor: '#FDF2F8',
+    padding: 8,
   },
   miniMonthHeader: {
     flexDirection: 'row',
@@ -1186,17 +1014,17 @@ const styles = createStyles(() => ({
     marginBottom: 4,
   },
   miniMonthTitle: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: Theme.colors.textPrimary,
   },
   miniPeriodBadge: {
     backgroundColor: '#FCE7F3',
     borderRadius: 4,
-    paddingHorizontal: 3,
+    paddingHorizontal: 4,
   },
   miniPeriodBadgeText: {
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '700',
     color: '#A8436F',
   },
@@ -1205,7 +1033,7 @@ const styles = createStyles(() => ({
     flexWrap: 'wrap',
     width: 42,
     alignSelf: 'center',
-    gap: 2,
+    gap: 4,
     height: 38,
   },
   miniDot: {
@@ -1222,7 +1050,7 @@ const styles = createStyles(() => ({
     backgroundColor: Theme.colors.primary,
   },
   historySection: {
-    marginTop: 14,
+    marginTop: 16,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
     paddingTop: 12,
@@ -1230,11 +1058,11 @@ const styles = createStyles(() => ({
   historyHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
+    gap: 8,
+    marginBottom: 12,
   },
   historyTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     color: Theme.colors.textPrimary,
   },
@@ -1243,9 +1071,9 @@ const styles = createStyles(() => ({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 6,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
@@ -1256,27 +1084,27 @@ const styles = createStyles(() => ({
   },
   cycleNumberBadge: {
     backgroundColor: '#E2E8F0',
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   cycleNumberText: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '700',
     color: Theme.colors.textSecondary,
   },
   cycleDateRange: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     color: Theme.colors.textPrimary,
   },
   cycleSubtext: {
-    fontSize: 10,
+    fontSize: 14,
     color: Theme.colors.textSecondary,
     marginTop: 1,
   },
   deleteCycleBtn: {
-    padding: 6,
+    padding: 8,
   },
   legendRow: {
     flexDirection: 'row',
@@ -1287,7 +1115,7 @@ const styles = createStyles(() => ({
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
   },
   legendDot: {
     width: 10,
@@ -1295,7 +1123,7 @@ const styles = createStyles(() => ({
     borderRadius: 5,
   },
   legendText: {
-    fontSize: 11,
+    fontSize: 12,
     color: Theme.colors.textSecondary,
   },
 }));

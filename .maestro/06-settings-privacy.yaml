@@ -1,0 +1,27 @@
+# 8. Settings in five sections (Account, Privacy, Reminders, Data, About)
+#    and the privacy dashboard: on the phone, backed up, last backup.
+appId: com.vyomvarshney1234.shesync
+name: Settings and privacy dashboard
+---
+- runFlow: subflows/start-guest.yaml
+- openLink: "shesync://profile"
+- tapOn:
+    id: "profile-settings"
+- assertVisible: "Account"
+- assertVisible: "Privacy"
+- scrollUntilVisible:
+    element: "Reminders"
+- scrollUntilVisible:
+    element: "Data"
+- assertVisible:
+    id: "settings-backup-status"
+- scrollUntilVisible:
+    element: "About"
+- openLink: "shesync://privacy-dashboard"
+- assertVisible:
+    id: "privacy-backup-card"
+- assertVisible: "Not backed up"
+- assertVisible: "On this phone only"
+- scrollUntilVisible:
+    element: "Never collected"
+- assertVisible: "Ad, analytics or tracking SDKs.*"

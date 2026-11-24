@@ -79,6 +79,8 @@ export interface PastCycleRecord {
   daysAgo: number;          // relative days ago
   lengthDays: number;       // e.g. 28 days
   periodDurationDays: number;// e.g. 5 days
+  /** "I don't remember exactly": the start is a guess (around early/mid/late in a month). */
+  approximate?: boolean;
 }
 
 export interface PrecautionMeasure {
@@ -124,6 +126,8 @@ export interface CyclePrediction {
   confidencePercentage: number;
   precautionMeasures: PrecautionMeasure[];
   cycleVarianceDays?: number;
+  /** Some saved period dates are approximate, so the prediction is less certain. */
+  approximateDates?: boolean;
   fertileWindow?: string;
   ovulationDate?: string;
   cyclePhaseBreakdown?: CyclePhaseBreakdown;
@@ -280,6 +284,9 @@ export interface YourGoGirlMessage {
   affirmation?: string;
   followUpSuggestions?: string[];
   actions?: YourGoGirlAction[];
+  /** Her 👍 / 👎 on this answer (also sent anonymously to find gaps). */
+  feedback?: 'up' | 'down';
+  feedbackReason?: string;
 }
 
 // ─── Details for Sync, referral and care contacts ───────────
@@ -368,7 +375,15 @@ export interface AppState {
   userPhoto?: string;
   isAuthenticated: boolean;
   isOfflineAccount: boolean;   // true when signed in on this device only
-  focusAreas: string[];        // chosen at sign-up
+  /** "Try without an account": everything stays on this phone until she creates one. */
+  isGuest: boolean;
+  focusAreas: string[];        // chosen after she has seen the app (Home card or Profile)
+  /** Home's "what should SheSync help with?" card is hidden until this date (YYYY-MM-DD). */
+  focusPromptSnoozedUntil: string;
+  /** Setup steps she skipped for now ("questions", "period", …); sensible defaults are used. */
+  skippedSyncSteps: string[];
+  /** Home's "Personalise SheSync" card is hidden until this date (YYYY-MM-DD). */
+  personalisePromptSnoozedUntil: string;
 
   // Assessment & Fine-Tuning
   isAssessmentCompleted: boolean;
@@ -416,6 +431,17 @@ export interface AppState {
   // Actions
   login: (email?: string, name?: string, options?: { offline?: boolean }) => void;
   signup: (name: string, email: string, focusAreas?: string[], options?: { offline?: boolean }) => void;
+  /** Starts SheSync on this phone with no account. */
+  startGuest: () => void;
+  /** Turns the guest session into an account, keeping everything she logged. */
+  upgradeGuest: (name: string, email: string, options?: { offline?: boolean }) => void;
+  setFocusAreas: (areas: string[]) => void;
+  snoozeFocusPrompt: (days: number) => void;
+  /** Skips one setup step for now. */
+  skipSyncStep: (step: string) => void;
+  /** Skips the rest of setup: sensible defaults, full Home, personalise later. */
+  skipSetup: () => void;
+  snoozePersonalise: (days: number) => void;
   logSleep: (hours: number) => void;
   logout: () => Promise<void> | void;
   updateUserPhoto: (uri: string) => void;
@@ -439,6 +465,7 @@ export interface AppState {
   setYourGoGirlMode: (mode: CounsellorMode) => void;
   clearYourGoGirlChat: () => void;
   deleteYourGoGirlMessage: (id: string) => void;
+  rateYourGoGirlMessage: (id: string, rating: 'up' | 'down', reason?: string) => void;
   saveHealthCheck: (answers: HealthCheckAnswers) => void;
   markSyncComplete: () => void;
   addCareContact: (contact: Omit<CareContact, 'id'>) => void;

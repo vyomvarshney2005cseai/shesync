@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { ChevronRight, HeartHandshake, ShieldCheck, Stethoscope } from 'lucide-react-native';
-import { Theme, createStyles, themed } from '@/constants/theme';
+import { ChevronRight } from 'lucide-react-native';
+import { Theme, createStyles } from '@/constants/theme';
+import { Card, IconBadge, badgeColors, type BadgeTone, type CardTone } from '@/components/ds';
 import { useAppStore } from '@/store/useAppStore';
 import { assessReferral, REFERRAL_LEVEL_TEXT } from '@/lib/referral';
 import { ROUTES } from '@/lib/routes';
@@ -14,6 +15,7 @@ export function ReferralStatusCard() {
   const symptomLogs = useAppStore((s) => s.symptomLogs);
   const pastCycles = useAppStore((s) => s.pastCycles);
   const cyclePrediction = useAppStore((s) => s.cyclePrediction);
+  const healthCheckCompleted = useAppStore((s) => s.healthCheckCompleted);
 
   const result = useMemo(
     () => assessReferral({ assessmentAnswers, healthCheck, symptomLogs, pastCycles, cyclePrediction }),
@@ -21,84 +23,66 @@ export function ReferralStatusCard() {
   );
 
   const referable = result.referable;
-  const tone = referable
+  // Skipped the safety check and nothing in her logs is worrying: say so, don't claim "all clear".
+  const unchecked = !healthCheckCompleted && !referable;
+  const tone: { card: CardTone; badge: BadgeTone } = referable
     ? result.level === 'urgent'
-      ? { bg: themed('#FDECEF'), border: themed('#F5C6D0'), ink: themed('#A33B55') }
-      : { bg: themed('#FFF4E8'), border: themed('#F6DDBF'), ink: themed('#9A5A2E') }
-    : { bg: themed('#ECF7F2'), border: themed('#CDEADF'), ink: themed('#2F7D69') };
+      ? { card: 'danger', badge: 'danger' }
+      : { card: 'amber', badge: 'amber' }
+    : unchecked
+    ? { card: 'lilac', badge: 'lilac' }
+    : { card: 'mint', badge: 'mint' };
+  const ink = badgeColors(tone.badge).fg;
 
   return (
     <View style={styles.wrap}>
-      <Pressable
-        onPress={() => router.push(ROUTES.syncResult)}
-        style={({ pressed }) => [styles.card, { backgroundColor: tone.bg, borderColor: tone.border }, pressed && styles.pressed]}
-        accessibilityRole="button"
+      <Card
+        tone={tone.card}
+        onPress={() => router.push(unchecked ? ROUTES.healthCheck : ROUTES.syncResult)}
+        accessibilityLabel={unchecked ? 'Health safety check, not done yet. Do the 1-minute safety check' : `Sync result: ${REFERRAL_LEVEL_TEXT[result.level].title}`}
       >
-        <View style={styles.iconCircle}>
-          {referable ? <Stethoscope size={20} color={tone.ink} /> : <ShieldCheck size={20} color={tone.ink} />}
+        <View style={styles.row}>
+          <IconBadge name={referable ? 'care' : 'healthCheck'} tone={tone.badge} size={44} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.label, { color: ink }]}>
+              {unchecked ? 'HEALTH SAFETY CHECK · NOT DONE YET' : `SYNC RESULT · ${referable ? 'REFERABLE' : 'NOT REFERABLE'}`}
+            </Text>
+            <Text style={styles.title}>{unchecked ? 'Do the 1-minute safety check' : REFERRAL_LEVEL_TEXT[result.level].title}</Text>
+            <Text style={styles.sub} numberOfLines={2}>
+              {unchecked
+                ? '11 yes/no questions show whether a gynaecologist visit is suggested.'
+                : referable
+                ? result.reasons.slice(0, 2).map((r) => r.title).join(' · ')
+                : 'Nothing in your answers needs a doctor right now.'}
+            </Text>
+          </View>
+          <ChevronRight size={20} color={ink} />
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.label, { color: tone.ink }]}>
-            SYNC RESULT · {referable ? 'REFERABLE' : 'NOT REFERABLE'}
-          </Text>
-          <Text style={styles.title}>{REFERRAL_LEVEL_TEXT[result.level].title}</Text>
-          <Text style={styles.sub} numberOfLines={2}>
-            {referable
-              ? result.reasons.slice(0, 2).map((r) => r.title).join(' · ')
-              : 'Nothing in your answers needs a doctor right now.'}
-          </Text>
-        </View>
-        <ChevronRight size={18} color={tone.ink} />
-      </Pressable>
+      </Card>
 
-      <Pressable
+      <Card
         onPress={() => router.push(ROUTES.care)}
-        style={({ pressed }) => [styles.careRow, pressed && styles.pressed]}
-        accessibilityRole="button"
+        padding="sm"
+        accessibilityLabel={`Care Connect — talk to a gynaecologist or a women’s counsellor${result.counsellorSuggested ? ' (counsellor suggested)' : ''}`}
       >
-        <HeartHandshake size={18} color={Theme.colors.secondaryDark} />
-        <Text style={styles.careText}>
-          Care Connect — talk to a gynaecologist or a women’s counsellor
-          {result.counsellorSuggested ? ' (counsellor suggested)' : ''}
-        </Text>
-        <ChevronRight size={16} color={Theme.colors.secondaryDark} />
-      </Pressable>
+        <View style={styles.row}>
+          <IconBadge name="care" tone="lilac" size={40} />
+          <Text style={styles.careText}>
+            Care Connect — talk to a gynaecologist or a women’s counsellor
+            {result.counsellorSuggested ? ' (counsellor suggested)' : ''}
+          </Text>
+          <ChevronRight size={20} color={Theme.colors.textTertiary} />
+        </View>
+      </Card>
     </View>
   );
 }
 
 const styles = createStyles(() => ({
-  wrap: { paddingHorizontal: 20, marginTop: 16, gap: 8 },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 14,
-    borderRadius: 24,
-    borderWidth: 1,
-  },
-  iconCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  label: { fontSize: 10, fontWeight: '800', letterSpacing: 0.8 },
-  title: { fontSize: 15, fontWeight: '800', color: Theme.colors.textPrimary, marginTop: 2 },
-  sub: { fontSize: 12, color: Theme.colors.textSecondary, marginTop: 2, lineHeight: 16 },
-  careRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    backgroundColor: Theme.colors.secondaryLight,
-    borderWidth: 1,
-    borderColor: Theme.colors.secondaryBorder,
-  },
-  careText: { flex: 1, fontSize: 12.5, fontWeight: '700', color: Theme.colors.secondaryDark },
-  pressed: { opacity: 0.86 },
+  wrap: { paddingHorizontal: Theme.space.md, marginTop: Theme.space.md, gap: Theme.space.xs },
+  row: { flexDirection: 'row', alignItems: 'center', gap: Theme.space.sm },
+  label: { ...Theme.type.caption, fontWeight: '800', letterSpacing: 0.6 },
+  title: { ...Theme.type.title, fontSize: 16, lineHeight: 22, color: Theme.colors.textPrimary, marginTop: 4 },
+  sub: { ...Theme.type.bodySm, color: Theme.colors.textSecondary, marginTop: 4 },
+  careText: { flex: 1, ...Theme.type.label, color: Theme.colors.textPrimary },
 }));

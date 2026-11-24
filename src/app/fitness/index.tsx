@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import {
   Flame,
@@ -18,7 +18,7 @@ import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { Card, Chip, MiniBars, ProgressBar, SectionHeader, StatTile, Stepper, uiStyles } from '@/components/common/ui';
 import { VideoShelf } from '@/components/common/VideoShelf';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
+import { Button } from '@/components/ds';
 import { WeightChart } from '@/components/fitness/WeightChart';
 import { WorkoutListItem } from '@/components/fitness/WorkoutListItem';
 import { Theme, createStyles, themed } from '@/constants/theme';
@@ -136,29 +136,24 @@ export default function FitnessDashboard() {
           {(['home', 'gym'] as const).map((p) => {
             const active = (profile?.trainingPlace ?? 'home') === p;
             return (
-              <Pressable
+              <Chip
                 key={p}
+                small
+                label={p === 'gym' ? 'Gym' : 'Home'}
+                selected={active}
                 onPress={() => (profile ? setTrainingPlace(p) : router.push('/fitness/setup'))}
-                style={[styles.placeChip, active && styles.placeChipActive]}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-              >
-                {p === 'gym' ? (
-                  <Dumbbell size={13} color={active ? Theme.colors.obsidian : themed('#FFFFFF')} />
-                ) : (
-                  <HomeIcon size={13} color={active ? Theme.colors.obsidian : themed('#FFFFFF')} />
-                )}
-                <Text style={[styles.placeText, active && styles.placeTextActive]}>{p === 'gym' ? 'Gym' : 'Home'}</Text>
-              </Pressable>
+                accessibilityRole="radio"
+                icon={p === 'gym' ? <Dumbbell size={16} color={active ? Theme.colors.onPrimary : Theme.colors.textPrimary} /> : <HomeIcon size={16} color={active ? Theme.colors.onPrimary : Theme.colors.textPrimary} />}
+              />
             );
           })}
         </View>
-        <PrimaryButton
+        <Button
           title={`Start ${plan.workout.minutes}-min session`}
           icon={<Play size={16} color={themed('#FFFFFF')} fill={themed('#FFFFFF')} />}
           onPress={() => router.push(`/fitness/workout/${plan.workout.id}`)}
           fullWidth
-          style={{ marginTop: 14 }}
+          style={{ marginTop: 16 }}
         />
       </Card>
 
@@ -187,7 +182,7 @@ export default function FitnessDashboard() {
           icon={<Target size={16} color={Theme.colors.strainAmber} />}
         />
       </View>
-      <Card style={{ marginTop: 10 }}>
+      <Card style={{ marginTop: 12 }}>
         <ProgressBar value={week.minutes / 150} />
         <Text style={[uiStyles.muted, { marginTop: 8 }]}>
           {week.minutes >= 150
@@ -205,10 +200,7 @@ export default function FitnessDashboard() {
         subtitle="Safe, slow targets — never below 1,200 kcal or your BMR"
         right={
           profile ? (
-            <Pressable onPress={() => router.push('/fitness/setup')} style={styles.editBtn} accessibilityRole="button">
-              <Pencil size={13} color={Theme.colors.primary} />
-              <Text style={styles.editText}>Edit</Text>
-            </Pressable>
+            <Button variant="secondary" title="Edit" onPress={() => router.push('/fitness/setup')} icon={<Pencil size={20} color={Theme.colors.textPrimary} />} />
           ) : null
         }
       />
@@ -219,7 +211,7 @@ export default function FitnessDashboard() {
             Height, weight, age and goal let SheSync work out your BMI, daily calories, protein and water — with
             safety limits built in.
           </Text>
-          <PrimaryButton
+          <Button
             title="Set up in 30 seconds"
             onPress={() => router.push('/fitness/setup')}
             fullWidth
@@ -245,7 +237,7 @@ export default function FitnessDashboard() {
             <StatTile label="Protein" value={`${ep.proteinGrams[0]}–${ep.proteinGrams[1]}g`} hint="per day" color={themed('#0F766E')} />
             <StatTile label="Water" value={`${ep.waterLitres} L`} hint="per day" color={themed('#0284C7')} />
           </View>
-          <Text style={[uiStyles.muted, { marginTop: 10 }]}>
+          <Text style={[uiStyles.muted, { marginTop: 12 }]}>
             Maintenance ≈ {ep.maintenance} kcal · BMR ≈ {ep.bmr} kcal. {ep.message}
           </Text>
           {ep.lossBlocked ? (
@@ -263,7 +255,7 @@ export default function FitnessDashboard() {
             </View>
           ) : null}
           {goalProgress && profile.targetWeightKg ? (
-            <View style={{ marginTop: 14 }}>
+            <View style={{ marginTop: 16 }}>
               <View style={uiStyles.row}>
                 <Text style={[uiStyles.muted, { flex: 1 }]}>
                   {goalProgress.start} kg → {profile.targetWeightKg} kg
@@ -272,11 +264,11 @@ export default function FitnessDashboard() {
                   {Math.round(goalProgress.value * 100)}%
                 </Text>
               </View>
-              <View style={{ marginTop: 6 }}>
+              <View style={{ marginTop: 8 }}>
                 <ProgressBar value={goalProgress.value} color={themed('#10B981')} track={themed('rgba(16,185,129,0.15)')} />
               </View>
               {ep.weeksToGoal ? (
-                <Text style={[uiStyles.muted, { marginTop: 6 }]}>
+                <Text style={[uiStyles.muted, { marginTop: 8 }]}>
                   At a gentle pace, about {ep.weeksToGoal} weeks to go. Slow and steady protects your cycle.
                 </Text>
               ) : null}
@@ -307,10 +299,10 @@ export default function FitnessDashboard() {
             returnKeyType="done"
           />
           <Text style={styles.kg}>kg</Text>
-          <PrimaryButton title="Save" onPress={saveWeight} style={{ paddingVertical: 11 }} />
+          <Button title="Save" onPress={saveWeight} style={{ paddingVertical: 12 }} />
         </View>
         {weightError ? <Text style={styles.error}>{weightError}</Text> : null}
-        <View style={{ marginTop: 14 }}>
+        <View style={{ marginTop: 16 }}>
           <WeightChart entries={weights} target={profile?.goal === 'lose' ? profile.targetWeightKg : undefined} />
         </View>
         {weightTrend ? (
@@ -327,7 +319,7 @@ export default function FitnessDashboard() {
             </Text>
           </View>
         ) : null}
-        <Text style={[uiStyles.muted, { marginTop: 10 }]}>
+        <Text style={[uiStyles.muted, { marginTop: 12 }]}>
           Water retention before a period can add a kilo or two for a few days — it is not fat. Judge progress over weeks.
         </Text>
       </Card>
@@ -345,9 +337,9 @@ export default function FitnessDashboard() {
             <Text style={styles.habitGoal}> / {waterGoal} glasses</Text>
           </Text>
           <ProgressBar value={todayHabits.water / waterGoal} color={themed('#0284C7')} track={themed('rgba(2,132,199,0.12)')} />
-          <View style={[uiStyles.row, { gap: 8, marginTop: 10 }]}>
+          <View style={[uiStyles.row, { gap: 8, marginTop: 12 }]}>
             <Chip label="− 1" onPress={() => addWater(-1)} small accessibilityLabel="Remove a glass of water" />
-            <Chip label="+ 1 glass" onPress={() => addWater(1)} selected color={themed('#0284C7')} small accessibilityLabel="Add a glass of water" />
+            <Chip label="+ 1 glass" onPress={() => addWater(1)} selected color={themed('#0369A1')} small accessibilityLabel="Add a glass of water" />
           </View>
         </Card>
         <Card style={styles.habitCard}>
@@ -360,7 +352,7 @@ export default function FitnessDashboard() {
             <Text style={styles.habitGoal}> / 7,500</Text>
           </Text>
           <ProgressBar value={todayHabits.steps / 7500} color={themed('#7C3AED')} track={themed('rgba(124,58,237,0.12)')} />
-          <View style={{ marginTop: 10, alignItems: 'flex-start' }}>
+          <View style={{ marginTop: 12, alignItems: 'flex-start' }}>
             <Stepper
               label="Steps"
               value={todayHabits.steps}
@@ -417,7 +409,7 @@ export default function FitnessDashboard() {
       <SectionHeader title="Video classes" subtitle="Follow along with trusted YouTube trainers" />
       <VideoShelf videos={FITNESS_VIDEOS} categories={FITNESS_VIDEO_CATEGORIES} />
 
-      <Card tone="amber" style={{ marginTop: 18 }}>
+      <Card tone="amber" style={{ marginTop: 20 }}>
         <Text style={[uiStyles.body, { color: themed('#92400E') }]}>
           Stop and rest if you feel dizzy, faint, short of breath or have chest pain. If you are pregnant, injured,
           have very heavy bleeding or a health condition, check with a doctor before starting a new routine.
@@ -429,65 +421,64 @@ export default function FitnessDashboard() {
 
 const styles = createStyles(() => ({
   todayCard: { marginTop: 4 },
-  todayLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1, color: '#FDA4AF' },
-  todayTitle: { fontSize: 22, fontWeight: '800', color: '#FFFFFF', marginTop: 6, letterSpacing: -0.4 },
-  todayMeta: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 4, fontWeight: '600' },
+  todayLabel: { fontSize: 12, fontWeight: '800', letterSpacing: 1, color: '#FDA4AF' },
+  todayTitle: { fontSize: 20, fontWeight: '800', color: '#FFFFFF', marginTop: 8, letterSpacing: -0.4 },
+  todayMeta: { fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 4, fontWeight: '600' },
   overridePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(253, 230, 138, 0.12)',
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    marginTop: 10,
+    marginTop: 12,
   },
-  overrideText: { color: '#FDE68A', fontSize: 11, fontWeight: '700', flexShrink: 1 },
-  todayReason: { fontSize: 13, lineHeight: 19, color: 'rgba(255,255,255,0.85)', marginTop: 10 },
-  placeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14 },
-  placeLabel: { fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '600', marginRight: 2 },
+  overrideText: { color: '#FDE68A', fontSize: 14, fontWeight: '700', flexShrink: 1 },
+  todayReason: { fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.85)', marginTop: 12 },
+  placeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16 },
+  placeLabel: { fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: '600', marginRight: 4 },
   placeChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.35)',
     borderRadius: 16,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
   },
   placeChipActive: { backgroundColor: '#FFFFFF', borderColor: '#FFFFFF' },
-  placeText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+  placeText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
   placeTextActive: { color: Theme.colors.obsidian },
-  tiles: { flexDirection: 'row', gap: 10 },
-  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, backgroundColor: Theme.colors.primaryLight },
-  editText: { fontSize: 12, fontWeight: '800', color: Theme.colors.primary },
+  tiles: { flexDirection: 'row', gap: 12 },
+  editText: { fontSize: 14, fontWeight: '800', color: Theme.colors.primary },
   bmiRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  bmiValue: { fontSize: 34, fontWeight: '800', letterSpacing: -1 },
-  bandLabel: { fontSize: 15, fontWeight: '800', marginBottom: 2 },
-  divider: { height: 1, backgroundColor: Theme.colors.cardBorder, marginVertical: 14 },
+  bmiValue: { fontSize: 32, fontWeight: '800', letterSpacing: -1 },
+  bandLabel: { fontSize: 16, fontWeight: '800', marginBottom: 4 },
+  divider: { height: 1, backgroundColor: Theme.colors.cardBorder, marginVertical: 16 },
   notice: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     borderWidth: 1,
     borderRadius: Theme.radius.md,
-    padding: 10,
-    marginTop: 10,
+    padding: 12,
+    marginTop: 12,
   },
-  noticeText: { fontSize: 12, fontWeight: '600', flex: 1, lineHeight: 17 },
+  noticeText: { fontSize: 14, fontWeight: '600', flex: 1, lineHeight: 20 },
   weightRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   weightIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: Theme.colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
-  kg: { fontSize: 13, fontWeight: '700', color: Theme.colors.textSecondary },
-  error: { color: Theme.colors.primaryDark, fontSize: 12, marginTop: 6, fontWeight: '600' },
-  habitRow: { flexDirection: 'row', gap: 10 },
-  habitCard: { flex: 1, padding: 14 },
-  habitTitle: { fontSize: 13, fontWeight: '800', color: Theme.colors.textPrimary, marginLeft: 6 },
-  habitValue: { fontSize: 22, fontWeight: '800', color: Theme.colors.textPrimary, marginVertical: 8 },
-  habitGoal: { fontSize: 12, fontWeight: '600', color: Theme.colors.textTertiary },
-  recentRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
+  kg: { fontSize: 14, fontWeight: '700', color: Theme.colors.textSecondary },
+  error: { color: Theme.colors.primaryDark, fontSize: 14, marginTop: 8, fontWeight: '600' },
+  habitRow: { flexDirection: 'row', gap: 12 },
+  habitCard: { flex: 1, padding: 16 },
+  habitTitle: { fontSize: 14, fontWeight: '800', color: Theme.colors.textPrimary, marginLeft: 8 },
+  habitValue: { fontSize: 20, fontWeight: '800', color: Theme.colors.textPrimary, marginVertical: 8 },
+  habitGoal: { fontSize: 14, fontWeight: '600', color: Theme.colors.textTertiary },
+  recentRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
   recentBorder: { borderTopWidth: 1, borderTopColor: Theme.colors.cardBorder },
   recentTitle: { fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary },
-  feel: { fontSize: 12, fontWeight: '700', color: Theme.colors.textSecondary },
+  feel: { fontSize: 14, fontWeight: '700', color: Theme.colors.textSecondary },
 }));

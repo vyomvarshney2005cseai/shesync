@@ -63,6 +63,7 @@ export function getLocal(): LocalSnapshot {
         confidence: st.confidence,
         wins: st.wins,
         kitChecks: st.kitChecks,
+        exams: st.exams,
       },
       games: { records: g.records, best: g.best },
       pcos: { diagnosed: pc.diagnosed, scan: pc.scan, checkins: pc.checkins, checklist: pc.checklist },
@@ -97,7 +98,7 @@ export function applyLocal(m: LocalSnapshot) {
   useAppStore.getState().savePastCycles(m.profile.rememberedCyclesCount, m.cycles);
 
   useFitnessStore.setState(pick(m.docs.fitness, ['profile', 'weights', 'sessions', 'habits']));
-  useStudyStore.setState(pick(m.docs.study, ['preset', 'sessions', 'tasks', 'confidence', 'wins', 'kitChecks']));
+  useStudyStore.setState(pick(m.docs.study, ['preset', 'sessions', 'tasks', 'confidence', 'wins', 'kitChecks', 'exams']));
   useGamesStore.setState(pick(m.docs.games, ['records', 'best']));
   usePcosStore.setState(pick(m.docs.pcos ?? {}, ['diagnosed', 'scan', 'checkins', 'checklist']));
   useConfidenceStore.setState(pick(m.docs.confidence ?? {}, ['levels', 'glow', 'challenges', 'proud', 'saved']));
@@ -128,7 +129,7 @@ const APP_KEYS = [
   'healthCheck', 'healthCheckCompleted', 'syncCompletedAt', 'rememberedCyclesCount',
   'pastCycles', 'symptomLogs', 'sleepLogs', 'careContacts',
 ] as const;
-const STUDY_KEYS = ['preset', 'sessions', 'tasks', 'confidence', 'wins', 'kitChecks'] as const;
+const STUDY_KEYS = ['preset', 'sessions', 'tasks', 'confidence', 'wins', 'kitChecks', 'exams'] as const;
 
 const changed = <T extends object>(a: T, b: T, keys: readonly (keyof T)[]) => keys.some((k) => a[k] !== b[k]);
 

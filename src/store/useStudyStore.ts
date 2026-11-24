@@ -37,6 +37,22 @@ export interface WinEntry {
   text: string;
 }
 
+/** An exam she has coming up (for the exam-cycle planner). */
+export interface ExamEntry {
+  id: string;
+  subject: string;
+  date: string; // YYYY-MM-DD
+}
+
+/** Details reused by the leave-note template (kept on this phone, not backed up). */
+export interface NoteProfile {
+  level: 'school' | 'college';
+  classOrCourse: string;
+  rollNo: string;
+  institution: string;
+  city: string;
+}
+
 export type TimerMode = 'idle' | 'focus' | 'break';
 
 export interface TimerState {
@@ -59,6 +75,8 @@ interface StudyState {
   confidence: Record<string, number>; // date -> 1..5
   wins: WinEntry[];
   kitChecks: Record<string, string[]>; // date -> checked item ids
+  exams: ExamEntry[]; // sorted by date
+  noteProfile: NoteProfile;
 
   setPreset: (preset: FocusPreset) => void;
   setSubject: (subject: string) => void;
@@ -79,6 +97,9 @@ interface StudyState {
   addWin: (text: string) => void;
   removeWin: (id: string) => void;
   toggleKitItem: (itemId: string) => void;
+  addExam: (subject: string, date: string) => void;
+  removeExam: (id: string) => void;
+  setNoteProfile: (p: Partial<NoteProfile>) => void;
   reset: () => void;
 }
 
@@ -99,6 +120,8 @@ const empty = () => ({
   confidence: {} as Record<string, number>,
   wins: [] as WinEntry[],
   kitChecks: {} as Record<string, string[]>,
+  exams: [] as ExamEntry[],
+  noteProfile: { level: 'college', classOrCourse: '', rollNo: '', institution: '', city: '' } as NoteProfile,
 });
 
 const uid = (prefix: string) => `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1e4)}`;
@@ -214,6 +237,20 @@ export const useStudyStore = create<StudyState>()(
         });
       },
 
+      addExam: (subject, date) => {
+        const clean = subject.trim();
+        if (!clean || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+        set((s) => ({
+          exams: [...s.exams.filter((e) => !(e.date === date && e.subject.toLowerCase() === clean.toLowerCase())), { id: uid('exam'), subject: clean.slice(0, 60), date }]
+            .sort((a, b) => a.date.localeCompare(b.date))
+            .slice(-60),
+        }));
+      },
+
+      removeExam: (id) => set((s) => ({ exams: s.exams.filter((e) => e.id !== id) })),
+
+      setNoteProfile: (p) => set((s) => ({ noteProfile: { ...s.noteProfile, ...p } })),
+
       reset: () => set(empty()),
     }),
     {
@@ -228,6 +265,8 @@ export const useStudyStore = create<StudyState>()(
         confidence: s.confidence,
         wins: s.wins,
         kitChecks: s.kitChecks,
+        exams: s.exams,
+        noteProfile: s.noteProfile,
       }),
     }
   )

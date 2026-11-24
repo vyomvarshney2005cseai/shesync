@@ -3,12 +3,9 @@ import { View, Text } from 'react-native';
 import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 
-const STRAIN_COLOR: Record<string, string> = {
-  severe: '#A33B55',
-  high: Theme.colors.strainHigh,
-  moderate: Theme.colors.strainAmber,
-  low: Theme.colors.strainOptimal,
-};
+/** Read at render time so the colours follow light and dark mode. */
+const strainColor = (level: string): string | undefined =>
+  ({ severe: themed('#A33B55'), high: Theme.colors.strainHigh, moderate: Theme.colors.strainAmber, low: Theme.colors.strainOptimal })[level];
 
 /** Report tab summary: latest logs, cycle outlook and points to raise with a doctor. */
 export const CalibratedScorecard: React.FC = () => {
@@ -25,14 +22,15 @@ export const CalibratedScorecard: React.FC = () => {
   const moodVal = latestMood?.mood;
 
   const days = prediction?.daysUntilNextPeriod ?? 0;
-  const countdown = days === 0 ? 'due today' : days < 0 ? `${Math.abs(days)} days late` : `in about ${days} days`;
+  const unit = (n: number) => (Math.abs(n) === 1 ? 'day' : 'days');
+  const countdown = days === 0 ? 'due today' : days < 0 ? `${Math.abs(days)} ${unit(days)} late` : `in about ${days} ${unit(days)}`;
 
   const tiles = [
     {
       label: 'Strain',
       value: `${biometrics.strainScore}/100`,
       hint: biometrics.strainLevel,
-      color: STRAIN_COLOR[biometrics.strainLevel] ?? Theme.colors.textPrimary,
+      color: strainColor(biometrics.strainLevel) ?? Theme.colors.textPrimary,
     },
     {
       label: 'Pain',
@@ -109,7 +107,7 @@ export const CalibratedScorecard: React.FC = () => {
               {prediction.cyclePhaseBreakdown.phaseDescription}
             </Text>
           ) : null}
-          <Text style={[styles.body, { marginTop: 6 }]}>
+          <Text style={[styles.body, { marginTop: 8 }]}>
             Next period <Text style={styles.bold}>{prediction.nextPeriodDate}</Text> — {countdown}.
           </Text>
           {prediction.precautionMeasures?.slice(0, 3).map((p) => (
@@ -147,9 +145,8 @@ const styles = createStyles(() => ({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
-    ...Theme.shadows.card,
   },
-  cardTitle: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary, marginBottom: 10 },
+  cardTitle: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary, marginBottom: 12 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tile: {
     width: '48.5%',
@@ -158,18 +155,18 @@ const styles = createStyles(() => ({
     borderRadius: Theme.radius.md,
     padding: 12,
   },
-  tileLabel: { fontSize: 12, fontWeight: '700', color: Theme.colors.textSecondary },
-  tileValue: { fontSize: 20, fontWeight: '800', marginTop: 2, textTransform: 'capitalize' },
-  tileHint: { fontSize: 11.5, color: Theme.colors.textTertiary, marginTop: 1, textTransform: 'capitalize' },
-  section: { marginTop: 18, paddingTop: 16, borderTopWidth: 1, borderTopColor: Theme.colors.backgroundMuted },
-  body: { fontSize: 13.5, lineHeight: 20, color: Theme.colors.textSecondary },
+  tileLabel: { fontSize: 14, fontWeight: '700', color: Theme.colors.textSecondary },
+  tileValue: { fontSize: 20, fontWeight: '800', marginTop: 4, textTransform: 'capitalize' },
+  tileHint: { fontSize: 14, color: Theme.colors.textTertiary, marginTop: 1, textTransform: 'capitalize' },
+  section: { marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: Theme.colors.backgroundMuted },
+  body: { fontSize: 14, lineHeight: 20, color: Theme.colors.textSecondary },
   bold: { fontWeight: '800', color: Theme.colors.textPrimary },
-  precaution: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Theme.colors.secondary, marginTop: 6 },
+  precaution: { flexDirection: 'row', gap: 12, marginTop: 12 },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Theme.colors.secondary, marginTop: 8 },
   dotHigh: { backgroundColor: Theme.colors.primary },
-  precautionTitle: { fontSize: 13.5, fontWeight: '700', color: Theme.colors.textPrimary },
-  precautionText: { fontSize: 12.5, lineHeight: 18, color: Theme.colors.textSecondary, marginTop: 1 },
-  point: { flexDirection: 'row', gap: 6, marginBottom: 8 },
-  bullet: { fontSize: 14, color: Theme.colors.primary, lineHeight: 19 },
-  pointText: { flex: 1, fontSize: 13, lineHeight: 19, color: Theme.colors.textSecondary },
+  precautionTitle: { fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary },
+  precautionText: { fontSize: 14, lineHeight: 20, color: Theme.colors.textSecondary, marginTop: 1 },
+  point: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  bullet: { fontSize: 14, color: Theme.colors.primary, lineHeight: 20 },
+  pointText: { flex: 1, fontSize: 14, lineHeight: 20, color: Theme.colors.textSecondary },
 }));

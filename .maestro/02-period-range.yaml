@@ -1,0 +1,36 @@
+# 2 + 3. One calendar for start and end; "I don't remember exactly".
+appId: com.vyomvarshney1234.shesync
+name: Pick a period range and an approximate period
+---
+- runFlow: subflows/start-guest.yaml
+- openLink: "shesync://log-cycle"
+- extendedWaitUntil:
+    visible: "Tap the first day of your period"
+    timeout: 10000
+- runScript: scripts/last-month.js
+- tapOn:
+    id: "calendar-prev-month"
+- tapOn:
+    id: "day-${output.first}"
+- tapOn:
+    id: "day-${output.last}"
+- assertVisible: ".*5 days"
+- tapOn: "Save this period"
+- scrollUntilVisible:
+    element:
+      id: "approx-toggle"
+- tapOn:
+    id: "approx-toggle"
+- tapOn:
+    id: "approx-month-2"
+- tapOn:
+    id: "approx-mid"
+- scrollUntilVisible:
+    element:
+      id: "approx-save"
+- tapOn:
+    id: "approx-save"
+- scrollUntilVisible:
+    element: "Saved periods \\(2\\)"
+- scrollUntilVisible:
+    element: ".*Started around mid-.*"

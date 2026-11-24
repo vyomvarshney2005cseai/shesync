@@ -19,4 +19,8 @@ export const ROUTES = {
   checkIn: r('/check-in'),
   appLock: r('/app-lock'),
   padCare: r('/pad-care'),
+  exams: r('/exams'),
+  leaveNote: r('/leave-note'),
+  sos: r('/sos'),
+  privacy: r('/privacy'),
 };

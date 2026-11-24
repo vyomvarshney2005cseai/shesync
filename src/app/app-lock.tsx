@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Switch, Platform, Alert } from 'react-native';
+import { View, Text, Platform, Alert } from 'react-native';
 import { LockKeyhole, ShieldCheck, ScanFace, KeyRound } from 'lucide-react-native';
 import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { AuthGate } from '@/components/common/AuthGate';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
+import { Button, SwitchRow } from '@/components/ds';
 import { Card, Chip } from '@/components/common/ui';
 import { PinPad } from '@/components/lock/PinPad';
 import { Theme, createStyles, themed } from '@/constants/theme';
@@ -153,7 +153,7 @@ export default function AppLockScreen() {
                   <Chip label="4 digits" selected={length === 4} onPress={() => setLength(4)} />
                   <Chip label="6 digits" selected={length === 6} onPress={() => setLength(6)} />
                 </View>
-                <PrimaryButton
+                <Button
                   title="Turn on app lock"
                   icon={<KeyRound size={18} color={themed('#FFFFFF')} />}
                   onPress={() => go({ kind: 'new', length }, `Choose a ${length}-digit PIN you’ll remember.`)}
@@ -163,29 +163,23 @@ export default function AppLockScreen() {
             ) : (
               <>
                 {bio && (bio.ready || bio.notEnrolled) && (
-                  <Card style={styles.row}>
-                    <ScanFace size={20} color={Theme.colors.primaryDark} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.rowTitle}>Unlock with {bio.label}</Text>
-                      <Text style={styles.rowSub}>
-                        {bio.ready ? 'Your PIN still works as a backup.' : `Set up ${bio.label} in your phone settings first.`}
-                      </Text>
-                    </View>
-                    <Switch
+                  <Card padding="none" style={styles.switchCard}>
+                    <SwitchRow
+                      icon={<ScanFace size={20} color={Theme.colors.primaryDark} />}
+                      title={`Unlock with ${bio.label}`}
+                      subtitle={bio.ready ? 'Your PIN still works as a backup.' : `Set up ${bio.label} in your phone settings first.`}
                       value={biometrics && bio.ready}
                       disabled={!bio.ready}
                       onValueChange={async (v) => {
                         if (v && !(await authenticateWithBiometrics(`Turn on ${bio.label}`))) return;
                         setBiometrics(v);
                       }}
-                      trackColor={{ false: themed('#E5E7EB'), true: Theme.colors.primaryLight }}
-                      thumbColor={biometrics ? Theme.colors.primary : themed('#F3F4F6')}
                     />
                   </Card>
                 )}
-                <PrimaryButton
+                <Button
                   title="Change PIN"
-                  variant="outline"
+                  variant="secondary"
                   onPress={() =>
                     biometrics && bio?.ready
                       ? void verifyWithBiometrics('change')
@@ -193,10 +187,10 @@ export default function AppLockScreen() {
                   }
                   fullWidth
                 />
-                <PrimaryButton
+                <Button
                   title="Turn off app lock"
-                  variant="outline"
-                  style={{ marginTop: 10 }}
+                  variant="secondary"
+                  style={{ marginTop: 12 }}
                   onPress={() =>
                     biometrics && bio?.ready
                       ? void verifyWithBiometrics('off')
@@ -224,7 +218,7 @@ export default function AppLockScreen() {
               disabled={busy}
               errorKey={errorKey}
             />
-            <PrimaryButton title="Cancel" variant="outline" style={{ marginTop: 22 }} onPress={() => go({ kind: 'overview' })} />
+            <Button title="Cancel" variant="secondary" style={{ marginTop: 24 }} onPress={() => go({ kind: 'overview' })} />
           </View>
         )}
       </Screen>
@@ -233,7 +227,7 @@ export default function AppLockScreen() {
 }
 
 const styles = createStyles(() => ({
-  status: { marginBottom: 18 },
+  status: { marginBottom: 20 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   statusIcon: {
     width: 44,
@@ -245,13 +239,11 @@ const styles = createStyles(() => ({
   },
   statusIconOn: { backgroundColor: Theme.colors.sageLight },
   statusTitle: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary },
-  statusSub: { fontSize: 13, lineHeight: 18, color: Theme.colors.textSecondary, marginTop: 2 },
-  label: { fontSize: 13, fontWeight: '800', color: Theme.colors.textSecondary, marginBottom: 8 },
+  statusSub: { fontSize: 14, lineHeight: 20, color: Theme.colors.textSecondary, marginTop: 4 },
+  label: { fontSize: 14, fontWeight: '800', color: Theme.colors.textSecondary, marginBottom: 8 },
   chips: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
-  rowTitle: { fontSize: 14.5, fontWeight: '800', color: Theme.colors.textPrimary },
-  rowSub: { fontSize: 12.5, color: Theme.colors.textSecondary, marginTop: 2 },
-  note: { fontSize: 12.5, lineHeight: 18, color: Theme.colors.textSecondary, marginTop: 20 },
+  switchCard: { marginBottom: 16, overflow: 'hidden' },
+  note: { fontSize: 14, lineHeight: 20, color: Theme.colors.textSecondary, marginTop: 20 },
   padWrap: { alignItems: 'center', paddingTop: 12 },
-  hint: { fontSize: 14, color: Theme.colors.textSecondary, marginBottom: 22, textAlign: 'center', minHeight: 20 },
+  hint: { fontSize: 14, color: Theme.colors.textSecondary, marginBottom: 24, textAlign: 'center', minHeight: 20 },
 }));

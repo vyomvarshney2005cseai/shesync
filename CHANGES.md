@@ -1,3 +1,117 @@
+# SheSync — One design system, light & dark themes, bespoke icons, Settings, privacy dashboard, skeletons, 44pt targets, reduce motion (24 Nov 2026)
+
+Direction: a women's health / period & wellbeing companion, **warm, rounded and gently empowering**.
+
+**One design system** (`src/constants/theme.ts`, `src/components/ds/`)
+- Tokens: 46 colours with a designed light *and* dark value; spacing on an 8-pt grid (4 · 8 · 12 · 16 · 24 · 32 · 40 · 48); radius 8 / 12 / 16 / 24; type scale caption 12 → body 14/16 → titles 18–32; 44pt minimum target.
+- **One Card** (1px border, 16pt radius, no drop shadow; tones rose, lilac, mint, amber, sky, danger, inverse; pressable cards get hover, pressed and focus states) and **one Button** (primary, secondary, tertiary, danger, link; sm/md/lg; icon-only; “Saving…” instead of a spinner). Plus Chip, list rows, switch rows, skeletons and icon badges. `PrimaryButton` is gone; every screen uses these.
+- Clear hierarchy: one filled rose button per screen for the main action, outlined secondary buttons, quiet links. Only floating things (the SOS button) cast a shadow.
+
+**Light & dark mode**
+- Profile → Preferences → Appearance: **Match phone** (new default), Light, Dark, Dark at night. Dark is deep slate — page #0F172A, cards #1E293B, raised #273449 — never pure black; every token has a hand-picked dark value, other colours convert to slate tones. Photo scrims and YouTube red stay the same in both modes.
+- `app.json` → `userInterfaceStyle: "automatic"`, so phones report their dark setting. **This needs a new build** (an over-the-air update can't change it).
+
+**Visibility & accessibility (WCAG AA)**
+- Text and interactive icons are at least 4.5:1 in both modes; focus ring and switch outlines at least 3:1. Fixed along the way: grey “None / Dry” (2.3 → 7.6), each flow level's label, teal badges (4.4 → 5.5), YouTube play marks (4.0 → 5.9), the streak flame (2.2 → 5.6), white icons on pink buttons in dark mode, workout badges in dark mode.
+- Visible keyboard focus ring (2px violet) on everything you can press, plus hover, pressed and disabled states.
+- Every button, chip, row and switch is at least 44 × 44 pt (back/close buttons were 34–40 wide, chips like “7d” 42); text fields are 48pt tall with 16pt text; grounding circles 48; star ratings 44. Switches are drawn by SheSync and the whole row is the target (no 40 × 20 control on the web).
+
+**Bespoke icons** (`src/components/icons/`)
+- 44 duotone icons: 24 × 24, 1.75px rounded strokes, an 18% accent fill for depth, with metaphors made for SheSync (hot-water bottle for pain, droplet with a clock for the pad timer, lotus for Mind, sneaker for Move, heart-check for the daily check-in …).
+- Feature icons sit in soft squircle badges that adapt to light and dark; pressing or hovering plays a tiny animation (bell rings, sparkle spins, heart pulses, tilt, bounce). Tab bar: pill highlight with a small hop. Utility icons share the 1.75 stroke.
+- Also exported as SVG files in `assets/icons/` (`currentColor` + `--accent-color`, `role="img"` + `aria-label`, `icons.css` hover animations, `preview.html`); `npx tsx scripts/export-icons.ts` rebuilds them.
+
+**Settings** (`/settings`, Profile → Settings): **Account** (status, create account / sign out, leave and delete data) · **Privacy** (privacy dashboard, app lock, anonymous crash reports — moved here from Profile, privacy promise) · **Reminders** (daily check-in at 9 am / 1 pm / 8 pm / 10 pm; a heads-up two days before the predicted period at 9 am; local notifications only, and the lock-screen text never says “period”) · **Data** (last backup, Back up now, export or import) · **About** (version and update, check for updates, not a medical device, Tele-MANAS).
+
+**Privacy dashboard** (`/privacy-dashboard`): last backup (“Backed up 5 min ago”, “Backing up…”, “Backup paused”, “Not backed up”) with Back up now or Create an account; **On this phone only** (voice recordings, chat, Pad Care, SOS contact, app-lock PIN, settings, reports waiting); **Backed up** with counts (periods, daily logs, journal text, sleep, care contacts, answers, study / fitness / games / PCOS / confidence); **Never collected** (location, contacts list, advertising ID, trackers). Fix: a voice entry's file path is no longer sent with the backup — only the text, as the dashboard says.
+
+**Skeleton loaders**: grey placeholders instead of spinners — the whole screen while saved data loads, YourGoGirl “typing”, the doctor report being prepared, video thumbnails. No spinners left in the app.
+
+**Reduce motion** (iOS Reduce Motion, Android Remove animations, the browser setting): screens and sheets appear without sliding; no pulsing (SOS button, plan banner, skeletons, recording halo), no PIN shake, icon wiggles or tab hop; breathing circles hold still while the words, timer and vibration keep guiding; carousels and auto-scroll jump instead of gliding; the strain ring is drawn at its value.
+
+**No new packages. No database change.**
+
+**Tested**: tsc + ESLint clean; `npm test` 12/12 files (16 new round-8 tests: 66 colour pairs × light/dark, badge tones, scales, icon format, exported icons up to date, reminders, privacy dashboard incl. the audio path, settings defaults, reduce motion); privacy check passes; web, Android and iOS bundles build. Audit of all 40 screens in light and dark (axe-core contrast, 44pt targets, icon contrast): 0 issues, plus 15 interactive states (sheet tabs, year view, approximate dates, YourGoGirl answer, health-check answers, game boards, SOS grounding, report ready, reminders): 0 issues. New Maestro flow `06-settings-privacy.yaml`, mirrored on the web build; reduce motion checked on the web build (the SOS pulse stops). The Maestro flows themselves were not run here (no Android emulator) — CI runs them.
+
+---
+
+# SheSync — Skip setup, one-calendar period dates, approximate dates, one check-in sheet, answer ratings, crash reports, CI, over-the-air fixes, friendly errors (24 Nov 2026)
+
+**Skip the questionnaire**
+- “Skip for now — use sensible defaults” on the Details for Sync card, and Skip / “Not now?” on each setup step (10 questions, period dates, pain, flow, mood, safety check). Setup moves on to the next step.
+- Defaults never invent data: no made-up period — the prediction card asks for the first day of her last period (“even roughly”) instead, and the referral card says the safety check is “not done yet”, not “all clear”.
+- A **Personalise SheSync** card on Home lists the skipped steps with what each one unlocks; “Not now” hides it for 14 days. Skipped rows on the setup card say “Skipped for now · tap to answer”.
+
+**Range date picker** (Log period dates)
+- One calendar: tap the first day, then the last day; the days between fill in, marked FIRST / LAST. “Lasted 3d–7d” chips, Clear and one **Save this period**. Tapping before the start moves it; over 14 days starts again; future days can’t be picked.
+- A corrected range replaces the overlapping one; any saved period can be deleted. Cycle lengths come from her start dates; with one period she sets her usual length or ticks “My periods are irregular”.
+
+**“I don’t remember exactly”**
+- Month (last 6), early / mid / late and about how many days → saved as “≈ Started around mid-October”, dashed on the calendar.
+- Lower prediction confidence (−25 when the latest period is approximate, −10 for an older one, never below 45%) and a wider margin (at least ±5 / ±3.5 days), shown as “≈ Based on approximate dates”. Backed up (new `cycles.approximate` column).
+
+**Why we ask** — an ⓘ on each of the 11 health-check questions opens a short “WHY WE ASK” note (heavy bleeding → anaemia, pain with peeing or sex → endometriosis, hair/acne → PCOS, fever → infection / toxic shock, …).
+
+**One check-in sheet** — Mood, Pain and Flow are tabs in one sheet. Choices stay while she switches tabs; saving ticks the tab and moves to the next (“Pain saved ✓ Next: Mood”); a bleeding flow offers the pad timer. `/log-mood`, `/log-pain` and `/log-flow` still work (Home buttons, YourGoGirl’s “Log pain”) and open the sheet on that tab; during setup each stays a single step. The 10-second check-in is unchanged.
+
+**Helpful / not helpful** (YourGoGirl) — 👍 / 👎 under each answer. 👎 asks “What was missing?” (didn’t answer, not for my situation, too long, language, something wrong) with an opt-in “Include my question (no name)”; English, Hinglish, हिन्दी. Sent anonymously (answer id, rating, reason, language, app version; her question only if ticked, emails/numbers removed). `answer_feedback_summary` lists the answers with the most 👎 first.
+
+**Crash reports without trackers**
+- Screen crashes, unhandled errors and promise rejections go to SheSync’s own Supabase (`crash_reports`): error, stack, screen, app version, update id, platform. No user id, device id, name or email; emails, phone numbers and URL queries scrubbed; same crash once a session, at most 15; nothing from development builds; queued while offline.
+- Profile → **Send anonymous crash reports** (on by default). Privacy screen: no ad or tracking SDKs; crash reports and 👍/👎 are anonymous.
+- The app can only add rows to the two report tables — never read, change or delete them. You read them in the Supabase dashboard (`crash_summary`, `answer_feedback_summary`).
+- `npm run check:privacy` fails on any ad, analytics, attribution or third-party crash SDK (direct or pulled in by another package), tracker addresses in code, or an unblocked Android advertising-ID permission (now blocked in app.json).
+
+**Automated tests in CI** (`.github/workflows/ci.yml`, every push and pull request)
+- Typecheck, lint, privacy check, web build and `npm test`: YourGoGirl (447 + held-out guard 45/50), referral & setup, sync engine, Supabase client, export/import, Pad Care, rounds 4/6/7, and every database migration run twice on an in-memory Postgres with RLS checks. Tests now live in `tests/`; `npm test -- round7` runs one file.
+- Then a release Android build runs 5 **Maestro** flows on an emulator (`.maestro/`: skip setup, period range + approximate, check-in sheet + deep links, why we ask, 👍/👎). Report and screenshots kept as a build artifact.
+
+**Over-the-air fixes** — expo-updates with a channel per build profile and a fingerprint runtime version: a JavaScript-only fix reaches phones whose build matches; native changes still need a new build. `npm run update:preview` / `update:production`, or Actions → **EAS Update** (runs the tests first). When a fix has downloaded, a small banner offers Restart or Later.
+
+**Friendly error screens** — a crash shows “Something went wrong on this screen — your data is safe” with **Try again**, **Go to Home** and details, instead of a blank screen. Each Home card fails on its own (“This part couldn’t load.”) without taking Home down.
+
+**Also**: “In about 1 day” (not “1 days”), “PMS days may be starting now” (not “in about 0 days”); the Log period screen reads today’s flow like Home does (it used to assume moderate flow when none was logged and always showed “Menstrual Phase”); the report queue never loses or double-sends a report added while sending; backup keeps working against a database that hasn’t had the new migration yet (it leaves the new column out).
+
+**New packages**: expo-updates; dev tools tsx and @electric-sql/pglite. **Database**: run `supabase/migrations/20261124000000_approx_feedback_crashes.sql` (safe to re-run).
+
+**Tested**: tsc + ESLint clean; `npm test` 11/11 files (19 new round-7 tests, 25 database checks, missing-column retry, plus all earlier suites); privacy check passes. Web, Android and iOS bundles build. Web click-through, light and night: skip setup → Personalise card, range picker, approximate period, check-in sheet, why we ask, 👍/👎, crash switch, privacy; the 5 Maestro flows mirrored on the web build; error screen checked by breaking saved data on purpose (friendly screen, crash queued and scrubbed). The Maestro flows themselves were not run here (no Android emulator) — CI runs them.
+
+---
+
+# SheSync — Journal prompts, SOS 2.0, exam planner, leave note, focus sounds, easier start (24 Nov 2026)
+
+**Phase-based journal prompts** (Voice Journal)
+- A “Today’s prompt” card with a gentle question for her cycle phase (period days, fresh-start, bright days, slow-down days; a general set until she logs a period). 7 per phase in English and हिन्दी (follows the journal language), one featured a day, “Another” for a different one, “Write about this” drops it into the entry.
+
+**SOS 2.0** (`/sos` — Mind tab’s SOS button, Profile → SOS, and YourGoGirl’s crisis/anxiety replies)
+- One-tap **Call {her trusted person}** and **Text**, plus **Call Tele-MANAS 14416**; 112 at the bottom. She adds the trusted person right there; it stays on the phone and is cleared on sign-out.
+- **5-4-3-2-1 grounding**: one sense at a time, a circle to tap for each thing she notices, then “How do you feel now?” — “Still not okay” scrolls back to the call buttons with a gentle nudge.
+- **Haptic breathing**: in 4 · hold 2 · out 6 with a growing circle and vibrations (quick taps in, still for hold, slow taps out) so it works with eyes closed; keeps the screen awake while running.
+- A call from SOS doesn’t end at the app-lock screen (lock paused for 30 minutes).
+
+**Exam-cycle planner** (`/exams` — Home box, Study Focus)
+- Add exams on a calendar that already shows predicted heavy, period and PMS days. Each exam gets a badge (Heavy day · day 2 of period / Period / PMS / Could overlap / Clear) with an uncertainty margin that grows the further ahead it is, and a dated prep plan (finish hard topics before the period, exam-day kit, restroom-break question, gentle timer on PMS days, sleep, mock paper).
+- Heavy days are learned from her own flow logs when she has heavy logs from 2+ periods; otherwise days 1–2. Exams back up with the Study data.
+
+**Period leave note** (`/leave-note` — Study Focus, Pad Care, Exam planner)
+- Polite application in the usual Indian format for school (class teacher / principal, parent’s-signature line) or college (HOD / class coordinator / principal), in English or हिन्दी. Reason “Unwell” (private, default), “Period pain” or “Doctor’s advice”; past/today/future wording follows the dates. Her class, roll no. and college are remembered on the phone. Copy or Share.
+
+**Focus sounds** (Study Focus timer)
+- Rain, Café and Lo-fi loops, made for SheSync and bundled (works offline, ~1.4 MB total). Plays during focus blocks, pauses for breaks, volume slider, short preview when picked.
+
+**Easier start**
+- **Welcome**: 3 slides (real app screens: Home, YourGoGirl in Hinglish, app lock) with one promise each, Skip and Next; then a start panel. Seen once per phone.
+- **Try without an account** is the first button: SheSync starts on the phone with nothing backed up. Home and Profile offer “Create an account” later — signing up keeps everything she logged. Logging in to another account warns that it opens that account instead.
+- **Shorter sign-up**: name, email, password (+ confirm). Focus areas moved to a Home card that appears after setup (“What should SheSync help you with most?”, Save / Not now) and to Profile.
+- **One privacy screen** (welcome, sign-up, Profile): what stays on the phone, what is backed up (only with an account), what we never do — three lines.
+- **Password helpers**: strength meter (length, variety, common passwords, her own name), show/hide on both password fields, “Passwords match”, and “Remember my email on this phone” on login (replaces the old “Keep me logged in” box, which did nothing).
+
+**New package**: expo-haptics (`npx expo install` version for SDK 58). No database change: exams ride in the existing study backup.
+
+**Tested**: tsc + ESLint clean; 30 new tests (exam forecasts incl. late period, learned heavy days, margins, prep plans; leave note EN/HI tenses; prompts; password strength; breathing rhythm; trusted contact; exams store; guest → account keeps data, other login wipes it; privacy lines); earlier suites pass (17 round-4, 23 Pad Care, 447 YourGoGirl, referral, 10 sync, 12 export/import). Web, Android and iOS bundles build. Web click-through, light and night: welcome slides/Skip/start panel, privacy, try without account, guest Profile, sign-up as guest with meter/show-hide/match, sign-out, login with remembered email, focus-area card, exam planner (heavy, PMS and clear exams, prep plan), leave note (Hindi + copy), journal prompt, SOS (contact, breathing stages, grounding → reach out), focus sounds — no errors.
+
+---
+
 # SheSync — Pad Care added + folder clean-up (18 Nov 2026)
 
 **Pad Care** (`/pad-care`, Home → Pad Care box; it moves next to YourGoGirl during her period or while the timer runs)

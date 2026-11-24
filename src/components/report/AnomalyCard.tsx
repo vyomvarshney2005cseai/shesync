@@ -94,16 +94,16 @@ const styles = createStyles(() => ({
     letterSpacing: -0.3,
   },
   sectionSubtitle: {
-    fontSize: 12,
+    fontSize: 14,
     color: Theme.colors.textSecondary,
-    marginTop: 2,
+    marginTop: 4,
     marginBottom: 12,
   },
   card: {
     borderRadius: Theme.radius.lg,
     padding: 16,
     borderWidth: 1,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   headerRow: {
     flexDirection: 'row',
@@ -118,10 +118,10 @@ const styles = createStyles(() => ({
     letterSpacing: -0.2,
   },
   description: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
     color: Theme.colors.textSecondary,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   severityRow: {
     flexDirection: 'row',
@@ -130,17 +130,17 @@ const styles = createStyles(() => ({
   },
   severityBadge: {
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 4,
     borderRadius: Theme.radius.full,
   },
   severityText: {
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 0.8,
   },
   typeText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.4,

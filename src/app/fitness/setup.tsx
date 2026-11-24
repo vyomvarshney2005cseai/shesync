@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { Card, Chip, SectionHeader, uiStyles } from '@/components/common/ui';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
+import { Button } from '@/components/ds';
 import { Theme, createStyles } from '@/constants/theme';
 import { useFitnessStore } from '@/store/useFitnessStore';
 import {
@@ -76,7 +76,7 @@ export default function FitnessSetup() {
           <Field label="Age" value={age} onChange={setAge} placeholder="20" />
         </View>
         {isMinor ? (
-          <Text style={[uiStyles.muted, { marginTop: 10 }]}>
+          <Text style={[uiStyles.muted, { marginTop: 12 }]}>
             BMI bands in SheSync are for adults. Under 18, focus on fitness and strength — not weight targets.
           </Text>
         ) : null}
@@ -85,20 +85,20 @@ export default function FitnessSetup() {
       <SectionHeader title="How active are you?" />
       <View style={{ gap: 8 }}>
         {(Object.keys(ACTIVITY_FACTORS) as ActivityLevel[]).map((k) => (
-          <Pressable
+          <Card
             key={k}
+            tone={activity === k ? 'rose' : 'default'}
+            style={styles.optionCard}
             onPress={() => setActivity(k)}
             accessibilityRole="radio"
-            accessibilityState={{ selected: activity === k }}
+            accessibilityState={{ selected: activity === k, checked: activity === k }}
           >
-            <Card tone={activity === k ? 'rose' : 'default'} style={styles.optionCard}>
               <Text style={[styles.optionTitle, activity === k && { color: Theme.colors.primaryDark }]}>
                 {activity === k ? '● ' : '○ '}
                 {ACTIVITY_FACTORS[k].label}
               </Text>
               <Text style={styles.optionHint}>{ACTIVITY_FACTORS[k].hint}</Text>
             </Card>
-          </Pressable>
         ))}
       </View>
 
@@ -125,7 +125,7 @@ export default function FitnessSetup() {
       </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <PrimaryButton title="Save profile" onPress={save} fullWidth style={{ marginTop: 20 }} />
+      <Button title="Save profile" onPress={save} fullWidth style={{ marginTop: 20 }} />
     </Screen>
   );
 }
@@ -160,10 +160,10 @@ function Field({
 }
 
 const styles = createStyles(() => ({
-  row: { flexDirection: 'row', gap: 10 },
-  fieldLabel: { fontSize: 11, fontWeight: '700', color: Theme.colors.textSecondary, marginBottom: 6 },
+  row: { flexDirection: 'row', gap: 12 },
+  fieldLabel: { fontSize: 14, fontWeight: '700', color: Theme.colors.textSecondary, marginBottom: 8 },
   optionCard: { paddingVertical: 12 },
   optionTitle: { fontSize: 14, fontWeight: '800', color: Theme.colors.textPrimary },
-  optionHint: { fontSize: 12, fontWeight: '500', color: Theme.colors.textSecondary, marginTop: 2, marginLeft: 18 },
-  error: { color: Theme.colors.primaryDark, fontWeight: '700', marginTop: 16, fontSize: 13 },
+  optionHint: { fontSize: 14, fontWeight: '500', color: Theme.colors.textSecondary, marginTop: 4, marginLeft: 20 },
+  error: { color: Theme.colors.primaryDark, fontWeight: '700', marginTop: 16, fontSize: 14 },
 }));

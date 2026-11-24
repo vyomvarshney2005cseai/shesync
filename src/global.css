@@ -16,3 +16,38 @@ html, body, #root {
   box-sizing: border-box;
 }
 
+
+/* ── Design system (web) ───────────────────────────────────── */
+:root {
+  --focus-ring: #7B3FD6;
+}
+
+/* Everything you can press shows the pointer. */
+[role="button"], [role="link"], [role="switch"], [role="tab"], [role="checkbox"], [role="radio"], a, button {
+  cursor: pointer;
+}
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* A clear keyboard focus ring on every interactive element (not on mouse clicks). */
+*:focus {
+  outline: none;
+}
+*:focus-visible {
+  outline: 2px solid var(--focus-ring) !important;
+  outline-offset: 2px !important;
+}
+input:focus-visible, textarea:focus-visible {
+  outline-offset: 0 !important;
+}
+
+/* The phone or browser asked for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -9,6 +9,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { AlertTriangle } from 'lucide-react-native';
+import { useReduceMotion } from '@/lib/motion';
 import { Theme, createStyles, themed } from '@/constants/theme';
 
 interface SOSFabProps {
@@ -18,8 +19,15 @@ interface SOSFabProps {
 export const SOSFab: React.FC<SOSFabProps> = ({ onPress }) => {
   const scale = useSharedValue(1);
   const glowOpacity = useSharedValue(0.3);
+  const reduceMotion = useReduceMotion();
 
   useEffect(() => {
+    // No pulsing when the phone asks for reduced motion.
+    if (reduceMotion) {
+      scale.value = 1;
+      glowOpacity.value = 0.35;
+      return;
+    }
     scale.value = withRepeat(
       withSequence(
         withTiming(1.08, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
@@ -36,7 +44,7 @@ export const SOSFab: React.FC<SOSFabProps> = ({ onPress }) => {
       -1,
       true
     );
-  }, [glowOpacity, scale]);
+  }, [glowOpacity, scale, reduceMotion]);
 
   const animatedScale = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -53,8 +61,10 @@ export const SOSFab: React.FC<SOSFabProps> = ({ onPress }) => {
         <Pressable
           onPress={onPress}
           style={({ pressed }) => [styles.fab, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="SOS: breathing, grounding and one-tap calls"
         >
-          <AlertTriangle size={24} color={themed('#FFFFFF')} />
+          <AlertTriangle size={24} color={Theme.colors.onPrimary} />
           <Text style={styles.fabText}>SOS</Text>
         </Pressable>
       </Animated.View>
@@ -85,10 +95,9 @@ const styles = createStyles(() => ({
     backgroundColor: Theme.colors.strainHigh,
     alignItems: 'center',
     justifyContent: 'center',
-    ...Theme.shadows.glowing,
   },
   fabText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 1.2,

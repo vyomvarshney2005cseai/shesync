@@ -1,11 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-} from 'react-native';
+import { View, Text, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Theme, createStyles, themed } from '@/constants/theme';
@@ -17,12 +11,14 @@ import {
 } from '@/constants/assessment';
 import { useAppStore } from '@/store/useAppStore';
 import { nextSyncHref } from '@/lib/syncDetails';
+import { SkipStepLink } from '@/components/common/SkipStepLink';
 import {
   ArrowLeft,
   ArrowRight,
   Check,
   Compass,
 } from 'lucide-react-native';
+import { Button, Card } from '@/components/ds';
 
 export default function AssessmentScreen() {
   const { reveal } = useLocalSearchParams<{ reveal?: string }>();
@@ -102,12 +98,8 @@ export default function AssessmentScreen() {
             </View>
             {cycleLabel ? <Text style={styles.cycleLine}>Today: {cycleLabel}</Text> : null}
 
-            <TouchableOpacity style={styles.enterButton} onPress={handleDone} activeOpacity={0.88}>
-              <Text style={styles.enterButtonText}>Done</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.retakeLink} onPress={handleRetake} activeOpacity={0.7}>
-              <Text style={styles.retakeLinkText}>Retake the {ASSESSMENT_QUESTIONS.length} questions</Text>
-            </TouchableOpacity>
+            <Button variant="primary" title="Done" onPress={handleDone} style={styles.enterButton} />
+            <Button variant="link" title={`Retake the ${ASSESSMENT_QUESTIONS.length} questions`} onPress={handleRetake} style={styles.retakeLink} />
           </ScrollView>
         </View>
       </SafeAreaView>
@@ -118,21 +110,22 @@ export default function AssessmentScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.outerCenterWrapper}>
-        {/* Top Header & Progress (Skip button removed per user request) */}
+        {/* Top Header & Progress. "Skip for now" uses sensible defaults; Home offers the questions again later. */}
         <View style={styles.topBar}>
-          <View style={styles.topBrandRow}>
+          <View style={[styles.topBrandRow, { flex: 1 }]}>
             <Image
               source={require('@/../assets/images/logo.png')}
               style={styles.topLogo}
               resizeMode="contain"
             />
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.topBrandTitle}>Details for Sync · Step 1 of 6</Text>
               <Text style={styles.topChapterSubtitle}>
                 Chapter {currentQ.chapterNumber}/5: {currentChapter?.title}
               </Text>
             </View>
           </View>
+          {!isAssessmentCompleted ? <SkipStepLink step="questions" label="Skip" /> : null}
         </View>
 
         {/* Animated Progress Bar */}
@@ -170,14 +163,16 @@ export default function AssessmentScreen() {
             {currentQ.options.map((opt) => {
               const isSelected = selectedOptionId === opt.id;
               return (
-                <TouchableOpacity
+                <Card
                   key={opt.id}
                   style={[
                     styles.optionCard,
                     isSelected ? styles.optionCardSelected : styles.optionCardUnselected,
                   ]}
                   onPress={() => handleSelectOption(opt.id)}
-                  activeOpacity={0.8}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: isSelected, checked: isSelected }}
+                  padding="sm"
                 >
                   <View style={styles.optionContent}>
                     <Text
@@ -208,7 +203,7 @@ export default function AssessmentScreen() {
                   >
                     {isSelected && <Check size={13} color={themed('#FFFFFF')} />}
                   </View>
-                </TouchableOpacity>
+                </Card>
               );
             })}
           </View>
@@ -216,34 +211,21 @@ export default function AssessmentScreen() {
 
         {/* Bottom Navigation Buttons */}
         <View style={styles.bottomNavRow}>
-          <TouchableOpacity
-            style={styles.navBtn}
+          <Button
+            variant="secondary"
+            title={currentIndex === 0 ? 'Home' : 'Previous'}
             onPress={handlePrev}
-            activeOpacity={0.7}
-          >
-            <ArrowLeft size={18} color={Theme.colors.textPrimary} />
-            <Text style={styles.navBtnText}>
-              {currentIndex === 0 ? 'Home' : 'Previous'}
-            </Text>
-          </TouchableOpacity>
+            icon={<ArrowLeft size={20} color={Theme.colors.textPrimary} />}
+            style={styles.navBtn}
+          />
 
-          <TouchableOpacity
-            style={[
-              styles.nextBtn,
-              !selectedOptionId && styles.nextBtnDisabled,
-            ]}
+          <Button
+            title={currentIndex === ASSESSMENT_QUESTIONS.length - 1 ? 'Save & continue' : 'Next question'}
             onPress={handleNext}
-            activeOpacity={0.88}
-          >
-            <Text style={styles.nextBtnText} numberOfLines={1}>
-              {currentIndex === ASSESSMENT_QUESTIONS.length - 1
-                ? 'Save & continue →'
-                : 'Next Question'}
-            </Text>
-            {currentIndex !== ASSESSMENT_QUESTIONS.length - 1 && (
-              <ArrowRight size={18} color={themed('#FFFFFF')} />
-            )}
-          </TouchableOpacity>
+            disabled={!selectedOptionId}
+            iconRight={<ArrowRight size={20} color={selectedOptionId ? Theme.colors.onPrimary : Theme.colors.textTertiary} />}
+            style={styles.nextBtn}
+          />
         </View>
       </View>
     </SafeAreaView>
@@ -251,8 +233,8 @@ export default function AssessmentScreen() {
 }
 
 const styles = createStyles(() => ({
-  cycleLine: { fontSize: 13, color: Theme.colors.textSecondary, textAlign: 'center', marginTop: 14 },
-  retakeLink: { alignSelf: 'center', paddingVertical: 14 },
+  cycleLine: { fontSize: 14, color: Theme.colors.textSecondary, textAlign: 'center', marginTop: 16 },
+  retakeLink: { alignSelf: 'center', paddingVertical: 16 },
   retakeLinkText: { fontSize: 14, fontWeight: '700', color: Theme.colors.primary },
   safeArea: {
     flex: 1,
@@ -279,7 +261,7 @@ const styles = createStyles(() => ({
   topBrandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   topLogo: {
     width: 30,
@@ -287,17 +269,17 @@ const styles = createStyles(() => ({
     borderRadius: 8,
   },
   topBrandTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
     color: Theme.colors.textPrimary,
   },
   topChapterSubtitle: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '600',
     color: Theme.colors.textSecondary,
   },
   skipButton: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: Theme.radius.full,
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
@@ -305,7 +287,7 @@ const styles = createStyles(() => ({
     borderColor: '#FFD7E3',
   },
   skipText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     color: Theme.colors.textSecondary,
   },
@@ -328,16 +310,16 @@ const styles = createStyles(() => ({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 6,
+    paddingTop: 8,
     paddingBottom: 8,
   },
   progressCounterText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: Theme.colors.textSecondary,
   },
   progressPercentText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: Theme.colors.feminismAccent,
   },
@@ -352,43 +334,39 @@ const styles = createStyles(() => ({
     alignItems: 'center',
     alignSelf: 'flex-start',
     backgroundColor: '#FFE5ED',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: Theme.radius.full,
-    marginBottom: 10,
+    marginBottom: 12,
     marginTop: 4,
   },
   chapterTagText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: Theme.colors.feminismAccent,
     letterSpacing: 0.8,
   },
   questionTitle: {
-    fontSize: 22,
+    fontSize: 20,
     lineHeight: 28,
     fontWeight: '800',
     color: Theme.colors.textPrimary,
     letterSpacing: -0.4,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   questionSubtitle: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
     color: Theme.colors.textSecondary,
-    marginBottom: 18,
+    marginBottom: 20,
   },
   optionsContainer: {
-    gap: 10,
+    gap: 12,
   },
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 14,
-    borderRadius: Theme.radius.lg,
-    borderWidth: 1.5,
-    ...Theme.shadows.soft,
   },
   optionCardSelected: {
     backgroundColor: '#FFF0F5',
@@ -400,12 +378,12 @@ const styles = createStyles(() => ({
   },
   optionContent: {
     flex: 1,
-    paddingRight: 10,
+    paddingRight: 12,
   },
   optionLabel: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   optionLabelSelected: {
     color: Theme.colors.primaryDark,
@@ -414,8 +392,8 @@ const styles = createStyles(() => ({
     color: Theme.colors.textPrimary,
   },
   optionDesc: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 14,
+    lineHeight: 20,
   },
   optionDescSelected: {
     color: '#831843',
@@ -445,22 +423,13 @@ const styles = createStyles(() => ({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: '#FFF4F7',
     borderTopWidth: 1,
     borderTopColor: '#FFE2EB',
     gap: 12,
   },
   navBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: Theme.radius.md,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#FFE2EB',
   },
   navBtnDisabled: {
     opacity: 0.5,
@@ -475,15 +444,6 @@ const styles = createStyles(() => ({
   },
   nextBtn: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: Theme.radius.md,
-    backgroundColor: '#46375A',
-    ...Theme.shadows.card,
   },
   nextBtnDisabled: {
     backgroundColor: '#D1D5DB',
@@ -509,38 +469,38 @@ const styles = createStyles(() => ({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'center',
-    gap: 6,
+    gap: 8,
     backgroundColor: '#FFE5ED',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: Theme.radius.full,
     marginBottom: 12,
   },
   archetypeBadgeText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
     color: Theme.colors.feminismAccent,
     letterSpacing: 0.8,
   },
   completionTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: Theme.colors.textSecondary,
     textAlign: 'center',
     marginBottom: 4,
   },
   archetypeName: {
-    fontSize: 22,
+    fontSize: 20,
     lineHeight: 28,
     fontWeight: '800',
     color: Theme.colors.textPrimary,
     textAlign: 'center',
     letterSpacing: -0.4,
-    marginBottom: 6,
+    marginBottom: 8,
     paddingHorizontal: 8,
   },
   archetypeTagline: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: Theme.colors.primaryDark,
     textAlign: 'center',
@@ -554,26 +514,25 @@ const styles = createStyles(() => ({
     borderWidth: 1,
     borderColor: '#FFE2EB',
     marginBottom: 20,
-    ...Theme.shadows.soft,
     alignSelf: 'stretch',
   },
   archetypeDesc: {
-    fontSize: 13,
+    fontSize: 14,
     lineHeight: 20,
     color: '#374151',
     textAlign: 'center',
   },
   calibrationsHeader: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: Theme.colors.textSecondary,
     letterSpacing: 0.5,
-    marginBottom: 10,
-    paddingHorizontal: 2,
+    marginBottom: 12,
+    paddingHorizontal: 4,
   },
   calibrationsGrid: {
     alignSelf: 'stretch',
-    gap: 10,
+    gap: 12,
     marginBottom: 20,
   },
   calibItem: {
@@ -600,27 +559,26 @@ const styles = createStyles(() => ({
     justifyContent: 'center',
   },
   calibLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: Theme.colors.textSecondary,
     textTransform: 'uppercase',
   },
   calibValue: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
     color: Theme.colors.textPrimary,
-    marginTop: 2,
+    marginTop: 4,
   },
   metricsSummaryCard: {
     alignSelf: 'stretch',
     backgroundColor: '#FFFFFF',
     borderRadius: Theme.radius.lg,
-    padding: 14,
+    padding: 16,
     borderWidth: 1,
     borderColor: '#FFE2EB',
     marginBottom: 16,
-    gap: 10,
-    ...Theme.shadows.card,
+    gap: 12,
   },
   metricRow: {
     flexDirection: 'row',
@@ -635,50 +593,38 @@ const styles = createStyles(() => ({
     flex: 1,
   },
   metricRowLabel: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: Theme.colors.textSecondary,
   },
   metricRowVal: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '800',
     color: Theme.colors.textPrimary,
   },
   analyticsButton: {
     alignSelf: 'stretch',
     backgroundColor: Theme.colors.primary,
-    paddingVertical: 15,
+    paddingVertical: 16,
     paddingHorizontal: 12,
     borderRadius: Theme.radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginBottom: 10,
-    ...Theme.shadows.soft,
+    marginBottom: 12,
   },
-  enterButton: {
-    alignSelf: 'stretch',
-    backgroundColor: '#46375A',
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: Theme.radius.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Theme.shadows.card,
-    marginBottom: 24,
-  },
+  enterButton: { alignSelf: 'stretch', marginBottom: 24 },
   enterButtonText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     flexShrink: 1,
     textAlign: 'center',
   },
   secondaryButtonText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     flexShrink: 1,
     textAlign: 'center',
@@ -689,7 +635,8 @@ const styles = createStyles(() => ({
     borderRadius: Theme.radius.lg,
     padding: 16,
     marginBottom: 16,
-    ...Theme.shadows.glowing,
+    borderWidth: 1,
+    borderColor: Theme.colors.cardBorder,
   },
   predictionCardTop: {
     flexDirection: 'row',
@@ -700,35 +647,35 @@ const styles = createStyles(() => ({
   predictionBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     backgroundColor: 'rgba(201, 87, 140, 0.25)',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   predictionBadgeText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: '#FF69B4',
     letterSpacing: 0.4,
   },
   confidenceLabel: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '700',
     color: '#10B981',
   },
   predDateTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: -0.4,
   },
   predSubtitle: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: Theme.colors.primary,
-    marginTop: 2,
-    marginBottom: 10,
+    marginTop: 4,
+    marginBottom: 12,
   },
   predInfoRow: {
     flexDirection: 'row',
@@ -738,25 +685,25 @@ const styles = createStyles(() => ({
     borderTopColor: 'rgba(255, 255, 255, 0.1)',
   },
   predInfoLabel: {
-    fontSize: 11,
+    fontSize: 14,
     color: 'rgba(255, 255, 255, 0.7)',
   },
   predInfoVal: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
   },
   precautionHighlightBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     backgroundColor: 'rgba(220, 38, 38, 0.15)',
-    borderRadius: 6,
+    borderRadius: 8,
     padding: 8,
     marginTop: 8,
   },
   precautionHighlightText: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '600',
     color: '#FCA5A5',
     flex: 1,

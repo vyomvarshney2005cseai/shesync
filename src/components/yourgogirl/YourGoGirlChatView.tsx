@@ -1,18 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  Alert,
-  Share,
-} from 'react-native';
+import { View, Text, ScrollView, TextInput, KeyboardAvoidingView, Platform, Modal, Pressable, Alert, Share } from 'react-native';
 import {
   Sparkles,
   Send,
@@ -34,7 +21,8 @@ import {
 } from 'lucide-react-native';
 import { router, type Href } from 'expo-router';
 import { callNumber, openUrl } from '@/lib/openExternal';
-import { Theme, createStyles } from '@/constants/theme';
+import { reduceMotionNow } from '@/lib/motion';
+import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { useSettingsStore, type ChatLanguageSetting } from '@/store/useSettingsStore';
 import { usePcosStore } from '@/store/usePcosStore';
@@ -49,8 +37,10 @@ import { LANGUAGE_OPTIONS, UI } from '@/lib/yourGoGirlLang';
 import { chatFileName, chatToText, messageToText } from '@/lib/chatExport';
 import { saveTextFile } from '@/lib/files';
 import { pauseAppLock } from '@/lib/appLock';
+import { AnswerFeedback } from '@/components/yourgogirl/AnswerFeedback';
 import type { ChatLanguage, CounsellorMode, YourGoGirlAction, YourGoGirlMessage } from '@/types';
 import type { DoctorPrepInput } from '@/lib/doctorVisitPrep';
+import { Button, Card, Chip, SkeletonLines } from '@/components/ds';
 
 async function shareText(text: string) {
   try {
@@ -179,7 +169,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
 
   useEffect(() => {
     setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
+      scrollViewRef.current?.scrollToEnd({ animated: !reduceMotionNow() });
     }, 120);
   }, [messages?.length, isTyping]);
 
@@ -296,18 +286,19 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
         <View style={styles.headerTopRow}>
           <View style={styles.brandRow}>
             {showBackButton && (
-              <TouchableOpacity
+              <Button
+                variant="secondary"
+                size="sm"
+                iconOnly
                 onPress={() => router.back()}
-                style={styles.backBtn}
-                activeOpacity={0.7}
                 accessibilityLabel="Back"
-              >
-                <ArrowLeft size={20} color={Theme.colors.textPrimary} />
-              </TouchableOpacity>
+                icon={<ArrowLeft size={20} color={Theme.colors.textPrimary} />}
+                style={styles.backBtn}
+              />
             )}
             <View style={styles.avatarRing}>
               <View style={styles.avatarCore}>
-                <Sparkles size={20} color="#FFFFFF" />
+                <Sparkles size={20} color={Theme.colors.onPrimary} />
               </View>
             </View>
             <View style={styles.titleCol}>
@@ -318,14 +309,15 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
             </View>
           </View>
 
-          <TouchableOpacity
+          <Button
+            variant="secondary"
+            size="sm"
+            iconOnly
             onPress={() => setMenuOpen(true)}
-            style={styles.resetBtn}
-            activeOpacity={0.7}
             accessibilityLabel="Chat options: export or delete"
-          >
-            <EllipsisVertical size={17} color={Theme.colors.textSecondary} />
-          </TouchableOpacity>
+            icon={<EllipsisVertical size={20} color={Theme.colors.textSecondary} />}
+            style={styles.resetBtn}
+          />
         </View>
 
         {/* Reply language */}
@@ -334,16 +326,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
           {LANGUAGE_OPTIONS.map((o) => {
             const on = language === o.id;
             return (
-              <TouchableOpacity
-                key={o.id}
-                onPress={() => changeLanguage(o.id)}
-                style={[styles.langChip, on && styles.langChipOn]}
-                activeOpacity={0.8}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: on }}
-              >
-                <Text style={[styles.langChipText, on && styles.langChipTextOn]}>{o.label}</Text>
-              </TouchableOpacity>
+              <Chip key={o.id} small label={o.label} selected={on} onPress={() => changeLanguage(o.id)} accessibilityRole="radio" />
             );
           })}
         </View>
@@ -364,23 +347,28 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
             contentContainerStyle={styles.topicsScroll}
           >
             {QUICK_PROMPT_TOPICS.map((topic) => (
-              <TouchableOpacity
+              <Card
                 key={topic.id}
-                style={[styles.topicCard, topic.id === 'doctor_prep' && styles.topicCardPrep]}
+                tone={topic.id === 'doctor_prep' ? 'lilac' : 'default'}
+                padding="sm"
+                style={styles.topicCard}
                 onPress={() => handleSendMessage(displayQuestion(topic.prompt, uiLang), topic.prompt)}
-                activeOpacity={0.8}
+                accessibilityLabel={quickTopicLabel(topic, uiLang)}
               >
                 <Text style={styles.topicEmoji}>{topic.emoji}</Text>
                 <Text style={styles.topicLabel}>{quickTopicLabel(topic, uiLang)}</Text>
-              </TouchableOpacity>
+              </Card>
             ))}
           </ScrollView>
         </View>
 
         {/* Conversation Messages */}
-        {messages.map((msg) => {
+        {messages.map((msg, index) => {
           const isUser = msg.sender === 'user';
           const words = UI[msg.lang ?? uiLang];
+          // Real answers (not the welcome or a language note) can be rated.
+          const rateable = !isUser && msg.id !== 'welcome-yourgogirl' && !msg.id.startsWith('bot-note');
+          const askedBefore = index > 0 && messages[index - 1].sender === 'user' ? messages[index - 1].text : undefined;
           return (
             <View
               key={msg.id}
@@ -391,7 +379,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
             >
               {!isUser && (
                 <View style={styles.msgAvatar}>
-                  <Heart size={14} color="#FFFFFF" />
+                  <Heart size={14} color={Theme.colors.onPrimary} />
                 </View>
               )}
 
@@ -406,7 +394,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
               >
                 {!isUser && msg.urgent && (
                   <View style={styles.urgentBanner}>
-                    <AlertTriangle size={14} color="#A33B55" />
+                    <AlertTriangle size={16} color={themed('#A33B55')} />
                     <Text style={styles.urgentText}>{words.urgent}</Text>
                   </View>
                 )}
@@ -438,7 +426,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
                           <CheckCircle2
                             size={14}
                             color={Theme.colors.strainOptimal}
-                            style={{ marginTop: 2 }}
+                            style={{ marginTop: 4 }}
                           />
                           {renderFormattedText(step, false, styles.stepText)}
                         </View>
@@ -450,7 +438,7 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
                 {!isUser && msg.whenToSeeDoctor && (
                   <View style={styles.doctorCard}>
                     <View style={styles.stepsHeader}>
-                      <Stethoscope size={14} color="#9A5A2E" />
+                      <Stethoscope size={16} color={themed('#9A5A2E')} />
                       <Text style={styles.doctorTitle}>{words.doctor}</Text>
                     </View>
                     {renderFormattedText(msg.whenToSeeDoctor, false, styles.doctorText)}
@@ -461,21 +449,22 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
                 {!isUser && msg.actions && msg.actions.length > 0 && (
                   <View style={styles.actionsRow}>
                     {msg.actions.map((a) => (
-                      <TouchableOpacity
+                      <Button
                         key={`${a.kind}-${a.label}`}
-                        style={[styles.actionBtn, a.kind === 'call' && styles.actionBtnCall]}
+                        variant={a.kind === 'call' ? 'primary' : 'secondary'}
+                        size="sm"
+                        title={a.label}
                         onPress={() => runAction(a)}
-                        activeOpacity={0.8}
-                      >
-                        {a.kind === 'call' ? (
-                          <Phone size={13} color="#FFFFFF" />
-                        ) : a.kind === 'share' ? (
-                          <Share2 size={13} color={Theme.colors.primaryDark} />
-                        ) : (
-                          <ChevronRight size={13} color={Theme.colors.primaryDark} />
-                        )}
-                        <Text style={[styles.actionText, a.kind === 'call' && styles.actionTextCall]}>{a.label}</Text>
-                      </TouchableOpacity>
+                        icon={
+                          a.kind === 'call' ? (
+                            <Phone size={16} color={Theme.colors.onPrimary} />
+                          ) : a.kind === 'share' ? (
+                            <Share2 size={16} color={Theme.colors.textPrimary} />
+                          ) : (
+                            <ChevronRight size={16} color={Theme.colors.textPrimary} />
+                          )
+                        }
+                      />
                     ))}
                   </View>
                 )}
@@ -498,18 +487,18 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
                       <Text style={styles.followUpHeader}>{words.youCouldAsk}</Text>
                       <View style={styles.followUpList}>
                         {msg.followUpSuggestions.map((sugg, idx) => (
-                          <TouchableOpacity
+                          <Button
+                            variant="secondary"
+                            title={sugg}
                             key={idx}
-                            style={styles.followUpChip}
                             onPress={() => handleSendMessage(sugg, msg.followUpQueries?.[idx] ?? sugg)}
-                            activeOpacity={0.75}
-                          >
-                            <Text style={styles.followUpChipText}>{sugg}</Text>
-                          </TouchableOpacity>
+                          />
                         ))}
                       </View>
                     </View>
                   )}
+
+                {rateable ? <AnswerFeedback msg={msg} question={askedBefore} lang={msg.lang ?? uiLang} /> : null}
 
                 <Text
                   style={[
@@ -528,11 +517,12 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
         {isTyping && (
           <View style={[styles.messageRow, styles.botRow]}>
             <View style={styles.msgAvatar}>
-              <Heart size={14} color="#FFFFFF" />
+              <Heart size={14} color={Theme.colors.onPrimary} />
             </View>
             <View style={[styles.messageBubble, styles.botBubble, styles.typingBubble]}>
-              <ActivityIndicator size="small" color={Theme.colors.primary} />
+              {/* A grey answer-shaped placeholder instead of a spinner. */}
               <Text style={styles.typingText}>{ui.typing}</Text>
+              <SkeletonLines lines={2} style={styles.typingLines} />
             </View>
           </View>
         )}
@@ -558,32 +548,22 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
             }
           }}
         />
-        <TouchableOpacity
-          style={[
-            styles.sendButton,
-            (!inputText.trim() || isTyping) && styles.sendButtonDisabled,
-          ]}
+        <Button
+          iconOnly
           onPress={() => handleSendMessage()}
           disabled={!inputText.trim() || isTyping}
-          activeOpacity={0.8}
           accessibilityLabel="Send"
-        >
-          <Send size={18} color="#FFFFFF" />
-        </TouchableOpacity>
+          icon={<Send size={20} color={!inputText.trim() || isTyping ? Theme.colors.textTertiary : Theme.colors.onPrimary} />}
+          style={styles.sendButton}
+        />
       </View>
 
       {/* Chat menu: export / delete all */}
       <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
         <Pressable style={styles.menuBackdrop} onPress={() => setMenuOpen(false)}>
           <View style={styles.menuCard}>
-            <TouchableOpacity style={styles.menuItem} onPress={() => void exportChat()} activeOpacity={0.8}>
-              <FileDown size={18} color={Theme.colors.primaryDark} />
-              <Text style={styles.menuText}>{ui.menuExport}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem} onPress={deleteAll} activeOpacity={0.8}>
-              <Trash2 size={18} color="#C0392B" />
-              <Text style={[styles.menuText, styles.menuDanger]}>{ui.menuDeleteAll}</Text>
-            </TouchableOpacity>
+            <Button variant="link" title={ui.menuExport} onPress={() => void exportChat()} icon={<FileDown size={20} color={Theme.colors.primaryDark} />} style={styles.menuItem} />
+            <Button variant="link" title={ui.menuDeleteAll} onPress={deleteAll} icon={<Trash2 size={20} color={Theme.colors.danger} />} textStyle={styles.menuDanger} style={styles.menuItem} />
             <Text style={styles.menuTip}>{ui.menuTip}</Text>
           </View>
         </Pressable>
@@ -596,31 +576,28 @@ export const YourGoGirlChatView: React.FC<YourGoGirlChatViewProps> = ({
             <Text style={styles.sheetPreview} numberOfLines={3}>
               {selected ? messageToText(selected) : ''}
             </Text>
-            <TouchableOpacity
-              style={styles.menuItem}
+            <Button
+              variant="link"
+              title={ui.copy}
               onPress={() => {
                 if (selected) void copyText(messageToText(selected));
                 setSelected(null);
               }}
-              activeOpacity={0.8}
-            >
-              <Copy size={18} color={Theme.colors.primaryDark} />
-              <Text style={styles.menuText}>{ui.copy}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+              icon={<Copy size={20} color={Theme.colors.primaryDark} />}
               style={styles.menuItem}
+            />
+            <Button
+              variant="link"
+              title={ui.deleteOne}
               onPress={() => {
                 if (selected) deleteMessage(selected.id);
                 setSelected(null);
               }}
-              activeOpacity={0.8}
-            >
-              <Trash2 size={18} color="#C0392B" />
-              <Text style={[styles.menuText, styles.menuDanger]}>{ui.deleteOne}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.menuItem, styles.menuCancel]} onPress={() => setSelected(null)} activeOpacity={0.8}>
-              <Text style={styles.menuCancelText}>{ui.cancel}</Text>
-            </TouchableOpacity>
+              icon={<Trash2 size={20} color={Theme.colors.danger} />}
+              textStyle={styles.menuDanger}
+              style={styles.menuItem}
+            />
+            <Button variant="secondary" title={ui.cancel} onPress={() => setSelected(null)} fullWidth style={styles.menuCancel} />
           </View>
         </Pressable>
       </Modal>
@@ -637,11 +614,10 @@ const styles = createStyles(() => ({
   },
   headerContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingTop: 12,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: Theme.colors.cardBorder,
-    ...Theme.shadows.soft,
   },
   headerTopRow: {
     flexDirection: 'row',
@@ -654,21 +630,14 @@ const styles = createStyles(() => ({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    gap: 10,
+    gap: 12,
   },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Theme.colors.backgroundMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  backBtn: { width: 36 },
   avatarRing: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    padding: 2,
+    padding: 4,
     backgroundColor: '#FFE4E8',
     alignItems: 'center',
     justifyContent: 'center',
@@ -698,7 +667,7 @@ const styles = createStyles(() => ({
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   botName: {
     fontSize: 18,
@@ -708,49 +677,40 @@ const styles = createStyles(() => ({
   },
   aiPill: {
     backgroundColor: Theme.colors.secondaryLight,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: Theme.radius.full,
     borderWidth: 1,
     borderColor: Theme.colors.secondaryBorder,
   },
   aiPillText: {
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '800',
     color: Theme.colors.secondaryDark,
     letterSpacing: 0.5,
   },
   botSubtitle: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '500',
     color: Theme.colors.textSecondary,
     marginTop: 1,
   },
-  resetBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: Theme.colors.backgroundAlt,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Theme.colors.cardBorder,
-  },
+  resetBtn: { width: 34 },
   bioSyncBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     marginHorizontal: 16,
     marginBottom: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
     backgroundColor: '#FFF5F8',
     borderRadius: Theme.radius.md,
     borderWidth: 1,
     borderColor: '#FFD8E4',
   },
   bioSyncText: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '700',
     color: Theme.colors.primaryDark,
     flex: 1,
@@ -758,13 +718,13 @@ const styles = createStyles(() => ({
   langRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     paddingHorizontal: 16,
     flexWrap: 'wrap',
   },
-  langLabel: { fontSize: 11, fontWeight: '700', color: Theme.colors.textSecondary, marginRight: 2 },
+  langLabel: { fontSize: 14, fontWeight: '700', color: Theme.colors.textSecondary, marginRight: 4 },
   langChip: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: Theme.radius.full,
     borderWidth: 1,
@@ -772,65 +732,64 @@ const styles = createStyles(() => ({
     backgroundColor: Theme.colors.backgroundAlt,
   },
   langChipOn: { backgroundColor: Theme.colors.primary, borderColor: Theme.colors.primary },
-  langChipText: { fontSize: 11.5, fontWeight: '700', color: Theme.colors.textPrimary },
+  langChipText: { fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary },
   langChipTextOn: { color: '#FFFFFF' },
   topicCardPrep: { borderColor: 'rgba(154, 90, 46, 0.35)', backgroundColor: '#FFF6EC' },
   menuBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(43, 34, 54, 0.25)',
+    backgroundColor: Theme.colors.overlay,
     alignItems: 'flex-end',
     paddingTop: Platform.OS === 'web' ? 70 : 110,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
   },
   menuCard: {
     width: 270,
     maxWidth: '92%',
     backgroundColor: Theme.colors.background,
     borderRadius: Theme.radius.lg,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
-    ...Theme.shadows.glowing,
   },
-  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 13 },
+  menuItem: { alignSelf: 'stretch', justifyContent: 'flex-start', paddingHorizontal: Theme.space.md },
   menuText: { fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary, flexShrink: 1 },
-  menuDanger: { color: '#C0392B' },
-  menuTip: { fontSize: 11.5, color: Theme.colors.textTertiary, paddingHorizontal: 16, paddingBottom: 10, paddingTop: 4 },
-  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(43, 34, 54, 0.35)', justifyContent: 'flex-end', alignItems: 'center' },
+  menuDanger: { color: Theme.colors.danger },
+  menuTip: { fontSize: 14, color: Theme.colors.textSecondary, paddingHorizontal: 16, paddingBottom: 12, paddingTop: 4 },
+  sheetBackdrop: { flex: 1, backgroundColor: Theme.colors.overlay, justifyContent: 'flex-end', alignItems: 'center' },
   sheetCard: {
     width: '100%',
     maxWidth: 520,
     backgroundColor: Theme.colors.background,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    paddingTop: 14,
-    paddingBottom: 26,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 16,
+    paddingBottom: 28,
   },
   sheetPreview: {
-    fontSize: 12.5,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
     color: Theme.colors.textSecondary,
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: Theme.colors.cardBorder,
   },
-  menuCancel: { justifyContent: 'center' },
+  menuCancel: { marginTop: Theme.space.xs },
   menuCancelText: { fontSize: 14, fontWeight: '800', color: Theme.colors.textSecondary, textAlign: 'center', flex: 1 },
   chatScroll: {
     flex: 1,
   },
   chatContent: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 24,
-    gap: 14,
+    gap: 16,
   },
   topicsWrapper: {
     marginBottom: 4,
   },
   topicsHeaderLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: Theme.colors.textSecondary,
     letterSpacing: 0.7,
@@ -844,20 +803,13 @@ const styles = createStyles(() => ({
   topicCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: Theme.radius.lg,
-    borderWidth: 1,
-    borderColor: Theme.colors.cardBorder,
-    ...Theme.shadows.card,
+    gap: 8,
   },
   topicEmoji: {
-    fontSize: 15,
+    fontSize: 16,
   },
   topicLabel: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     color: Theme.colors.textPrimary,
   },
@@ -884,23 +836,21 @@ const styles = createStyles(() => ({
   messageBubble: {
     maxWidth: '88%',
     borderRadius: Theme.radius.xl,
-    padding: 15,
+    padding: 16,
   },
   userBubble: {
     backgroundColor: Theme.colors.primary,
-    borderBottomRightRadius: 6,
-    ...Theme.shadows.soft,
+    borderBottomRightRadius: 8,
   },
   botBubble: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 6,
+    borderTopLeftRadius: 8,
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
-    ...Theme.shadows.card,
   },
   messageText: {
     fontSize: 14,
-    lineHeight: 21,
+    lineHeight: 20,
     color: Theme.colors.textPrimary,
   },
   userMessageText: {
@@ -926,37 +876,37 @@ const styles = createStyles(() => ({
   bioCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     marginBottom: 4,
   },
   bioCardTitle: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: Theme.colors.secondaryDark,
     letterSpacing: 0.5,
   },
   bioCardBody: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
     color: Theme.colors.textPrimary,
   },
   stepsCard: {
-    marginTop: 10,
+    marginTop: 12,
     backgroundColor: '#FFF5F8',
     borderRadius: Theme.radius.md,
     padding: 12,
     borderWidth: 1,
     borderColor: '#FFE0EA',
-    gap: 7,
+    gap: 8,
   },
   stepsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 2,
+    gap: 8,
+    marginBottom: 4,
   },
   stepsTitle: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: Theme.colors.primaryDark,
     letterSpacing: 0.5,
@@ -968,17 +918,17 @@ const styles = createStyles(() => ({
   },
   stepText: {
     flex: 1,
-    fontSize: 12.5,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 16,
     color: Theme.colors.textPrimary,
   },
   affirmationBox: {
-    marginTop: 10,
+    marginTop: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     backgroundColor: '#FFFBEB',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: Theme.radius.md,
     borderWidth: 1,
@@ -986,58 +936,48 @@ const styles = createStyles(() => ({
   },
   affirmationText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 14,
     fontStyle: 'italic',
     fontWeight: '700',
     color: '#92400E',
   },
   followUpContainer: {
     marginTop: 12,
-    paddingTop: 10,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#FFF0F5',
   },
   followUpHeader: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '700',
     color: Theme.colors.textSecondary,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   followUpList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
-  },
-  followUpChip: {
-    backgroundColor: Theme.colors.backgroundAlt,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: Theme.radius.full,
-    borderWidth: 1,
-    borderColor: '#FFD6E4',
+    gap: 8,
   },
   followUpChipText: {
-    fontSize: 11.5,
+    fontSize: 14,
     fontWeight: '700',
     color: Theme.colors.primaryDark,
   },
   timestampText: {
-    fontSize: 10,
+    fontSize: 12,
     color: Theme.colors.textTertiary,
-    marginTop: 6,
+    marginTop: 8,
     alignSelf: 'flex-end',
   },
   userTimestampText: {
     color: 'rgba(255, 255, 255, 0.8)',
   },
+  typingLines: { width: 180, marginTop: Theme.space.xs },
   typingBubble: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
     paddingVertical: 12,
   },
   typingText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: Theme.colors.textSecondary,
     fontStyle: 'italic',
@@ -1045,18 +985,18 @@ const styles = createStyles(() => ({
   urgentBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     backgroundColor: '#FDECEF',
     borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    marginBottom: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: '#F3C4CF',
   },
-  urgentText: { flex: 1, fontSize: 12, fontWeight: '800', color: '#A33B55' },
+  urgentText: { flex: 1, fontSize: 14, fontWeight: '800', color: '#A33B55' },
   doctorCard: {
-    marginTop: 10,
+    marginTop: 12,
     backgroundColor: '#FFF6EC',
     borderRadius: Theme.radius.md,
     padding: 12,
@@ -1064,55 +1004,48 @@ const styles = createStyles(() => ({
     borderColor: '#F6DDBF',
     gap: 4,
   },
-  doctorTitle: { fontSize: 10, fontWeight: '800', color: '#9A5A2E', letterSpacing: 0.5 },
-  doctorText: { fontSize: 12.5, lineHeight: 18, color: Theme.colors.textPrimary },
-  actionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12 },
+  doctorTitle: { fontSize: 12, fontWeight: '800', color: Theme.colors.peachDark, letterSpacing: 0.5 },
+  doctorText: { fontSize: 14, lineHeight: 20, color: Theme.colors.textPrimary },
+  actionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 11,
-    paddingVertical: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: Theme.radius.full,
     backgroundColor: Theme.colors.primaryLight,
     borderWidth: 1,
     borderColor: 'rgba(201, 87, 140, 0.25)',
   },
   actionBtnCall: { backgroundColor: Theme.colors.primary, borderColor: Theme.colors.primary },
-  actionText: { fontSize: 12, fontWeight: '800', color: Theme.colors.primaryDark },
+  actionText: { fontSize: 14, fontWeight: '800', color: Theme.colors.primaryDark },
   actionTextCall: { color: '#FFFFFF' },
   composerBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.96)',
     borderTopWidth: 1,
     borderTopColor: Theme.colors.cardBorder,
   },
   textInput: {
     flex: 1,
+    minHeight: 48,
     backgroundColor: Theme.colors.backgroundAlt,
-    borderRadius: 20,
+    borderRadius: 24,
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 10,
-    fontSize: 14,
+    paddingTop: 12,
+    paddingBottom: 12,
+    fontSize: 16,
     color: Theme.colors.textPrimary,
-    maxHeight: 100,
+    maxHeight: 120,
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
-    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {}),
   },
   sendButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: Theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Theme.shadows.soft,
   },
   sendButtonDisabled: {
     opacity: 0.45,

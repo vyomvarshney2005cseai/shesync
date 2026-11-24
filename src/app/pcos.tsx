@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { Check, CircleDashed, CircleHelp, Dumbbell, FileText, HeartHandshake, Minus, Stethoscope, Trash2, Utensils } from 'lucide-react-native';
 import { Theme, createStyles, themed } from '@/constants/theme';
 import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { AuthGate } from '@/components/common/AuthGate';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
+import { Button, CheckRow } from '@/components/ds';
 import { Card, Chip, ProgressBar, SectionHeader } from '@/components/common/ui';
 import { useAppStore } from '@/store/useAppStore';
 import { useFitnessStore } from '@/store/useFitnessStore';
@@ -39,7 +39,7 @@ const TABS: { id: Tab; label: string }[] = [
 const STATUS: Record<SignStatus, { label: string; color: string; bg: string }> = {
   yes: { label: 'Sign noted', color: '#B45309', bg: '#FEF3C7' },
   maybe: { label: 'Possible', color: '#6E55B5', bg: '#F2EDFB' },
-  no: { label: 'Not seen', color: '#2F7D69', bg: '#E8F5F1' },
+  no: { label: 'Not seen', color: '#276C5C', bg: '#E8F5F1' },
   unknown: { label: 'Not known yet', color: '#6E6478', bg: '#F1EFF4' },
 };
 
@@ -134,15 +134,7 @@ export default function PcosScreen() {
 
         <View style={styles.tabs}>
           {TABS.map((t) => (
-            <Pressable
-              key={t.id}
-              onPress={() => setTab(t.id)}
-              style={[styles.tab, tab === t.id && styles.tabActive]}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: tab === t.id }}
-            >
-              <Text style={[styles.tabText, tab === t.id && styles.tabTextActive]}>{t.label}</Text>
-            </Pressable>
+            <Chip key={t.id} small label={t.label} selected={tab === t.id} onPress={() => setTab(t.id)} accessibilityRole="tab" style={styles.tab} />
           ))}
         </View>
 
@@ -182,9 +174,9 @@ export default function PcosScreen() {
                     : 'Keep saving your periods and do a check-in each month. See a doctor if your periods become irregular or new signs appear.'}
               </Text>
               {summary.worthChecking || diagnosed === 'yes' ? (
-                <PrimaryButton
+                <Button
                   title="Find a doctor in Care Connect"
-                  variant="dark"
+                  variant="primary"
                   icon={<HeartHandshake size={16} color={themed('#FFFFFF')} />}
                   onPress={() => router.push(ROUTES.care)}
                   style={{ marginTop: 12 }}
@@ -242,7 +234,7 @@ export default function PcosScreen() {
                   />
                 </View>
               </View>
-              <PrimaryButton title={saved ? 'Saved' : 'Save check-in'} onPress={save} fullWidth style={{ marginTop: 14 }} />
+              <Button title={saved ? 'Saved' : 'Save check-in'} onPress={save} fullWidth style={{ marginTop: 16 }} />
             </Card>
 
             {checkins.length > 0 ? (
@@ -260,9 +252,7 @@ export default function PcosScreen() {
                           {c.weightKg ? ` · ${c.weightKg} kg` : ''}
                         </Text>
                       </View>
-                      <Pressable onPress={() => removeCheckin(c.id)} hitSlop={10} accessibilityRole="button" accessibilityLabel="Delete check-in">
-                        <Trash2 size={16} color={Theme.colors.textTertiary} />
-                      </Pressable>
+                      <Button variant="secondary" size="sm" iconOnly onPress={() => removeCheckin(c.id)} accessibilityLabel="Delete check-in" icon={<Trash2 size={20} color={Theme.colors.textTertiary} />} />
                     </View>
                   ))}
                 </Card>
@@ -309,12 +299,12 @@ export default function PcosScreen() {
                 <Text style={styles.body}> / {WEEKLY_MINUTES_GOAL} active minutes</Text>
               </View>
               <ProgressBar value={weekMinutes / WEEKLY_MINUTES_GOAL} color={themed('#3E9E86')} track={themed('rgba(62,158,134,0.15)')} />
-              <PrimaryButton
+              <Button
                 title="Open Fitness & Weight"
-                variant="outline"
+                variant="secondary"
                 icon={<Dumbbell size={16} color={Theme.colors.textPrimary} />}
                 onPress={() => router.push('/fitness')}
-                style={{ marginTop: 14 }}
+                style={{ marginTop: 16 }}
                 fullWidth
               />
             </Card>
@@ -344,24 +334,12 @@ export default function PcosScreen() {
                 {g.items.map((item) => {
                   const on = !!checklist[item.id];
                   return (
-                    <Pressable
-                      key={item.id}
-                      onPress={() => toggleChecklist(item.id)}
-                      style={styles.checkRow}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: on }}
-                    >
-                      <View style={[styles.box, on && styles.boxOn]}>{on ? <Check size={13} color={themed('#FFFFFF')} /> : null}</View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.checkLabel, on && styles.checkLabelOn]}>{item.label}</Text>
-                        {item.why ? <Text style={styles.help}>{item.why}</Text> : null}
-                      </View>
-                    </Pressable>
+                    <CheckRow key={item.id} label={item.label} detail={item.why || undefined} checked={on} onToggle={() => toggleChecklist(item.id)} />
                   );
                 })}
               </Card>
             ))}
-            <PrimaryButton
+            <Button
               title="Open my doctor report"
               icon={<FileText size={16} color={themed('#FFFFFF')} />}
               onPress={() => router.push('/(tabs)/report')}
@@ -379,48 +357,51 @@ export default function PcosScreen() {
 }
 
 const styles = createStyles(() => ({
-  gap: { marginBottom: 14 },
+  gap: { marginBottom: 16 },
   tabs: {
     flexDirection: 'row',
     backgroundColor: Theme.colors.backgroundMuted,
     borderRadius: 999,
     padding: 4,
-    marginBottom: 14,
+    marginBottom: 16,
   },
-  tab: { flex: 1, paddingVertical: 9, borderRadius: 999, alignItems: 'center' },
-  tabActive: { backgroundColor: Theme.colors.white, ...Theme.shadows.card },
-  tabText: { fontSize: 13, fontWeight: '600', color: Theme.colors.textSecondary },
+  tab: { flex: 1, },
+  tabActive: { backgroundColor: Theme.colors.white,
+  borderWidth: 1,
+  borderColor: Theme.colors.cardBorder, },
+  tabText: { fontSize: 12, fontWeight: '600', color: Theme.colors.textSecondary },
   tabTextActive: { color: Theme.colors.primaryDark, fontWeight: '800' },
-  cardTitle: { fontSize: 15, fontWeight: '800', color: Theme.colors.textPrimary, marginBottom: 4 },
-  body: { fontSize: 13, lineHeight: 19, color: Theme.colors.textSecondary },
-  help: { fontSize: 12, lineHeight: 17, color: Theme.colors.textSecondary, marginTop: 1 },
-  note: { fontSize: 12, lineHeight: 17, color: Theme.colors.textSecondary, marginTop: 4, marginBottom: 16, paddingHorizontal: 4 },
-  question: { fontSize: 13, fontWeight: '700', color: Theme.colors.textPrimary, marginTop: 14, marginBottom: 8 },
+  cardTitle: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary, marginBottom: 4 },
+  body: { fontSize: 14, lineHeight: 20, color: Theme.colors.textSecondary },
+  help: { fontSize: 14, lineHeight: 20, color: Theme.colors.textSecondary, marginTop: 1 },
+  note: { fontSize: 14, lineHeight: 20, color: Theme.colors.textSecondary, marginTop: 4, marginBottom: 16, paddingHorizontal: 4 },
+  question: { fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary, marginTop: 16, marginBottom: 8 },
   criterion: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  criterionIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
+  criterionIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   criterionTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' },
   criterionTitle: { fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary },
-  criterionTag: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
+  criterionTag: { fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
   divider: { height: 1, backgroundColor: Theme.colors.cardBorder, marginVertical: 12 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
-  signBlock: { marginBottom: 14 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  signBlock: { marginBottom: 16 },
   signLabel: { fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary },
   measureRow: { flexDirection: 'row', gap: 12 },
   input: {
-    marginTop: 6,
+    minHeight: 48,
+    marginTop: 8,
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
     backgroundColor: Theme.colors.white,
     borderRadius: Theme.radius.md,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
+    paddingVertical: 12,
+    fontSize: 16,
     color: Theme.colors.textPrimary,
   },
-  historyRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
+  historyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
   historyBorder: { borderTopWidth: 1, borderTopColor: Theme.colors.cardBorder },
-  historyDate: { fontSize: 13, fontWeight: '700', color: Theme.colors.textPrimary },
-  tipRow: { flexDirection: 'row', gap: 12, paddingVertical: 11, alignItems: 'flex-start' },
+  historyDate: { fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary },
+  tipRow: { flexDirection: 'row', gap: 12, paddingVertical: 12, alignItems: 'flex-start' },
   tipIcon: {
     width: 30,
     height: 30,
@@ -430,17 +411,17 @@ const styles = createStyles(() => ({
     justifyContent: 'center',
     marginTop: 1,
   },
-  mealRow: { flexDirection: 'row', gap: 12, paddingVertical: 10, alignItems: 'flex-start' },
-  mealName: { width: 76, fontSize: 13, fontWeight: '800', color: Theme.colors.primaryDark },
-  minutes: { fontSize: 12, fontWeight: '700', color: Theme.colors.textSecondary },
-  weekTop: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 10 },
-  weekValue: { fontSize: 28, fontWeight: '800', color: '#2F7D69' },
-  groupHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  checkRow: { flexDirection: 'row', gap: 12, paddingVertical: 9, alignItems: 'flex-start' },
+  mealRow: { flexDirection: 'row', gap: 12, paddingVertical: 12, alignItems: 'flex-start' },
+  mealName: { width: 76, fontSize: 14, fontWeight: '800', color: Theme.colors.primaryDark },
+  minutes: { fontSize: 14, fontWeight: '700', color: Theme.colors.textSecondary },
+  weekTop: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 12 },
+  weekValue: { fontSize: 28, fontWeight: '800', color: '#276C5C' },
+  groupHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  checkRow: { flexDirection: 'row', gap: 12, paddingVertical: 8, alignItems: 'flex-start' },
   box: {
     width: 22,
     height: 22,
-    borderRadius: 7,
+    borderRadius: 8,
     borderWidth: 1.5,
     borderColor: Theme.colors.secondaryBorder,
     alignItems: 'center',

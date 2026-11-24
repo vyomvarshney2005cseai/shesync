@@ -13,7 +13,7 @@ import { Linking, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 // Enums imported by name: eslint-plugin-import cannot see them through the namespace.
 import { AndroidImportance, IosAuthorizationStatus } from 'expo-notifications';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { ROUTES } from '@/lib/routes';
 import { PRODUCT_GUIDES } from '@/constants/padCare';
 import { HOUR_MS, reminderHours } from '@/lib/padCare';
@@ -139,14 +139,16 @@ export function syncPadReminders(): Promise<void> {
   return queue;
 }
 
-/** Opens the Pad Care screen when a reminder is tapped. Mount once, in the root layout. */
+/** Opens the right screen when a reminder is tapped. Mount once, in the root layout. */
 export function usePadReminderTaps(): void {
   useEffect(() => {
     if (!remindersSupported) return;
     const open = (response: Notifications.NotificationResponse | null) => {
       const url = response?.notification.request.content.data?.url;
-      if (url !== PAD_CARE_URL) return;
-      router.push(ROUTES.padCare);
+      // Pad Care, the daily check-in and the cycle heads-up (Settings → Reminders).
+      if (url === PAD_CARE_URL) router.push(ROUTES.padCare);
+      else if (url === '/check-in' || url === '/log-cycle') router.push(url as Href);
+      else return;
       // Without this, the same tap would reopen the screen on the next launch.
       Notifications.clearLastNotificationResponseAsync().catch(() => {});
     };

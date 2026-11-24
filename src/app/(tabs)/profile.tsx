@@ -1,41 +1,39 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Switch,
-  Image,
-  Alert,
-  Platform,
-} from 'react-native';
+import React from 'react';
+import { View, Text, ScrollView, Image, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { Theme, createStyles, themed } from '@/constants/theme';
+import { router, type Href } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import { Theme, createStyles } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
-import { useSettingsStore } from '@/store/useSettingsStore';
+import { useSettingsStore, type NightMode } from '@/store/useSettingsStore';
+import { useSafetyStore } from '@/store/useSafetyStore';
 import { ROUTES } from '@/lib/routes';
 import { pauseAppLock } from '@/lib/appLock';
-import { useLockStore } from '@/store/useLockStore';
 import { ASSESSMENT_QUESTIONS } from '@/constants/assessment';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import { deleteAccountAndData, flushCloudSync, signOutAndClear, useSyncStatus } from '@/lib/sync';
-import {
-  ChevronRight,
-  RefreshCw,
-  LogOut,
-  FileText,
-  Cloud,
-  CloudOff,
-  Trash2,
-  Database,
-  Sliders,
-  CheckCircle2,
-  LockKeyhole,
-} from 'lucide-react-native';
-
-import * as ImagePicker from 'expo-image-picker';
+import { useSyncStatus } from '@/lib/sync';
+import { backupSummary } from '@/lib/privacySummary';
+import { FocusAreasCard } from '@/components/home/FocusAreasCard';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
+import { Stepper } from '@/components/common/ui';
+import { BrandIcon } from '@/components/icons/BrandIcon';
+import { Button, Card, Chip, GroupLabel, ListGroup, ListRow, SwitchRow } from '@/components/ds';
+import type { SettingsSection } from '@/app/settings';
+
+const APPEARANCE: { id: NightMode; label: string }[] = [
+  { id: 'system', label: 'Match phone' },
+  { id: 'off', label: 'Light' },
+  { id: 'on', label: 'Dark' },
+  { id: 'auto', label: 'Dark at night' },
+];
+
+const SETTINGS_ROWS: { id: SettingsSection; title: string; subtitle: string; icon: 'account' | 'privacy' | 'bell' | 'data' | 'about'; tone: 'rose' | 'mint' | 'amber' | 'sky' | 'lilac' }[] = [
+  { id: 'account', title: 'Account', subtitle: 'Sign in, sign out, delete account', icon: 'account', tone: 'rose' },
+  { id: 'privacy', title: 'Privacy', subtitle: 'Privacy dashboard, app lock, crash reports', icon: 'privacy', tone: 'mint' },
+  { id: 'reminders', title: 'Reminders', subtitle: 'Check-in, period heads-up, pad changes', icon: 'bell', tone: 'amber' },
+  { id: 'data', title: 'Data', subtitle: 'Backup, export and import', icon: 'data', tone: 'sky' },
+  { id: 'about', title: 'About', subtitle: 'Version, updates, how SheSync helps', icon: 'about', tone: 'lilac' },
+];
 
 export default function ProfileScreen() {
   const userName = useAppStore((s) => s.userName);
@@ -45,382 +43,198 @@ export default function ProfileScreen() {
   const assessmentAnswers = useAppStore((s) => s.assessmentAnswers);
   const fineTuningSettings = useAppStore((s) => s.fineTuningSettings);
   const updateFineTuningSettings = useAppStore((s) => s.updateFineTuningSettings);
+  const generateClinicalPDF = useAppStore((s) => s.generateClinicalPDF);
   const isOfflineAccount = useAppStore((s) => s.isOfflineAccount);
-  const sync = useSyncStatus();
+  const isGuest = useAppStore((s) => s.isGuest);
+  const trusted = useSafetyStore((s) => s.trusted);
   const nightMode = useSettingsStore((s) => s.nightMode);
   const setNightMode = useSettingsStore((s) => s.setNightMode);
-  const [busy, setBusy] = useState<'signout' | 'delete' | null>(null);
-  const lockOn = useLockStore((s) => s.enabled);
-  const generateClinicalPDF = useAppStore((s) => s.generateClinicalPDF);
+  const sync = useSyncStatus();
 
   const answeredCount = Object.keys(assessmentAnswers).length;
-  const initial = (userName || 'M').charAt(0).toUpperCase();
+  const initial = (userName || 'S').charAt(0).toUpperCase();
+  const backup = backupSummary({ guest: isGuest, onDevice: isOfflineAccount || !isSupabaseConfigured, state: sync.state, lastSyncedAt: sync.lastSyncedAt });
 
   const handlePickImage = async () => {
     pauseAppLock(); // the photo picker is not "leaving" SheSync
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      updateUserPhoto(result.assets[0].uri);
-    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 1 });
+    if (!result.canceled) updateUserPhoto(result.assets[0].uri);
   };
 
-  const handleRetakeAssessment = () => {
-    router.push('/assessment' as any);
-  };
-
-  /** Native Alert on phones, window.confirm on web. */
-  const confirm = (title: string, msg: string, action: string, onYes: () => void) => {
-    if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined' && window.confirm(`${title}\n\n${msg}`)) onYes();
-      return;
-    }
-    Alert.alert(title, msg, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: action, style: 'destructive', onPress: onYes },
-    ]);
-  };
-
-  const notify = (title: string, msg: string) => {
-    if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined') window.alert(`${title}\n\n${msg}`);
-    } else Alert.alert(title, msg);
-  };
-
-  const backedUp = sync.state === 'idle' && !!sync.lastSyncedAt;
-
-  // Clearing the session is enough: the signed-in area's AuthGate sends the
-  // user to the welcome screen. (Navigating here too raced with it on web.)
-  const confirmLogout = () =>
-    confirm(
-      'Sign out of SheSync?',
-      backedUp || sync.state === 'syncing'
-        ? 'Your data is backed up and comes back when you sign in again. It is removed from this device.'
-        : 'For your privacy, signing out removes your logs, cycles and dashboard data from this device.',
-      'Sign out',
-      () => {
-        setBusy('signout');
-        signOutAndClear()
-          .catch((err) => console.warn('Sign out error', err))
-          .finally(() => setBusy(null));
-      }
-    );
-
-  const confirmDelete = () =>
-    confirm(
-      'Delete your account?',
-      'This permanently deletes your account and all your SheSync data' +
-        (isOfflineAccount || !isSupabaseConfigured ? ' on this device.' : ', on this device and in the cloud.') +
-        ' This cannot be undone.',
-      'Delete',
-      () => {
-        setBusy('delete');
-        deleteAccountAndData()
-          .catch(() => notify('Could not delete', 'Check your internet connection and try again. Nothing was deleted.'))
-          .finally(() => setBusy(null));
-      }
-    );
-
-  const handleExportPDF = () => {
-    generateClinicalPDF();
-    router.push('/(tabs)/report' as any);
-  };
+  const openSettings = (section?: SettingsSection) =>
+    router.push((section ? { pathname: '/settings', params: { section } } : '/settings') as Href);
 
   return (
     <AdaptiveBackground>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <ScrollView
-          style={styles.scrollWrapper}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.centeredWrapper}>
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.headerTitle}>Profile</Text>
-          </View>
-        </View>
-
-        {/* Identity Card */}
-        <View style={styles.identityCard}>
-          <TouchableOpacity onPress={handlePickImage} activeOpacity={0.8}>
-            <View style={styles.avatarGlow}>
-              <View style={styles.avatarCircle}>
-                {userPhoto ? (
-                  <Image source={{ uri: userPhoto }} style={styles.avatarImage} />
-                ) : (
-                  <Text style={styles.avatarText}>{initial}</Text>
-                )}
-              </View>
-            </View>
-          </TouchableOpacity>
-
-          <View style={styles.identityInfo}>
-            <Text style={styles.userNameText}>{userName}</Text>
-            {userEmail ? <Text style={styles.userEmailText}>{userEmail}</Text> : null}
-          </View>
-        </View>
-
-        {/* Bio-Adaptive Archetype Card */}
-        <View style={styles.archetypeCard}>
-          <Text style={styles.archetypeNameText}>{fineTuningSettings.archetypeName}</Text>
-          <Text style={styles.archetypeDescText}>{fineTuningSettings.archetypeDescription}</Text>
-        </View>
-
-        {/* Health Assessment Status & Retake Action */}
-        <View style={styles.assessmentCard}>
-          <View style={styles.assessmentHeader}>
-            <View style={styles.assessmentIconCircle}>
-              <CheckCircle2 size={20} color={Theme.colors.feminismAccent} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.assessmentTitle}>Health Assessment</Text>
-              <Text style={styles.assessmentStatusText}>
-                {answeredCount > 0
-                  ? `${answeredCount}/${ASSESSMENT_QUESTIONS.length} questions answered`
-                  : `${ASSESSMENT_QUESTIONS.length} quick questions`}
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.column}>
+            <View style={styles.headerRow}>
+              <Text style={styles.headerTitle} accessibilityRole="header">
+                Profile
               </Text>
+              <Button
+                variant="secondary"
+                size="sm"
+                iconOnly
+                accessibilityLabel="Settings"
+                icon={<BrandIcon name="settings" size={22} color={Theme.colors.textPrimary} accent={Theme.colors.primary} />}
+                onPress={() => openSettings()}
+                style={styles.round}
+                testID="profile-settings"
+              />
             </View>
-          </View>
 
-          <TouchableOpacity
-            style={styles.retakeButton}
-            onPress={handleRetakeAssessment}
-            activeOpacity={0.8}
-          >
-            <RefreshCw size={15} color={themed('#FFFFFF')} style={{ marginRight: 6 }} />
-            <Text style={styles.retakeButtonText}>
-              {answeredCount > 0 ? 'Review or retake' : 'Start'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Fine-Tuning Control Center */}
-        <View style={styles.sectionBlock}>
-          <View style={styles.sectionHeaderRow}>
-            <Sliders size={16} color={Theme.colors.textPrimary} />
-            <Text style={styles.sectionTitle}>Settings</Text>
-          </View>
-
-          {/* Night mode */}
-          <View style={styles.settingItem}>
-            <View style={styles.settingTopRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.settingLabel}>Night mode</Text>
-                <Text style={styles.settingHelp}>A calm dark screen. Auto turns it on from 9 pm to 6 am.</Text>
-              </View>
-            </View>
-            <View style={styles.chipsRow}>
-              {(['off', 'on', 'auto'] as const).map((option) => {
-                const isActive = nightMode === option;
-                return (
-                  <TouchableOpacity
-                    key={option}
-                    style={[styles.settingChip, isActive && styles.settingChipActive]}
-                    onPress={() => setNightMode(option)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.settingChipText, isActive && styles.settingChipTextActive]}>
-                      {option === 'off' ? 'Off' : option === 'on' ? 'On' : 'Auto'}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* Setting 1: Strain Sensitivity */}
-          <View style={styles.settingItem}>
-            <View style={styles.settingTopRow}>
-              <View>
-                <Text style={styles.settingLabel}>Workout intensity</Text>
-              </View>
-            </View>
-            <View style={styles.chipsRow}>
-              {(['gentle', 'balanced', 'dynamic'] as const).map((level) => {
-                const isActive = fineTuningSettings.strainSensitivity === level;
-                return (
-                  <TouchableOpacity
-                    key={level}
-                    style={[styles.settingChip, isActive && styles.settingChipActive]}
-                    onPress={() => updateFineTuningSettings({ strainSensitivity: level })}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.settingChipText, isActive && styles.settingChipTextActive]}>
-                      {level.charAt(0).toUpperCase() + level.slice(1)}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* Setting 2: Preferred Somatic Therapy */}
-          <View style={styles.settingItem}>
-            <View style={styles.settingTopRow}>
-              <View>
-                <Text style={styles.settingLabel}>Calming practice</Text>
-              </View>
-            </View>
-            <View style={styles.chipsRow}>
-              {(['somatic', 'cbt', 'breathwork'] as const).map((mode) => {
-                const isActive = fineTuningSettings.preferredTherapy === mode;
-                const labels: Record<string, string> = {
-                  somatic: 'Body calm',
-                  cbt: 'Reframing',
-                  breathwork: 'Breathing',
-                };
-                return (
-                  <TouchableOpacity
-                    key={mode}
-                    style={[styles.settingChip, isActive && styles.settingChipActive]}
-                    onPress={() => updateFineTuningSettings({ preferredTherapy: mode })}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.settingChipText, isActive && styles.settingChipTextActive]}>
-                      {labels[mode]}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* Setting 3: Cortisol Auto-Override Switch */}
-          <View style={styles.toggleRow}>
-            <View style={{ flex: 1, paddingRight: 12 }}>
-              <Text style={styles.settingLabel}>Gentler workouts on hard days</Text>
-              <Text style={styles.settingHelp}>Swaps intense sessions for gentle ones when your strain is high.</Text>
-            </View>
-            <Switch
-              value={fineTuningSettings.autoCortisolOverride}
-              onValueChange={(val) => updateFineTuningSettings({ autoCortisolOverride: val })}
-              trackColor={{ false: themed('#E5E7EB'), true: themed('#FF88AD') }}
-              thumbColor={fineTuningSettings.autoCortisolOverride ? Theme.colors.feminismAccent : themed('#F3F4F6')}
-            />
-          </View>
-
-          {/* Setting 4: PMDD Early Shield Alert Switch */}
-          <View style={styles.toggleRow}>
-            <View style={{ flex: 1, paddingRight: 12 }}>
-              <Text style={styles.settingLabel}>Pre-period calm reminders</Text>
-              <Text style={styles.settingHelp}>Extra calming suggestions in the week before your period.</Text>
-            </View>
-            <Switch
-              value={fineTuningSettings.pmddEarlyShield}
-              onValueChange={(val) => updateFineTuningSettings({ pmddEarlyShield: val })}
-              trackColor={{ false: themed('#E5E7EB'), true: themed('#FF88AD') }}
-              thumbColor={fineTuningSettings.pmddEarlyShield ? Theme.colors.feminismAccent : themed('#F3F4F6')}
-            />
-          </View>
-
-          {/* Setting 5: Sleep Target */}
-          <View style={styles.settingItem}>
-            <View style={styles.settingTopRow}>
-              <View>
-                <Text style={styles.settingLabel}>Sleep goal</Text>
-              </View>
-              <View style={styles.sleepStepper}>
-                <TouchableOpacity
-                  style={styles.stepperBtn}
-                  onPress={() =>
-                    updateFineTuningSettings({
-                      dailySleepTargetHours: Math.max(6, fineTuningSettings.dailySleepTargetHours - 0.5),
-                    })
-                  }
+            {/* Who she is + backup at a glance */}
+            <Card padding="lg">
+              <View style={styles.identityRow}>
+                <Pressable
+                  onPress={handlePickImage}
+                  accessibilityRole="button"
+                  accessibilityLabel="Change profile photo"
+                  style={({ pressed }) => [styles.avatar, pressed && { opacity: 0.85 }]}
                 >
-                  <Text style={styles.stepperBtnText}>-</Text>
-                </TouchableOpacity>
-                <Text style={styles.sleepValueText}>
-                  {fineTuningSettings.dailySleepTargetHours}h
+                  {userPhoto ? <Image source={{ uri: userPhoto }} style={styles.avatarImage} /> : <Text style={styles.avatarText}>{initial}</Text>}
+                </Pressable>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.name}>{userName || (isGuest ? 'Trying SheSync' : 'You')}</Text>
+                  <Text style={styles.email}>{isGuest ? 'No account · everything stays on this phone' : userEmail || 'On this phone'}</Text>
+                </View>
+              </View>
+              <Pressable
+                onPress={() => openSettings('data')}
+                accessibilityRole="button"
+                accessibilityLabel={`${backup.title}. ${backup.detail}`}
+                style={({ pressed }) => [styles.backupPill, !backup.ok && styles.backupPillOff, pressed && { opacity: 0.85 }]}
+              >
+                <BrandIcon name={backup.ok ? 'cloud' : 'cloudOff'} size={20} color={backup.ok ? Theme.colors.strainOptimal : Theme.colors.textSecondary} />
+                <Text style={[styles.backupText, !backup.ok && styles.backupTextOff]} numberOfLines={1}>
+                  {backup.title}
                 </Text>
-                <TouchableOpacity
-                  style={styles.stepperBtn}
-                  onPress={() =>
-                    updateFineTuningSettings({
-                      dailySleepTargetHours: Math.min(10, fineTuningSettings.dailySleepTargetHours + 0.5),
-                    })
-                  }
-                >
-                  <Text style={styles.stepperBtnText}>+</Text>
-                </TouchableOpacity>
+              </Pressable>
+              {isGuest ? <Button title="Create an account" onPress={() => router.push('/signup')} fullWidth style={{ marginTop: Theme.space.sm }} /> : null}
+            </Card>
+
+            <GroupLabel icon="sparkle" tone="lilac">
+              Your SheSync
+            </GroupLabel>
+            <Card tone="lilac">
+              <Text style={styles.eyebrow}>YOUR RESULT</Text>
+              <Text style={styles.archetypeName}>{fineTuningSettings.archetypeName}</Text>
+              <Text style={styles.archetypeDesc}>{fineTuningSettings.archetypeDescription}</Text>
+            </Card>
+            <ListGroup style={{ marginTop: Theme.space.sm }}>
+              <ListRow
+                icon="report"
+                tone="rose"
+                title="Health assessment"
+                subtitle={answeredCount > 0 ? `${answeredCount}/${ASSESSMENT_QUESTIONS.length} questions answered` : `${ASSESSMENT_QUESTIONS.length} quick questions`}
+                value={answeredCount > 0 ? 'Review' : 'Start'}
+                onPress={() => router.push('/assessment' as Href)}
+              />
+              <ListRow
+                icon="sos"
+                tone="danger"
+                title="SOS"
+                subtitle={trusted ? `One-tap call: ${trusted.name} or Tele-MANAS 14416` : 'Add someone you trust for one-tap calls'}
+                onPress={() => router.push(ROUTES.sos)}
+              />
+              <ListRow
+                icon="report"
+                tone="lilac"
+                title="Doctor report (PDF)"
+                subtitle="Your last 90 days for your gynaecologist"
+                onPress={() => {
+                  generateClinicalPDF();
+                  router.push('/(tabs)/report' as Href);
+                }}
+              />
+            </ListGroup>
+            <View style={{ height: Theme.space.sm }} />
+            <FocusAreasCard mode="profile" />
+
+            <GroupLabel icon="appearance" tone="amber">
+              Preferences
+            </GroupLabel>
+            <Card>
+              <Text style={styles.prefLabel}>Appearance</Text>
+              <Text style={styles.prefHelp}>Dark is a calm slate screen. “Dark at night” switches from 9 pm to 6 am.</Text>
+              <View style={styles.chips}>
+                {APPEARANCE.map((o) => (
+                  <Chip key={o.id} label={o.label} selected={nightMode === o.id} onPress={() => setNightMode(o.id)} accessibilityRole="radio" small />
+                ))}
               </View>
-            </View>
-          </View>
-        </View>
 
-        {/* App lock */}
-        <TouchableOpacity style={styles.exportCard} onPress={() => router.push(ROUTES.appLock)} activeOpacity={0.8}>
-          <View style={styles.exportIconBox}>
-            <LockKeyhole size={20} color={Theme.colors.primaryDark} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.exportTitle}>App lock</Text>
-            <Text style={styles.exportSubtitle}>{lockOn ? 'On · PIN or fingerprint / Face ID' : 'Off · add a PIN or fingerprint / Face ID'}</Text>
-          </View>
-          <ChevronRight size={18} color={Theme.colors.textTertiary} />
-        </TouchableOpacity>
+              <Text style={[styles.prefLabel, styles.prefGap]}>Workout intensity</Text>
+              <View style={styles.chips}>
+                {(['gentle', 'balanced', 'dynamic'] as const).map((level) => (
+                  <Chip
+                    key={level}
+                    label={level.charAt(0).toUpperCase() + level.slice(1)}
+                    selected={fineTuningSettings.strainSensitivity === level}
+                    onPress={() => updateFineTuningSettings({ strainSensitivity: level })}
+                    accessibilityRole="radio"
+                    small
+                  />
+                ))}
+              </View>
 
-        {/* Clinical Report Export Link */}
-        <TouchableOpacity
-          style={styles.exportCard}
-          onPress={handleExportPDF}
-          activeOpacity={0.8}
-        >
-          <View style={styles.exportIconBox}>
-            <FileText size={20} color={Theme.colors.primaryDark} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.exportTitle}>Doctor report (PDF)</Text>
-            <Text style={styles.exportSubtitle}>Your last 90 days for your gynaecologist</Text>
-          </View>
-          <ChevronRight size={18} color={Theme.colors.textTertiary} />
-        </TouchableOpacity>
+              <Text style={[styles.prefLabel, styles.prefGap]}>Calming practice</Text>
+              <View style={styles.chips}>
+                {(
+                  [
+                    ['somatic', 'Body calm'],
+                    ['cbt', 'Reframing'],
+                    ['breathwork', 'Breathing'],
+                  ] as const
+                ).map(([mode, label]) => (
+                  <Chip
+                    key={mode}
+                    label={label}
+                    selected={fineTuningSettings.preferredTherapy === mode}
+                    onPress={() => updateFineTuningSettings({ preferredTherapy: mode })}
+                    accessibilityRole="radio"
+                    small
+                  />
+                ))}
+              </View>
 
-        {/* Export / import */}
-        <TouchableOpacity style={styles.exportCard} onPress={() => router.push(ROUTES.data)} activeOpacity={0.8}>
-          <View style={styles.exportIconBox}>
-            <Database size={20} color={Theme.colors.primaryDark} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.exportTitle}>Export or import data</Text>
-            <Text style={styles.exportSubtitle}>Backup, CSV, or bring data from Flo / Clue</Text>
-          </View>
-          <ChevronRight size={18} color={Theme.colors.textTertiary} />
-        </TouchableOpacity>
+              <View style={[styles.sleepRow, styles.prefGap]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.prefLabel}>Sleep goal</Text>
+                  <Text style={styles.prefHelp}>Used for the sleep card and your strain score.</Text>
+                </View>
+                <Stepper
+                  label="Sleep goal"
+                  value={fineTuningSettings.dailySleepTargetHours}
+                  onChange={(v) => updateFineTuningSettings({ dailySleepTargetHours: v })}
+                  min={6}
+                  max={10}
+                  step={0.5}
+                  format={(v) => `${v}h`}
+                />
+              </View>
+            </Card>
+            <ListGroup style={{ marginTop: Theme.space.sm }}>
+              <SwitchRow
+                icon="fitness"
+                tone="mint"
+                title="Gentler workouts on hard days"
+                subtitle="Swaps intense sessions for gentle ones when your strain is high"
+                value={fineTuningSettings.autoCortisolOverride}
+                onValueChange={(val) => updateFineTuningSettings({ autoCortisolOverride: val })}
+              />
+            </ListGroup>
 
-        {/* Backup status */}
-        <BackupRow
-          state={sync.state}
-          lastSyncedAt={sync.lastSyncedAt}
-          onDevice={isOfflineAccount || !isSupabaseConfigured}
-          onSignIn={() => router.push({ pathname: '/login', params: { email: userEmail ?? '' } })}
-          onRetry={() => void flushCloudSync(15000)}
-        />
-
-        {/* Logout Button */}
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={confirmLogout}
-          disabled={!!busy}
-          activeOpacity={0.8}
-        >
-          <LogOut size={16} color={themed('#DC2626')} style={{ marginRight: 8 }} />
-          <Text style={styles.logoutText}>{busy === 'signout' ? 'Signing out…' : 'Sign out'}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.deleteButton} onPress={confirmDelete} disabled={!!busy} activeOpacity={0.7}>
-          <Trash2 size={14} color={Theme.colors.textTertiary} style={{ marginRight: 6 }} />
-          <Text style={styles.deleteText}>{busy === 'delete' ? 'Deleting…' : 'Delete account'}</Text>
-        </TouchableOpacity>
-
-        <View style={{ height: 40 }} />
+            <GroupLabel icon="settings" tone="neutral">
+              Settings
+            </GroupLabel>
+            <ListGroup>
+              {SETTINGS_ROWS.map((r) => (
+                <ListRow key={r.id} icon={r.icon} tone={r.tone} title={r.title} subtitle={r.subtitle} onPress={() => openSettings(r.id)} testID={`profile-settings-${r.id}`} />
+              ))}
+            </ListGroup>
+            <View style={{ height: Theme.space.xxxl }} />
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -428,516 +242,46 @@ export default function ProfileScreen() {
   );
 }
 
-function timeAgo(ms: number): string {
-  const min = Math.round((Date.now() - ms) / 60000);
-  if (min < 1) return 'just now';
-  if (min < 60) return `${min} min ago`;
-  const h = Math.round(min / 60);
-  if (h < 24) return `${h} h ago`;
-  return new Date(ms).toLocaleDateString();
-}
-
-function BackupRow(props: {
-  state: ReturnType<typeof useSyncStatus.getState>['state'];
-  lastSyncedAt?: number;
-  onDevice: boolean;
-  onSignIn: () => void;
-  onRetry: () => void;
-}) {
-  const { state, lastSyncedAt, onDevice } = props;
-  let title = 'Backed up';
-  let detail = lastSyncedAt ? timeAgo(lastSyncedAt) : 'Waiting for your first change';
-  let action: { label: string; onPress: () => void } | null = null;
-  let ok = true;
-
-  if (onDevice) {
-    ok = false;
-    title = 'Saved on this device only';
-    detail = isSupabaseConfigured ? 'Sign in online to back up your data' : 'Cloud backup is not set up';
-    if (isSupabaseConfigured) action = { label: 'Sign in', onPress: props.onSignIn };
-  } else if (state === 'syncing') {
-    title = 'Backing up…';
-    detail = lastSyncedAt ? `Last backup ${timeAgo(lastSyncedAt)}` : 'First backup';
-  } else if (state === 'signin') {
-    ok = false;
-    title = 'Backup paused';
-    detail = 'Sign in again to keep backing up';
-    action = { label: 'Sign in', onPress: props.onSignIn };
-  } else if (state === 'error') {
-    ok = false;
-    title = 'Backup paused';
-    detail = 'No connection — it will retry automatically';
-    action = { label: 'Retry', onPress: props.onRetry };
-  }
-
-  const Icon = ok ? Cloud : CloudOff;
-  return (
-    <View style={styles.backupRow}>
-      <View style={[styles.backupIcon, !ok && styles.backupIconOff]}>
-        <Icon size={18} color={ok ? Theme.colors.primaryDark : Theme.colors.textTertiary} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.backupTitle}>{title}</Text>
-        <Text style={styles.backupDetail}>{detail}</Text>
-      </View>
-      {action ? (
-        <TouchableOpacity onPress={action.onPress} style={styles.backupAction} activeOpacity={0.8}>
-          <Text style={styles.backupActionText}>{action.label}</Text>
-        </TouchableOpacity>
-      ) : null}
-    </View>
-  );
-}
-
 const styles = createStyles(() => ({
-  safeArea: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  scrollWrapper: {
-    flex: 1,
-    width: '100%',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingTop: 12,
-    paddingBottom: 100,
-  },
-  centeredWrapper: {
-    width: '100%',
-    maxWidth: 520,
-    alignSelf: 'center',
-    paddingHorizontal: 16,
-  },
-  headerRow: {
-    marginBottom: 16,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#FFE3EC',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: Theme.radius.full,
-    marginBottom: 6,
-  },
-  headerLogo: {
-    width: 14,
-    height: 14,
-    borderRadius: 3,
-  },
-  headerBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: Theme.colors.feminismAccent,
-    letterSpacing: 0.6,
-  },
-  headerTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: Theme.colors.textPrimary,
-    letterSpacing: -0.5,
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    color: Theme.colors.textSecondary,
-    marginTop: 2,
-  },
-  identityCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: Theme.radius.xl,
-    padding: 16,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#FFE2EB',
-    ...Theme.shadows.soft,
-    gap: 14,
-  },
-  avatarGlow: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#FFE5ED',
+  safeArea: { flex: 1, backgroundColor: 'transparent' },
+  scrollContent: { paddingBottom: 96 },
+  column: { width: '100%', maxWidth: 520, alignSelf: 'center', paddingHorizontal: Theme.space.md },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: Theme.space.sm, paddingBottom: Theme.space.md },
+  headerTitle: { ...Theme.type.h1, color: Theme.colors.textPrimary, letterSpacing: -0.5 },
+  round: { borderRadius: Theme.radius.full, borderColor: Theme.colors.cardBorder },
+  identityRow: { flexDirection: 'row', alignItems: 'center', gap: Theme.space.md },
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: Theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFADC4',
+    overflow: 'hidden',
   },
-  avatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Theme.colors.feminismAccent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  avatarImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 22,
-  },
-  identityInfo: {
-    flex: 1,
-  },
-  userNameText: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Theme.colors.textPrimary,
-  },
-  userEmailText: {
-    fontSize: 12,
-    color: Theme.colors.textSecondary,
-    marginTop: 1,
-  },
-  membershipPill: {
+  avatarImage: { width: 64, height: 64 },
+  avatarText: { ...Theme.type.h2, color: Theme.colors.onPrimary },
+  name: { ...Theme.type.h3, color: Theme.colors.textPrimary },
+  email: { ...Theme.type.bodySm, color: Theme.colors.textSecondary, marginTop: 2 },
+  backupPill: {
+    marginTop: Theme.space.md,
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    alignSelf: 'flex-start',
-    backgroundColor: '#FFF0F5',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: Theme.radius.full,
-    marginTop: 6,
-    borderWidth: 1,
-    borderColor: '#FFD7E3',
-  },
-  membershipText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: Theme.colors.feminismAccent,
-  },
-  archetypeCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: Theme.radius.xl,
-    padding: 18,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#FFE2EB',
-    ...Theme.shadows.soft,
-  },
-  archetypeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  archetypeTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  archetypeTagText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: Theme.colors.feminismAccent,
-    letterSpacing: 0.8,
-  },
-  conditionPill: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Theme.colors.primaryDark,
-    backgroundColor: '#FFE4E8',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: Theme.radius.full,
-  },
-  archetypeNameText: {
-    fontSize: 19,
-    fontWeight: '800',
-    color: Theme.colors.textPrimary,
-    letterSpacing: -0.3,
-  },
-  archetypeTaglineText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Theme.colors.primaryDark,
-    marginTop: 2,
-    marginBottom: 6,
-  },
-  archetypeDescText: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: '#4B5563',
-  },
-  assessmentCard: {
-    backgroundColor: '#FFF5F8',
-    borderRadius: Theme.radius.xl,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#FFD3E0',
-  },
-  assessmentHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 12,
-  },
-  assessmentIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#FFADC4',
-  },
-  assessmentTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: Theme.colors.textPrimary,
-  },
-  assessmentStatusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Theme.colors.textSecondary,
-    marginTop: 1,
-  },
-  retakeButton: {
-    backgroundColor: '#46375A',
+    gap: Theme.space.xs,
+    paddingHorizontal: Theme.space.sm,
     borderRadius: Theme.radius.md,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Theme.shadows.card,
+    backgroundColor: Theme.colors.successLight,
   },
-  retakeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  sectionBlock: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: Theme.radius.xl,
-    padding: 18,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#FFE2EB',
-    ...Theme.shadows.soft,
-    gap: 14,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: Theme.colors.textPrimary,
-  },
-  sectionSubtitle: {
-    fontSize: 12,
-    color: Theme.colors.textSecondary,
-    marginTop: -8,
-    marginBottom: 2,
-  },
-  settingItem: {
-    borderTopWidth: 1,
-    borderTopColor: '#FFF0F5',
-    paddingTop: 12,
-  },
-  settingTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  settingLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Theme.colors.textPrimary,
-  },
-  settingHelp: {
-    fontSize: 11,
-    color: Theme.colors.textSecondary,
-    marginTop: 2,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 4,
-  },
-  settingChip: {
-    flex: 1,
-    paddingVertical: 9,
-    paddingHorizontal: 8,
-    borderRadius: Theme.radius.md,
-    backgroundColor: '#FFF8FA',
-    borderWidth: 1,
-    borderColor: '#FFD7E3',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  settingChipActive: {
-    backgroundColor: Theme.colors.feminismAccent,
-    borderColor: Theme.colors.feminismAccent,
-  },
-  settingChipText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Theme.colors.textPrimary,
-  },
-  settingChipTextActive: {
-    color: '#FFFFFF',
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTopWidth: 1,
-    borderTopColor: '#FFF0F5',
-    paddingTop: 12,
-  },
-  sleepStepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#FFF8FA',
-    borderRadius: Theme.radius.full,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: '#FFD7E3',
-  },
-  stepperBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#FFADC4',
-  },
-  stepperBtnText: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: Theme.colors.feminismAccent,
-    lineHeight: 18,
-  },
-  sleepValueText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: Theme.colors.textPrimary,
-  },
-  exportCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: Theme.radius.lg,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#FFE2EB',
-    marginBottom: 16,
-    gap: 12,
-    ...Theme.shadows.soft,
-  },
-  exportIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: '#FFE4E8',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  exportTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Theme.colors.textPrimary,
-  },
-  exportSubtitle: {
-    fontSize: 11,
-    color: Theme.colors.textSecondary,
-    marginTop: 1,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: Theme.radius.md,
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FEE2E2',
-    alignSelf: 'stretch',
-  },
-  logoutText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#DC2626',
-    flexShrink: 1,
-    textAlign: 'center',
-  },
-  deleteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginTop: 6,
-  },
-  deleteText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Theme.colors.textTertiary,
-  },
-  backupRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 14,
-    marginBottom: 14,
-    borderRadius: Theme.radius.md,
-    backgroundColor: Theme.colors.cardGlass,
-    borderWidth: 1,
-    borderColor: Theme.colors.cardBorder,
-  },
-  backupIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Theme.colors.primaryLight,
-  },
-  backupIconOff: {
-    backgroundColor: Theme.colors.secondaryLight,
-  },
-  backupTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Theme.colors.textPrimary,
-  },
-  backupDetail: {
-    fontSize: 12,
-    color: Theme.colors.textSecondary,
-    marginTop: 2,
-  },
-  backupAction: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 999,
-    backgroundColor: Theme.colors.primaryLight,
-  },
-  backupActionText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Theme.colors.primaryDark,
-  },
+  backupPillOff: { backgroundColor: Theme.colors.backgroundMuted },
+  backupText: { ...Theme.type.label, color: Theme.colors.strainOptimal, flexShrink: 1 },
+  backupTextOff: { color: Theme.colors.textSecondary },
+  eyebrow: { ...Theme.type.caption, fontWeight: '800', letterSpacing: 0.6, color: Theme.colors.secondaryDark },
+  archetypeName: { ...Theme.type.h3, color: Theme.colors.textPrimary, marginTop: 4 },
+  archetypeDesc: { ...Theme.type.bodySm, color: Theme.colors.textSecondary, marginTop: 4 },
+  prefLabel: { ...Theme.type.label, fontSize: 16, lineHeight: 22, color: Theme.colors.textPrimary },
+  prefHelp: { ...Theme.type.bodySm, color: Theme.colors.textSecondary, marginTop: 2 },
+  prefGap: { marginTop: Theme.space.lg },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Theme.space.xs, marginTop: Theme.space.sm },
+  sleepRow: { flexDirection: 'row', alignItems: 'center', gap: Theme.space.sm },
 }));

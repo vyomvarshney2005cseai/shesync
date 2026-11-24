@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, Modal, AppState, Platform, Alert, TouchableOpacity, Image } from 'react-native';
+import { View, Text, Modal, AppState, Platform, Alert, Image } from 'react-native';
 import { LockKeyhole } from 'lucide-react-native';
 import { Theme, createStyles } from '@/constants/theme';
 import { useLockStore } from '@/store/useLockStore';
@@ -12,6 +12,7 @@ import {
   resumeAppLock,
   verifyPin,
 } from '@/lib/appLock';
+import { Button } from '@/components/ds';
 
 /**
  * Covers the whole app while it is locked. Locks on launch and the moment she
@@ -170,9 +171,7 @@ function LockScreen() {
         biometricLabel={bioLabel ?? undefined}
         onBiometric={bioLabel ? () => void tryBiometrics() : undefined}
       />
-      <TouchableOpacity onPress={forgot} style={styles.forgot} activeOpacity={0.7}>
-        <Text style={styles.forgotText}>Forgot PIN?</Text>
-      </TouchableOpacity>
+      <Button variant="link" title="Forgot PIN?" onPress={forgot} style={styles.forgot} />
     </View>
   );
 }
@@ -186,7 +185,7 @@ const styles = createStyles(() => ({
     paddingHorizontal: 24,
   },
   logo: { width: 96, height: 96, opacity: 0.9 },
-  top: { alignItems: 'center', marginBottom: 30 },
+  top: { alignItems: 'center', marginBottom: 32 },
   iconRing: {
     width: 60,
     height: 60,
@@ -194,10 +193,10 @@ const styles = createStyles(() => ({
     backgroundColor: Theme.colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+    marginBottom: 16,
   },
-  title: { fontSize: 22, fontWeight: '800', color: Theme.colors.textPrimary, letterSpacing: -0.4 },
-  sub: { fontSize: 14, color: Theme.colors.textSecondary, marginTop: 6, textAlign: 'center', minHeight: 20 },
-  forgot: { marginTop: 26, padding: 8 },
+  title: { fontSize: 20, fontWeight: '800', color: Theme.colors.textPrimary, letterSpacing: -0.4 },
+  sub: { fontSize: 14, color: Theme.colors.textSecondary, marginTop: 8, textAlign: 'center', minHeight: 20 },
+  forgot: { marginTop: 28 },
   forgotText: { fontSize: 14, fontWeight: '700', color: Theme.colors.primaryDark },
 }));

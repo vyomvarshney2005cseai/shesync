@@ -4,7 +4,7 @@ import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { GameResult, LevelPicker, StatStrip, clock } from '@/components/games/GameKit';
 import { Card, uiStyles } from '@/components/common/ui';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
+import { Button } from '@/components/ds';
 import { Theme, createStyles, themed } from '@/constants/theme';
 import { makeMathsQuestion, type MathsQuestion } from '@/lib/games';
 import { useGamesStore } from '@/store/useGamesStore';
@@ -152,7 +152,7 @@ export default function MathsGame() {
               ? 'Answer as many as you can in 60 seconds.'
               : 'No timer. Fifteen questions at your own pace — a calm way to wake up your brain.'}
           </Text>
-          <PrimaryButton title="Start" onPress={start} fullWidth style={{ marginTop: 12 }} />
+          <Button title="Start" onPress={start} fullWidth style={{ marginTop: 12 }} />
         </Card>
       ) : null}
 
@@ -173,7 +173,7 @@ const styles = createStyles(() => ({
   qCard: { alignItems: 'center', paddingVertical: 28 },
   question: { fontSize: 40, fontWeight: '800', color: Theme.colors.textPrimary, fontVariant: ['tabular-nums'] },
   feedback: { fontSize: 14, fontWeight: '800', marginTop: 8, minHeight: 20 },
-  options: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 14 },
+  options: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 16 },
   option: {
     width: '47.5%',
     flexGrow: 1,
@@ -183,7 +183,6 @@ const styles = createStyles(() => ({
     borderWidth: 1.5,
     borderColor: Theme.colors.cardBorder,
     alignItems: 'center',
-    ...Theme.shadows.card,
   },
   optionText: { fontSize: 24, fontWeight: '800', color: Theme.colors.textPrimary, fontVariant: ['tabular-nums'] },
 }));

@@ -1,0 +1,10 @@
+# 4. An (i) on each health-check question explains why it matters.
+appId: com.vyomvarshney1234.shesync
+name: Why we ask
+---
+- runFlow: subflows/start-guest.yaml
+- openLink: "shesync://health-check"
+- tapOn:
+    id: "why-hc_soak"
+- assertVisible: "WHY WE ASK"
+- assertVisible: ".*anaemia.*"

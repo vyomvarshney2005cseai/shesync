@@ -5,7 +5,8 @@ import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { GameResult, LevelPicker, StatStrip, clock } from '@/components/games/GameKit';
 import { Card, uiStyles } from '@/components/common/ui';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
+import { Button } from '@/components/ds';
+import { useReduceMotion } from '@/lib/motion';
 import { Theme, createStyles } from '@/constants/theme';
 import { BREATH_PATTERNS } from '@/lib/games';
 import { useGamesStore } from '@/store/useGamesStore';
@@ -33,6 +34,7 @@ export default function CalmBreathing() {
   const [done, setDone] = useState(false);
   const [result, setResult] = useState<{ id: string; newBest: boolean } | null>(null);
   const [scale] = useState(() => new Animated.Value(0.55));
+  const reduceMotion = useReduceMotion();
 
   const pattern = BREATH_PATTERNS[patternId];
   const cycleSec = pattern.steps.reduce((a, s) => a + s.seconds, 0);
@@ -79,7 +81,13 @@ export default function CalmBreathing() {
   // Animate the circle each time a new step begins.
   useEffect(() => {
     if (!running) {
-      Animated.timing(scale, { toValue: 0.55, duration: 400, useNativeDriver: Platform.OS !== 'web' }).start();
+      if (reduceMotion) scale.setValue(0.55);
+      else Animated.timing(scale, { toValue: 0.55, duration: 400, useNativeDriver: Platform.OS !== 'web' }).start();
+      return;
+    }
+    // Reduced motion: jump straight to each step's size instead of growing and shrinking.
+    if (reduceMotion) {
+      scale.setValue(step.scale);
       return;
     }
     Animated.timing(scale, {
@@ -88,7 +96,7 @@ export default function CalmBreathing() {
       easing: Easing.inOut(Easing.ease),
       useNativeDriver: Platform.OS !== 'web',
     }).start();
-  }, [running, stepIdx, cycleNo, step.scale, step.seconds, scale]);
+  }, [running, stepIdx, cycleNo, step.scale, step.seconds, scale, reduceMotion]);
 
   const start = () => {
     const t = Date.now();
@@ -118,7 +126,7 @@ export default function CalmBreathing() {
             value={patternId}
             onChange={setPatternId}
           />
-          <Text style={[uiStyles.muted, { marginTop: -4, marginBottom: 10 }]}>{pattern.hint}</Text>
+          <Text style={[uiStyles.muted, { marginTop: -4, marginBottom: 12 }]}>{pattern.hint}</Text>
           <LevelPicker levels={[...DURATIONS]} value={duration} onChange={setDuration} />
         </>
       ) : null}
@@ -142,9 +150,9 @@ export default function CalmBreathing() {
       </View>
 
       {!running && !done ? (
-        <PrimaryButton title="Begin" onPress={start} fullWidth style={{ marginTop: 8 }} />
+        <Button title="Begin" onPress={start} fullWidth style={{ marginTop: 8 }} />
       ) : null}
-      {running ? <PrimaryButton title="Finish" variant="outline" onPress={stop} fullWidth style={{ marginTop: 8 }} /> : null}
+      {running ? <Button title="Finish" variant="secondary" onPress={stop} fullWidth style={{ marginTop: 8 }} /> : null}
 
       {done ? (
         <GameResult
@@ -167,7 +175,7 @@ export default function CalmBreathing() {
 
 const SIZE = 240;
 const styles = createStyles(() => ({
-  stage: { height: SIZE + 30, alignItems: 'center', justifyContent: 'center', marginVertical: 6 },
+  stage: { height: SIZE + 30, alignItems: 'center', justifyContent: 'center', marginVertical: 8 },
   halo: {
     position: 'absolute',
     width: SIZE + 30,
@@ -182,9 +190,8 @@ const styles = createStyles(() => ({
     borderRadius: SIZE / 2,
     backgroundColor: Theme.colors.secondary,
     opacity: 0.85,
-    ...Theme.shadows.glowing,
   },
   center: { alignItems: 'center' },
   stepLabel: { fontSize: 24, fontWeight: '800', color: '#FFFFFF', textShadowColor: 'rgba(0,0,0,0.2)', textShadowRadius: 4 },
-  stepCount: { fontSize: 44, fontWeight: '800', color: '#FFFFFF', fontVariant: ['tabular-nums'] },
+  stepCount: { fontSize: 40, fontWeight: '800', color: '#FFFFFF', fontVariant: ['tabular-nums'] },
 }));

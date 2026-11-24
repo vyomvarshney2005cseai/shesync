@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, Pressable, ScrollView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Check, X } from 'lucide-react-native';
@@ -10,6 +10,7 @@ import { AuthGate } from '@/components/common/AuthGate';
 import { DIGESTIVE_SYMPTOMS, cleanDigestive } from '@/lib/digestive';
 import { todayKey } from '@/lib/dates';
 import type { DigestiveSymptom, FlowIntensity, MoodLevel, PainLevel, SymptomLog } from '@/types';
+import { Button, Chip } from '@/components/ds';
 
 const MOODS: { label: string; emoji: string }[] = [
   { label: 'Depleted', emoji: '😞' },
@@ -109,9 +110,7 @@ function CheckInSheet() {
               {initial.editing ? 'Update today’s check-in' : 'Slide what applies today. Skip the rest.'}
             </Text>
           </View>
-          <TouchableOpacity onPress={close} style={styles.closeBtn} accessibilityLabel="Close">
-            <X size={18} color={Theme.colors.textSecondary} />
-          </TouchableOpacity>
+          <Button variant="secondary" size="sm" iconOnly onPress={close} accessibilityLabel="Close" icon={<X size={20} color={Theme.colors.textSecondary} />} style={styles.closeBtn} />
         </View>
 
         {saved ? (
@@ -172,7 +171,7 @@ function CheckInSheet() {
                   value={sleep}
                   restAt={sleepTarget}
                   onChange={setSleep}
-                  color="#4F8DBA"
+                  color={Theme.colors.strainTeal}
                   accessibilityLabel="Hours slept last night"
                   valueText={(v) => `${v} hours`}
                 />
@@ -189,48 +188,31 @@ function CheckInSheet() {
                   {DIGESTIVE_SYMPTOMS.map((d) => {
                     const on = tummy.includes(d.id);
                     return (
-                      <TouchableOpacity
-                        key={d.id}
-                        onPress={() => toggleTummy(d.id)}
-                        style={[styles.chip, on && styles.chipOn]}
-                        activeOpacity={0.8}
-                        accessibilityRole="checkbox"
-                        accessibilityState={{ checked: on }}
-                      >
-                        <Text style={[styles.chipText, on && styles.chipTextOn]}>
-                          {d.emoji} {d.label}
-                        </Text>
-                      </TouchableOpacity>
+                      <Chip key={d.id} small label={`${d.emoji} ${d.label}`} selected={on} onPress={() => toggleTummy(d.id)} accessibilityRole="checkbox" />
                     );
                   })}
-                  <TouchableOpacity
+                  <Chip
+                    small
+                    label="All fine"
+                    selected={tummyTouched && !tummy.length}
                     onPress={() => {
                       setTummyTouched(true);
                       setTummy([]);
                     }}
-                    style={[styles.chip, tummyTouched && !tummy.length && styles.chipOn]}
-                    activeOpacity={0.8}
                     accessibilityRole="checkbox"
-                    accessibilityState={{ checked: tummyTouched && !tummy.length }}
-                  >
-                    <Text style={[styles.chipText, tummyTouched && !tummy.length && styles.chipTextOn]}>All fine</Text>
-                  </TouchableOpacity>
+                  />
                 </View>
               </View>
             </ScrollView>
 
-            <TouchableOpacity
-              style={[styles.saveBtn, !count && styles.saveBtnOff]}
+            <Button
+              size="lg"
+              fullWidth
               onPress={handleSave}
               disabled={!count}
-              activeOpacity={0.85}
-              accessibilityRole="button"
-            >
-              <Check size={18} color={themed('#FFFFFF')} />
-              <Text style={styles.saveText}>
-                {count ? `Save check-in (${count})` : 'Move a slider to start'}
-              </Text>
-            </TouchableOpacity>
+              title={count ? `Save check-in (${count})` : 'Move a slider to start'}
+              icon={<Check size={20} color={count ? Theme.colors.onPrimary : Theme.colors.textTertiary} />}
+            />
           </>
         )}
       </View>
@@ -269,16 +251,13 @@ function SavedNote({ pain, flow, onDone }: { pain: number | null; flow: FlowInte
         </Text>
       )}
       <View style={styles.noteRow}>
-        <TouchableOpacity
-          style={styles.noteGhost}
+        <Button
+          variant="secondary"
+          title="Ask YourGoGirl"
           onPress={() => router.replace('/your-go-girl')}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.noteGhostText}>Ask YourGoGirl</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.noteBtn} onPress={onDone} activeOpacity={0.85}>
-          <Text style={styles.noteBtnText}>Done</Text>
-        </TouchableOpacity>
+          style={styles.noteGhost}
+        />
+        <Button variant="primary" title="Done" onPress={onDone} style={styles.noteBtn} />
       </View>
     </View>
   );
@@ -300,10 +279,10 @@ const styles = createStyles(() => ({
     alignSelf: 'center',
     maxHeight: '92%',
     backgroundColor: Theme.colors.background,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 12,
     ...(Platform.OS === 'web' ? ({ boxShadow: '0 -8px 30px rgba(0,0,0,0.12)' } as object) : {}),
   },
   handle: {
@@ -312,78 +291,57 @@ const styles = createStyles(() => ({
     height: 5,
     borderRadius: 3,
     backgroundColor: Theme.colors.cardBorder,
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  headRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 6 },
+  headRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 8 },
   title: { fontSize: 20, fontWeight: '800', color: Theme.colors.textPrimary, letterSpacing: -0.4 },
-  subtitle: { fontSize: 12.5, color: Theme.colors.textSecondary, marginTop: 2 },
-  closeBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Theme.colors.backgroundMuted,
-  },
+  subtitle: { fontSize: 14, color: Theme.colors.textSecondary, marginTop: 4 },
+  closeBtn: { width: 34 },
   body: { flexGrow: 0 },
-  bodyContent: { paddingVertical: 8, gap: 6 },
+  bodyContent: { paddingVertical: 8, gap: 8 },
   row: {
     backgroundColor: Theme.colors.card,
     borderRadius: Theme.radius.lg,
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: 6,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   rowHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   rowLabel: { fontSize: 14, fontWeight: '800', color: Theme.colors.textPrimary },
-  rowValue: { fontSize: 13, fontWeight: '700', color: Theme.colors.primaryDark },
+  rowValue: { fontSize: 14, fontWeight: '700', color: Theme.colors.primaryDark },
   rowValueEmpty: { color: Theme.colors.textTertiary, fontWeight: '600' },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, paddingVertical: 8 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingVertical: 8 },
   chip: {
-    paddingHorizontal: 11,
-    paddingVertical: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: Theme.radius.full,
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
     backgroundColor: Theme.colors.backgroundAlt,
   },
   chipOn: { backgroundColor: Theme.colors.primaryLight, borderColor: Theme.colors.primary },
-  chipText: { fontSize: 12.5, fontWeight: '700', color: Theme.colors.textSecondary },
+  chipText: { fontSize: 14, fontWeight: '700', color: Theme.colors.textSecondary },
   chipTextOn: { color: Theme.colors.primaryDark },
   saveBtn: {
-    marginTop: 10,
+    marginTop: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     backgroundColor: Theme.colors.primary,
     borderRadius: Theme.radius.lg,
-    paddingVertical: 15,
-    ...Theme.shadows.glowing,
+    paddingVertical: 16,
   },
   saveBtnOff: { opacity: 0.5 },
-  saveText: { fontSize: 15, fontWeight: '800', color: '#FFFFFF' },
-  note: { paddingVertical: 12, gap: 10 },
+  saveText: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
+  note: { paddingVertical: 12, gap: 12 },
   noteTitle: { fontSize: 18, fontWeight: '800', color: Theme.colors.strainOptimal },
-  noteText: { fontSize: 13.5, lineHeight: 20, color: Theme.colors.textPrimary },
-  noteRow: { flexDirection: 'row', gap: 10, marginTop: 6 },
-  noteGhost: {
-    flex: 1,
-    paddingVertical: 13,
-    borderRadius: Theme.radius.lg,
-    borderWidth: 1,
-    borderColor: Theme.colors.cardBorder,
-    alignItems: 'center',
-  },
+  noteText: { fontSize: 14, lineHeight: 20, color: Theme.colors.textPrimary },
+  noteRow: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  noteGhost: { flex: 1 },
   noteGhostText: { fontSize: 14, fontWeight: '800', color: Theme.colors.primaryDark },
-  noteBtn: {
-    flex: 1,
-    paddingVertical: 13,
-    borderRadius: Theme.radius.lg,
-    backgroundColor: Theme.colors.primary,
-    alignItems: 'center',
-  },
+  noteBtn: { flex: 1 },
   noteBtnText: { fontSize: 14, fontWeight: '800', color: '#FFFFFF' },
 }));

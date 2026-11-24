@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput } from 'react-native';
 import { Brain, Send, Check } from 'lucide-react-native';
 import { Theme, createStyles } from '@/constants/theme';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
+import { Button } from '@/components/ds';
 import type { CBTPrompt } from '@/types';
 
 interface CBTReframeCardProps {
@@ -55,10 +55,10 @@ export const CBTReframeCard: React.FC<CBTReframeCardProps> = ({
             numberOfLines={3}
             textAlignVertical="top"
           />
-          <PrimaryButton
+          <Button
             title="Save Reflection"
-            variant="dark"
-            icon={<Send size={14} color="#FFFFFF" />}
+            variant="primary"
+            icon={<Send size={18} color={Theme.colors.onPrimary} />}
             onPress={() => text.trim() && onSubmit(text.trim())}
             fullWidth
             style={{ marginTop: 12 }}
@@ -76,13 +76,12 @@ const styles = createStyles(() => ({
     padding: 20,
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
-    ...Theme.shadows.card,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 14,
+    marginBottom: 16,
   },
   iconCircle: {
     width: 44,
@@ -96,30 +95,30 @@ const styles = createStyles(() => ({
     flex: 1,
   },
   typeLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: Theme.colors.primary,
     letterSpacing: 1,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   trigger: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: Theme.colors.textSecondary,
   },
   promptText: {
     fontSize: 14,
-    lineHeight: 21,
+    lineHeight: 20,
     color: Theme.colors.textPrimary,
     fontWeight: '500',
-    marginBottom: 14,
+    marginBottom: 16,
     fontStyle: 'italic',
   },
   textInput: {
     backgroundColor: Theme.colors.backgroundAlt,
     borderRadius: Theme.radius.md,
-    padding: 14,
-    fontSize: 14,
+    padding: 16,
+    fontSize: 16,
     color: Theme.colors.textPrimary,
     minHeight: 80,
     borderWidth: 1,
@@ -128,9 +127,9 @@ const styles = createStyles(() => ({
   },
   submittedWrap: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
     backgroundColor: 'rgba(16, 185, 129, 0.06)',
-    padding: 14,
+    padding: 16,
     borderRadius: Theme.radius.md,
     borderWidth: 1,
     borderColor: 'rgba(16, 185, 129, 0.2)',
@@ -147,7 +146,7 @@ const styles = createStyles(() => ({
     flex: 1,
   },
   submittedLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: Theme.colors.strainOptimal,
     letterSpacing: 0.6,
@@ -155,8 +154,8 @@ const styles = createStyles(() => ({
     marginBottom: 4,
   },
   submittedText: {
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 14,
+    lineHeight: 20,
     color: Theme.colors.textPrimary,
   },
 }));

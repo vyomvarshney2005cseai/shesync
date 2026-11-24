@@ -145,7 +145,7 @@ export default function MiniSudoku() {
           <Text style={[styles.padText, { fontSize: 16 }]}>⌫</Text>
         </Pressable>
       </View>
-      <View style={[uiStyles.row, { justifyContent: 'center', gap: 10, marginTop: 12 }]}>
+      <View style={[uiStyles.row, { justifyContent: 'center', gap: 12, marginTop: 12 }]}>
         <Chip label="💡 Hint" onPress={hint} />
         <Chip label="New puzzle" onPress={() => reset()} />
       </View>
@@ -188,13 +188,13 @@ const styles = createStyles(() => ({
   given: { backgroundColor: '#F9FAFB' },
   selected: { backgroundColor: Theme.colors.primaryLight },
   bad: { backgroundColor: '#FFF1F2' },
-  cellText: { fontSize: 26, fontWeight: '700', color: Theme.colors.secondary },
+  cellText: { fontSize: 24, fontWeight: '700', color: Theme.colors.secondary },
   givenText: { color: Theme.colors.textPrimary, fontWeight: '800' },
-  pad: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 10, marginTop: 16 },
+  pad: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: 16 },
   padBtn: {
     width: 52,
     height: 52,
-    borderRadius: 14,
+    borderRadius: 16,
     backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
     borderColor: Theme.colors.cardBorder,

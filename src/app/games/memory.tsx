@@ -110,16 +110,15 @@ export default function MemoryGame() {
 }
 
 const styles = createStyles(() => ({
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center' },
   card: {
     aspectRatio: 0.85,
     borderRadius: 16,
     backgroundColor: Theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    ...Theme.shadows.soft,
   },
   cardUp: { backgroundColor: '#FFFFFF', borderWidth: 2, borderColor: Theme.colors.primaryLight },
   cardMatched: { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0', opacity: 0.8 },
-  symbol: { fontSize: 30, color: '#FFFFFF' },
+  symbol: { fontSize: 28, color: '#FFFFFF' },
 }));

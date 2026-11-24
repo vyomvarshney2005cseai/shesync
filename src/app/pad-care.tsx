@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { Check, ExternalLink, Phone, TriangleAlert } from 'lucide-react-native';
 import { AuthGate } from '@/components/common/AuthGate';
 import { Screen } from '@/components/common/Screen';
@@ -26,6 +26,9 @@ import { daysSinceKey } from '@/lib/dates';
 import { callNumber, CRISIS_LINES, openUrl } from '@/lib/openExternal';
 import { useAppStore } from '@/store/useAppStore';
 import { usePadCareStore } from '@/store/usePadCareStore';
+import { router } from 'expo-router';
+import { ROUTES } from '@/lib/routes';
+import { Button, CheckRow } from '@/components/ds';
 
 export default function PadCareScreen() {
   return (
@@ -55,7 +58,6 @@ function PadCareDashboard() {
   const guide = PRODUCT_GUIDES[guideFor];
   const ticked = PAD_CHECKLIST.filter((c) => checklist.includes(c.id)).length;
   const amberText = themed('#92400E');
-  const white = themed('#FFFFFF');
 
   return (
     <Screen>
@@ -112,20 +114,7 @@ function PadCareDashboard() {
         {PAD_CHECKLIST.map((item) => {
           const on = checklist.includes(item.id);
           return (
-            <Pressable
-              key={item.id}
-              onPress={() => toggleChecklist(item.id)}
-              style={styles.checkRow}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: on }}
-              accessibilityLabel={item.title}
-            >
-              <View style={[styles.checkbox, on && styles.checkboxOn]}>{on ? <Check size={14} color={white} /> : null}</View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.checkTitle}>{item.title}</Text>
-                <Text style={uiStyles.muted}>{item.why}</Text>
-              </View>
-            </Pressable>
+            <CheckRow key={item.id} label={item.title} detail={item.why} checked={on} onToggle={() => toggleChecklist(item.id)} />
           );
         })}
         <View style={styles.scoreBox}>
@@ -156,7 +145,7 @@ function PadCareDashboard() {
       <Card>
         {HYGIENE_TIPS.map((t) => (
           <View key={t} style={styles.listRow}>
-            <Check size={14} color={themed('#047857')} style={{ marginTop: 2 }} />
+            <Check size={14} color={themed('#047857')} style={{ marginTop: 4 }} />
             <Text style={styles.listText}>{t}</Text>
           </View>
         ))}
@@ -174,25 +163,23 @@ function PadCareDashboard() {
         <View style={styles.urgentBox}>
           <Text style={styles.urgentLabel}>GET HELP NOW</Text>
           <Text style={[styles.listText, { marginTop: 4 }]}>{URGENT_SIGN}</Text>
-          <Pressable
+          <Button
+            variant="danger"
+            size="sm"
+            title={`Call ${CRISIS_LINES.emergency.number}`}
             onPress={() => callNumber(CRISIS_LINES.emergency.number, CRISIS_LINES.emergency.label)}
-            style={styles.callBtn}
-            accessibilityRole="button"
             accessibilityLabel="Call 112 emergency services"
-          >
-            <Phone size={14} color={white} />
-            <Text style={styles.callText}>Call {CRISIS_LINES.emergency.number}</Text>
-          </Pressable>
+            icon={<Phone size={16} color={Theme.colors.danger} />}
+          />
         </View>
       </Card>
+
+      <Button variant="secondary" title="Too unwell for class today? Make a polite leave note in a minute →" onPress={() => router.push(ROUTES.leaveNote)} style={styles.leaveRow} />
 
       {/* ── Sources ─────────────────────────────────── */}
       <Text style={styles.sourcesTitle}>Sources</Text>
       {PAD_CARE_SOURCES.map((s) => (
-        <Pressable key={s.url} onPress={() => openUrl(s.url)} style={styles.sourceRow} accessibilityRole="link">
-          <ExternalLink size={12} color={Theme.colors.textTertiary} />
-          <Text style={styles.sourceText}>{s.label}</Text>
-        </Pressable>
+        <Button variant="link" title={s.label} key={s.url} onPress={() => openUrl(s.url)} icon={<ExternalLink size={20} color={Theme.colors.primaryDark} />} />
       ))}
       <Text style={styles.disclaimer}>
         General information, not medical advice. SheSync does not rank or endorse brands. Your ratings stay on this phone.
@@ -204,14 +191,14 @@ function PadCareDashboard() {
 const styles = createStyles(() => ({
   wearTime: { fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary, marginTop: 12, lineHeight: 20 },
   list: { marginTop: 8, gap: 4 },
-  listRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 3 },
+  listRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 4 },
   bullet: { fontSize: 14, fontWeight: '900', color: Theme.colors.primary, width: 10 },
-  listText: { fontSize: 13, color: Theme.colors.textPrimary, flex: 1, lineHeight: 19 },
-  checkRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 8 },
+  listText: { fontSize: 14, color: Theme.colors.textPrimary, flex: 1, lineHeight: 20 },
+  checkRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 8 },
   checkbox: {
     width: 22,
     height: 22,
-    borderRadius: 7,
+    borderRadius: 8,
     borderWidth: 2,
     borderColor: 'rgba(255, 77, 141, 0.35)',
     alignItems: 'center',
@@ -221,8 +208,8 @@ const styles = createStyles(() => ({
   },
   checkboxOn: { backgroundColor: Theme.colors.primary, borderColor: Theme.colors.primary },
   checkTitle: { fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary },
-  scoreBox: { marginTop: 10, paddingTop: 12, borderTopWidth: 1, borderTopColor: Theme.colors.cardBorder },
-  scoreText: { fontSize: 15, fontWeight: '800', color: Theme.colors.primaryDark },
+  scoreBox: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: Theme.colors.cardBorder },
+  scoreText: { fontSize: 16, fontWeight: '800', color: Theme.colors.primaryDark },
   urgentBox: {
     marginTop: 12,
     backgroundColor: '#FFFFFF',
@@ -231,21 +218,22 @@ const styles = createStyles(() => ({
     borderWidth: 1,
     borderColor: '#FECACA',
   },
-  urgentLabel: { fontSize: 10, fontWeight: '900', letterSpacing: 1, color: '#B91C1C' },
+  urgentLabel: { fontSize: 12, fontWeight: '900', letterSpacing: 1, color: '#B91C1C' },
   callBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     alignSelf: 'flex-start',
     backgroundColor: '#B91C1C',
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    marginTop: 10,
+    marginTop: 12,
   },
-  callText: { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
-  sourcesTitle: { fontSize: 12, fontWeight: '800', color: Theme.colors.textSecondary, marginTop: 22, marginBottom: 4 },
-  sourceRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 },
-  sourceText: { fontSize: 12, color: Theme.colors.textSecondary, textDecorationLine: 'underline', flex: 1 },
-  disclaimer: { fontSize: 11, color: Theme.colors.textTertiary, marginTop: 12, lineHeight: 16 },
+  callText: { fontSize: 14, fontWeight: '800', color: '#FFFFFF' },
+  sourcesTitle: { fontSize: 14, fontWeight: '800', color: Theme.colors.textSecondary, marginTop: 24, marginBottom: 4 },
+  sourceText: { fontSize: 14, color: Theme.colors.textSecondary, textDecorationLine: 'underline', flex: 1 },
+  leaveRow: { marginTop: 20 },
+  leaveText: { fontSize: 14, fontWeight: '700', color: Theme.colors.secondaryDark, lineHeight: 20 },
+  disclaimer: { fontSize: 14, color: Theme.colors.textTertiary, marginTop: 12, lineHeight: 20 },
 }));

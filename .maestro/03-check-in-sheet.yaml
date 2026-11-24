@@ -1,0 +1,23 @@
+# 5. Mood, pain and flow as tabs in one sheet; /log-pain still opens it.
+appId: com.vyomvarshney1234.shesync
+name: Check-in sheet tabs and deep links
+---
+- runFlow: subflows/start-guest.yaml
+- openLink: "shesync://log-pain"
+- extendedWaitUntil:
+    visible:
+      id: "logsheet-tab-pain"
+    timeout: 10000
+- assertVisible: "How strong\\?"
+- scrollUntilVisible:
+    element: "Save Pain Entry"
+- tapOn: "Save Pain Entry"
+- assertVisible: "Pain saved.*"
+- assertVisible: "How are you feeling\\?"
+- tapOn:
+    id: "logsheet-tab-flow"
+- assertVisible: "How heavy\\?"
+- tapOn:
+    id: "logsheet-close"
+- openLink: "shesync://log-flow"
+- assertVisible: "How heavy\\?"

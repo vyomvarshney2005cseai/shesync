@@ -1,0 +1,6 @@
+# SheSync end-to-end tests (Maestro, Android).
+#   Local:  start an emulator, install a build, then `npm run e2e`
+#   CI:     .github/workflows/ci.yml builds a release APK and runs these flows
+# Flows find elements by testID (`id:`) so copy changes don't break them.
+flows:
+  - "*.yaml"

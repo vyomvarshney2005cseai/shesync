@@ -3,7 +3,7 @@ import { Pressable, Text, TextInput, View } from 'react-native';
 import { Star, Trash2 } from 'lucide-react-native';
 import { Theme, createStyles, themed } from '@/constants/theme';
 import { Card, Chip, uiStyles } from '@/components/common/ui';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
+import { Button } from '@/components/ds';
 import { PRODUCT_GUIDES, PRODUCT_ORDER, type PeriodProduct } from '@/constants/padCare';
 import { noteScore, type SkinReaction } from '@/lib/padCare';
 import { usePadCareStore } from '@/store/usePadCareStore';
@@ -25,7 +25,7 @@ function Rating({ label, value, onChange }: { label: string; value: number; onCh
           <Pressable
             key={n}
             onPress={() => onChange(n)}
-            hitSlop={4}
+            style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
             accessibilityRole="button"
             accessibilityLabel={`${label} ${n} of 5`}
             accessibilityState={{ selected: value === n }}
@@ -80,14 +80,14 @@ export function PadNotes() {
         accessibilityLabel="Brand or product name"
         maxLength={60}
       />
-      <View style={[uiStyles.wrap, { marginTop: 10 }]}>
+      <View style={[uiStyles.wrap, { marginTop: 12 }]}>
         {PRODUCT_ORDER.map((p) => (
           <Chip key={p} label={PRODUCT_GUIDES[p].label} small selected={product === p} onPress={() => setProduct(p)} color={Theme.colors.secondary} />
         ))}
       </View>
       <Rating label="Comfort" value={comfort} onChange={setComfort} />
       <Rating label="No leaks" value={protection} onChange={setProtection} />
-      <View style={[uiStyles.wrap, { marginTop: 10 }]}>
+      <View style={[uiStyles.wrap, { marginTop: 12 }]}>
         {SKIN_OPTIONS.map((o) => (
           <Chip
             key={o.id}
@@ -104,12 +104,12 @@ export function PadNotes() {
         onChangeText={setNote}
         placeholder="Note (optional), e.g. “good for nights, a bit thick”"
         placeholderTextColor={Theme.colors.textTertiary}
-        style={[uiStyles.input, { marginTop: 10 }]}
+        style={[uiStyles.input, { marginTop: 12 }]}
         accessibilityLabel="Note"
         maxLength={140}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <PrimaryButton title="Save my rating" variant="lilac" onPress={save} fullWidth style={{ marginTop: 12 }} />
+      <Button title="Save my rating" variant="primary" onPress={save} fullWidth style={{ marginTop: 12 }} />
       <Text style={[uiStyles.muted, { marginTop: 8, textAlign: 'center' }]}>Private — saved only on this phone.</Text>
 
       {best && notes.length > 1 ? (
@@ -132,9 +132,7 @@ export function PadNotes() {
             </Text>
             {n.note ? <Text style={styles.noteText}>“{n.note}”</Text> : null}
           </View>
-          <Pressable onPress={() => removeNote(n.id)} hitSlop={8} accessibilityRole="button" accessibilityLabel={`Delete rating for ${n.brand}`}>
-            <Trash2 size={16} color={Theme.colors.textTertiary} />
-          </Pressable>
+          <Button variant="secondary" size="sm" iconOnly onPress={() => removeNote(n.id)} accessibilityLabel={`Delete rating for ${n.brand}`} icon={<Trash2 size={20} color={Theme.colors.textTertiary} />} />
         </View>
       ))}
 
@@ -150,27 +148,27 @@ export function PadNotes() {
 
 const styles = createStyles(() => ({
   ratingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
-  ratingLabel: { fontSize: 13, fontWeight: '700', color: Theme.colors.textPrimary },
-  error: { fontSize: 12, fontWeight: '700', color: Theme.colors.primaryDark, marginTop: 8 },
+  ratingLabel: { fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary },
+  error: { fontSize: 14, fontWeight: '700', color: Theme.colors.primaryDark, marginTop: 8 },
   bestBox: {
-    marginTop: 14,
+    marginTop: 16,
     backgroundColor: '#ECFDF5',
     borderRadius: Theme.radius.md,
     borderWidth: 1,
     borderColor: '#A7F3D0',
     padding: 12,
   },
-  bestLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1, color: '#047857' },
-  bestName: { fontSize: 15, fontWeight: '800', color: Theme.colors.textPrimary, marginTop: 2 },
+  bestLabel: { fontSize: 12, fontWeight: '800', letterSpacing: 1, color: '#047857' },
+  bestName: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary, marginTop: 4 },
   noteRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
-    paddingVertical: 10,
+    gap: 12,
+    paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: Theme.colors.cardBorder,
     marginTop: 8,
   },
   noteBrand: { fontSize: 14, fontWeight: '800', color: Theme.colors.textPrimary },
-  noteText: { fontSize: 12, color: Theme.colors.textSecondary, fontStyle: 'italic', marginTop: 2 },
+  noteText: { fontSize: 14, color: Theme.colors.textSecondary, fontStyle: 'italic', marginTop: 4 },
 }));

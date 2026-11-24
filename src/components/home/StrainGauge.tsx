@@ -7,6 +7,7 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
+import { useReduceMotion } from '@/lib/motion';
 import { Theme, createStyles, themed } from '@/constants/theme';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -23,13 +24,17 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 export const StrainGauge: React.FC<StrainGaugeProps> = ({ score, level }) => {
   const progress = useSharedValue(0);
+  const reduceMotion = useReduceMotion();
 
   useEffect(() => {
-    progress.value = withTiming(score / 100, {
-      duration: 1400,
-      easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
-    });
-  }, [score, progress]);
+    // With reduced motion the ring is drawn at its value straight away.
+    progress.value = reduceMotion
+      ? score / 100
+      : withTiming(score / 100, {
+          duration: 1400,
+          easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+        });
+  }, [score, progress, reduceMotion]);
 
   const animatedProps = useAnimatedProps(() => ({
     strokeDashoffset: CIRCUMFERENCE * (1 - progress.value),
@@ -124,24 +129,24 @@ const styles = createStyles(() => ({
     justifyContent: 'center',
   },
   scoreText: {
-    fontSize: 42,
+    fontSize: 40,
     fontWeight: '800',
     letterSpacing: -1,
   },
   levelText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: Theme.colors.textSecondary,
-    marginTop: 2,
+    marginTop: 4,
   },
   levelPill: {
-    marginTop: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
     borderRadius: Theme.radius.full,
   },
   levelPillText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: 0.8,
   },

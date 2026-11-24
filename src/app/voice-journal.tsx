@@ -1,16 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Platform,
-  Alert,
-  Animated,
-  AppState,
-  ActivityIndicator,
-} from 'react-native';
+import { Pressable, View, Text, ScrollView, TextInput, Platform, Alert, Animated, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import {
@@ -21,7 +10,8 @@ import {
   setAudioModeAsync,
   type RecordingOptions,
 } from 'expo-audio';
-import { ArrowLeft, Check, Mic, Square, Trash2, Lock, Download, PenLine, BookOpen } from 'lucide-react-native';
+import { ArrowLeft, Check, Mic, Square, Trash2, Lock, Download, PenLine, BookOpen, RefreshCw, Sparkles } from 'lucide-react-native';
+import { useReduceMotion } from '@/lib/motion';
 import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { useSettingsStore, type JournalSpeechLang } from '@/store/useSettingsStore';
@@ -44,6 +34,8 @@ import {
   keepRecording,
 } from '@/lib/journalAudio';
 import type { SymptomLog } from '@/types';
+import { PHASE_PROMPTS, promptPhase, promptsFor } from '@/constants/journalPrompts';
+import { Button, Chip } from '@/components/ds';
 
 const MAX_SECONDS = 10 * 60;
 
@@ -60,11 +52,6 @@ const LANGS: { id: JournalSpeechLang; label: string }[] = [
   { id: 'hi-IN', label: 'हिन्दी' },
 ];
 
-const PROMPTS = [
-  'Where in my body do I feel tension right now?',
-  'What drained my energy today, and what gave some back?',
-  'What is one kind thing I can do for myself tonight?',
-];
 
 const BAR_SHAPE = [0.35, 0.6, 0.9, 0.5, 1, 0.7, 0.4, 0.85, 1, 0.65, 0.45, 0.8, 0.95, 0.55, 0.4, 0.75, 0.9, 0.5];
 
@@ -87,6 +74,13 @@ export default function VoiceJournalScreen() {
   const logSymptom = useAppStore((s) => s.logSymptom);
   const journalLang = useSettingsStore((s) => s.journalLang);
   const setJournalLang = useSettingsStore((s) => s.setJournalLang);
+  const cyclePhase = useAppStore((s) => s.cycle.phase);
+  const hasCycleData = useAppStore((s) => !!s.cycle.hasCycleData);
+  const [promptShift, setPromptShift] = useState(0);
+  const pPhase = promptPhase(cyclePhase, hasCycleData);
+  const pLang = journalLang === 'hi-IN' ? 'hi' : 'en';
+  const phaseInfo = PHASE_PROMPTS[pPhase];
+  const [featured, ...morePrompts] = promptsFor(pPhase, pLang, promptShift);
 
   const [checked, setChecked] = useState<{ lang: string; support: SpeechSupport } | null>(null);
   const support = checked?.lang === journalLang ? checked.support : null;
@@ -107,6 +101,7 @@ export default function VoiceJournalScreen() {
   const recorder = useAudioRecorder(AUDIO_ONLY_PRESET);
   const recState = useAudioRecorderState(recorder, 150);
   const [pulse] = useState(() => new Animated.Value(1));
+  const reduceMotion = useReduceMotion();
   const startedAt = useRef(0);
   const engineRef = useRef<'speech' | 'audio'>('audio');
   const savedRef = useRef(false);
@@ -199,23 +194,24 @@ export default function VoiceJournalScreen() {
       pulse.setValue(1);
       return;
     }
-    const loop = Animated.loop(
+    // Reduced motion: the halo shows recording without pulsing.
+    const loop = reduceMotion ? null : Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, { toValue: 1.18, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
         Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: Platform.OS !== 'web' }),
       ])
     );
-    loop.start();
+    loop?.start();
     const t = setInterval(() => {
       const secs = Math.floor((Date.now() - startedAt.current) / 1000);
       setSeconds(secs);
       if (secs >= MAX_SECONDS) stopRef.current();
     }, 250);
     return () => {
-      loop.stop();
+      loop?.stop();
       clearInterval(t);
     };
-  }, [recording, pulse]);
+  }, [recording, pulse, reduceMotion]);
 
   const stop = useCallback(async () => {
     if (engineRef.current === 'speech') {
@@ -396,9 +392,7 @@ export default function VoiceJournalScreen() {
     <AdaptiveBackground>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <View style={styles.navBar}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton} activeOpacity={0.7} accessibilityLabel="Back">
-            <ArrowLeft size={22} color={Theme.colors.textPrimary} />
-          </TouchableOpacity>
+          <Button variant="secondary" size="sm" iconOnly onPress={() => router.back()} accessibilityLabel="Back" icon={<ArrowLeft size={20} color={Theme.colors.textPrimary} />} style={styles.backButton} />
           <Text style={styles.navTitle}>Voice Journal</Text>
           <View style={{ width: 40 }} />
         </View>
@@ -408,15 +402,7 @@ export default function VoiceJournalScreen() {
             <View style={styles.langRow}>
               <Text style={styles.langLabel}>I’ll speak in</Text>
               {LANGS.map((l) => (
-                <TouchableOpacity
-                  key={l.id}
-                  onPress={() => setJournalLang(l.id)}
-                  disabled={phase !== 'idle'}
-                  style={[styles.langChip, journalLang === l.id && styles.langChipOn]}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.langChipText, journalLang === l.id && styles.langChipTextOn]}>{l.label}</Text>
-                </TouchableOpacity>
+                <Chip key={l.id} small label={l.label} selected={journalLang === l.id} onPress={() => setJournalLang(l.id)} disabled={phase !== 'idle'} accessibilityRole="radio" />
               ))}
             </View>
           )}
@@ -429,13 +415,8 @@ export default function VoiceJournalScreen() {
                 {journalLang === 'hi-IN' ? 'Hindi' : 'English (India)'} voice pack from Google.
               </Text>
               <View style={styles.packRow}>
-                <TouchableOpacity style={styles.packBtn} onPress={getPack} activeOpacity={0.85}>
-                  <Download size={15} color={themed('#FFFFFF')} />
-                  <Text style={styles.packBtnText}>Download</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.packGhost} onPress={() => setUseAudioOnly(true)} activeOpacity={0.8}>
-                  <Text style={styles.packGhostText}>Record audio only</Text>
-                </TouchableOpacity>
+                <Button variant="primary" title="Download" onPress={getPack} icon={<Download size={20} color={Theme.colors.onPrimary} />} />
+                <Button variant="secondary" title="Record audio only" onPress={() => setUseAudioOnly(true)} />
               </View>
             </View>
           ) : (
@@ -480,22 +461,19 @@ export default function VoiceJournalScreen() {
             </View>
 
             <Animated.View style={[styles.pulseHalo, recording && { transform: [{ scale: pulse }], backgroundColor: themed('rgba(201, 87, 140, 0.2)') }]}>
-              <TouchableOpacity
+              <Pressable
                 style={[styles.recordBtn, recording && styles.recordBtnActive, (needsModel || !support) && styles.recordBtnOff]}
                 onPress={recording ? () => void stop() : () => void start()}
                 disabled={!support || needsModel || phase === 'starting' || phase === 'stopping'}
-                activeOpacity={0.8}
                 accessibilityRole="button"
                 accessibilityLabel={recording ? 'Stop recording' : 'Start recording'}
               >
-                {phase === 'starting' || phase === 'stopping' ? (
-                  <ActivityIndicator color={themed('#FFFFFF')} />
-                ) : recording ? (
+                {recording ? (
                   <Square size={26} color={themed('#FFFFFF')} />
                 ) : (
                   <Mic size={30} color={themed('#FFFFFF')} />
                 )}
-              </TouchableOpacity>
+              </Pressable>
             </Animated.View>
 
             {recording && speechMode && (
@@ -507,9 +485,7 @@ export default function VoiceJournalScreen() {
                 <View style={{ flex: 1 }}>
                   <JournalAudioPlayer uri={tempUri} />
                 </View>
-                <TouchableOpacity onPress={discard} style={styles.iconBtn} accessibilityLabel="Delete this recording">
-                  <Trash2 size={18} color={Theme.colors.textSecondary} />
-                </TouchableOpacity>
+                <Button variant="secondary" size="sm" iconOnly onPress={discard} accessibilityLabel="Delete this recording" icon={<Trash2 size={20} color={Theme.colors.textSecondary} />} style={styles.iconBtn} />
               </View>
             )}
             {notice ? <Text style={styles.notice}>{notice}</Text> : null}
@@ -521,6 +497,30 @@ export default function VoiceJournalScreen() {
               <PenLine size={17} color={Theme.colors.secondary} />
               <Text style={styles.sectionTitle}>{transcribed ? 'Your words (edit if needed)' : 'Your reflection'}</Text>
             </View>
+            <View style={styles.todayPrompt}>
+              <View style={styles.todayHead}>
+                <Sparkles size={13} color={Theme.colors.secondaryDark} />
+                <Text style={styles.todayLabel}>
+                  {pLang === 'hi' ? 'आज का सवाल' : 'TODAY’S PROMPT'} · {(pLang === 'hi' ? phaseInfo.titleHi : phaseInfo.title).toUpperCase()}
+                </Text>
+              </View>
+              <Text style={styles.todayText}>{featured}</Text>
+              <Text style={styles.todayNote}>{pLang === 'hi' ? phaseInfo.noteHi : phaseInfo.note}</Text>
+              <View style={styles.todayBtns}>
+                <Button
+                  variant="primary"
+                  title={pLang === 'hi' ? 'इस सवाल से लिखें' : 'Write about this'}
+                  onPress={() => setText((t) => (t ? `${t}\n\n${featured} ` : `${featured} `))}
+                />
+                <Button
+                  variant="link"
+                  title={pLang === 'hi' ? 'दूसरा' : 'Another'}
+                  onPress={() => setPromptShift((n) => n + 1)}
+                  accessibilityLabel="Show another prompt"
+                  icon={<RefreshCw size={20} color={Theme.colors.primaryDark} />}
+                />
+              </View>
+            </View>
             <TextInput
               style={styles.input}
               multiline
@@ -530,28 +530,22 @@ export default function VoiceJournalScreen() {
               placeholderTextColor={Theme.colors.textTertiary}
             />
             <View style={styles.prompts}>
-              {PROMPTS.map((q) => (
-                <TouchableOpacity
-                  key={q}
-                  onPress={() => setText((t) => (t ? `${t}\n\n${q} ` : `${q} `))}
-                  activeOpacity={0.8}
-                  style={styles.prompt}
-                >
-                  <Text style={styles.promptText}>＋ {q}</Text>
-                </TouchableOpacity>
+              {morePrompts.map((q) => (
+                <Button key={q} variant="secondary" size="sm" title={`＋ ${q}`} onPress={() => setText((t) => (t ? `${t}\n\n${q} ` : `${q} `))} style={styles.prompt} />
               ))}
             </View>
           </View>
 
-          <TouchableOpacity
-            style={[styles.saveButton, (saving || recording) && styles.saveOff]}
-            activeOpacity={0.85}
+          <Button
+            size="lg"
+            fullWidth
+            title={saving ? 'Saving' : 'Save journal entry'}
+            loading={saving}
             onPress={() => void handleSave()}
-            disabled={saving || recording || phase !== 'idle'}
-          >
-            <Check size={20} color={themed('#FFFFFF')} />
-            <Text style={styles.saveButtonText}>{saving ? 'Saving…' : 'Save journal entry'}</Text>
-          </TouchableOpacity>
+            disabled={recording || phase !== 'idle'}
+            icon={<Check size={20} color={recording || phase !== 'idle' ? Theme.colors.textTertiary : Theme.colors.onPrimary} />}
+            style={styles.saveButton}
+          />
 
           <PastEntries />
         </ScrollView>
@@ -619,16 +613,14 @@ function PastEntry({ entry, onDelete }: { entry: SymptomLog; onDelete: () => voi
           {shortDateLabel(entry.date)} · {time}
           {entry.transcriptSource === 'speech' ? ' · spoken' : ''}
         </Text>
-        <TouchableOpacity onPress={onDelete} style={styles.iconBtnSm} accessibilityLabel="Delete entry">
-          <Trash2 size={15} color={Theme.colors.textTertiary} />
-        </TouchableOpacity>
+        <Button variant="secondary" size="sm" iconOnly onPress={onDelete} accessibilityLabel="Delete entry" icon={<Trash2 size={20} color={Theme.colors.textTertiary} />} />
       </View>
       {body ? (
-        <TouchableOpacity onPress={() => setOpen((o) => !o)} activeOpacity={0.8}>
+        <Pressable onPress={() => setOpen((o) => !o)} accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityHint={open ? 'Shows less' : 'Shows the whole entry'}>
           <Text style={styles.entryText} numberOfLines={open ? undefined : 3}>
             {body}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       ) : null}
       {uri ? (
         <View style={{ marginTop: 8 }}>
@@ -657,36 +649,29 @@ const styles = createStyles(() => ({
     width: '100%',
     alignSelf: 'center',
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Theme.colors.backgroundMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navTitle: { fontSize: 17, fontWeight: '800', color: Theme.colors.textPrimary },
+  backButton: { width: 40 },
+  navTitle: { fontSize: 18, fontWeight: '800', color: Theme.colors.textPrimary },
   scrollContent: {
     flexGrow: 1,
     width: '100%',
     maxWidth: 520,
     alignSelf: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 18,
-    gap: 14,
+    paddingVertical: 20,
+    gap: 16,
   },
   langRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  langLabel: { fontSize: 13, fontWeight: '700', color: Theme.colors.textSecondary, marginRight: 2 },
+  langLabel: { fontSize: 14, fontWeight: '700', color: Theme.colors.textSecondary, marginRight: 4 },
   langChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: Theme.radius.full,
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
     backgroundColor: Theme.colors.card,
   },
   langChipOn: { backgroundColor: Theme.colors.primary, borderColor: Theme.colors.primary },
-  langChipText: { fontSize: 13, fontWeight: '700', color: Theme.colors.textPrimary },
+  langChipText: { fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary },
   langChipTextOn: { color: '#FFFFFF' },
   banner: {
     flexDirection: 'row',
@@ -698,48 +683,31 @@ const styles = createStyles(() => ({
   },
   bannerOk: { backgroundColor: Theme.colors.sageLight, borderColor: '#BFE3D8' },
   bannerInfo: { backgroundColor: Theme.colors.backgroundAlt, borderColor: Theme.colors.cardBorder },
-  bannerText: { flex: 1, fontSize: 12.5, lineHeight: 18, color: Theme.colors.textPrimary },
+  bannerText: { flex: 1, fontSize: 14, lineHeight: 20, color: Theme.colors.textPrimary },
   packCard: {
-    padding: 14,
+    padding: 16,
     borderRadius: Theme.radius.lg,
     backgroundColor: Theme.colors.secondaryLight,
     borderWidth: 1,
     borderColor: Theme.colors.secondaryBorder,
     gap: 8,
   },
-  packTitle: { fontSize: 14.5, fontWeight: '800', color: Theme.colors.textPrimary },
-  packText: { fontSize: 13, lineHeight: 19, color: Theme.colors.textPrimary },
-  packRow: { flexDirection: 'row', gap: 8, marginTop: 2 },
-  packBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: Theme.colors.secondary,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: Theme.radius.full,
-  },
-  packBtnText: { fontSize: 13, fontWeight: '800', color: '#FFFFFF' },
-  packGhost: {
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: Theme.radius.full,
-    borderWidth: 1,
-    borderColor: Theme.colors.secondaryBorder,
-  },
-  packGhostText: { fontSize: 13, fontWeight: '800', color: Theme.colors.secondaryDark },
+  packTitle: { fontSize: 14, fontWeight: '800', color: Theme.colors.textPrimary },
+  packText: { fontSize: 14, lineHeight: 20, color: Theme.colors.textPrimary },
+  packRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  packBtnText: { fontSize: 14, fontWeight: '800', color: '#FFFFFF' },
+  packGhostText: { fontSize: 14, fontWeight: '800', color: Theme.colors.secondaryDark },
   recordCard: {
     backgroundColor: Theme.colors.card,
     borderRadius: Theme.radius.xl,
-    padding: 22,
+    padding: 24,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
-    ...Theme.shadows.card,
   },
-  statusText: { fontSize: 12, fontWeight: '700', color: Theme.colors.textSecondary, letterSpacing: 0.3 },
-  timerText: { fontSize: 44, fontWeight: '800', color: Theme.colors.textPrimary, letterSpacing: -1, marginVertical: 2 },
-  waveform: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 70, gap: 5, marginVertical: 8 },
+  statusText: { fontSize: 14, fontWeight: '700', color: Theme.colors.textSecondary, letterSpacing: 0.3 },
+  timerText: { fontSize: 40, fontWeight: '800', color: Theme.colors.textPrimary, letterSpacing: -1, marginVertical: 4 },
+  waveform: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 70, gap: 4, marginVertical: 8 },
   waveBar: { width: 4, borderRadius: 2 },
   pulseHalo: { width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center' },
   recordBtn: {
@@ -749,69 +717,61 @@ const styles = createStyles(() => ({
     backgroundColor: Theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    ...Theme.shadows.glowing,
   },
   recordBtnActive: { backgroundColor: Theme.colors.strainHigh },
   recordBtnOff: { opacity: 0.45 },
-  liveText: { marginTop: 12, fontSize: 14, lineHeight: 21, color: Theme.colors.textPrimary, textAlign: 'center' },
+  liveText: { marginTop: 12, fontSize: 14, lineHeight: 20, color: Theme.colors.textPrimary, textAlign: 'center' },
   liveEmpty: { color: Theme.colors.textTertiary, fontStyle: 'italic' },
-  takeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14, alignSelf: 'stretch' },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Theme.colors.backgroundMuted,
-  },
-  iconBtnSm: { padding: 6 },
-  notice: { marginTop: 12, fontSize: 12.5, lineHeight: 18, color: Theme.colors.textSecondary, textAlign: 'center' },
+  takeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16, alignSelf: 'stretch' },
+  iconBtn: { width: 40 },
+  notice: { marginTop: 12, fontSize: 14, lineHeight: 20, color: Theme.colors.textSecondary, textAlign: 'center' },
   section: {
     backgroundColor: Theme.colors.card,
     borderRadius: Theme.radius.xl,
     padding: 16,
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
-    ...Theme.shadows.card,
   },
-  sectionRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  sectionTitle: { fontSize: 15, fontWeight: '800', color: Theme.colors.textPrimary },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  sectionTitle: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary },
   input: {
     backgroundColor: Theme.colors.backgroundAlt,
     borderRadius: Theme.radius.md,
-    padding: 14,
-    fontSize: 14,
+    padding: 16,
+    fontSize: 16,
     color: Theme.colors.textPrimary,
-    lineHeight: 21,
+    lineHeight: 20,
     minHeight: 120,
     textAlignVertical: 'top',
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
   },
   prompts: { gap: 8, marginTop: 12 },
-  prompt: {
-    backgroundColor: Theme.colors.backgroundAlt,
+  todayPrompt: {
+    backgroundColor: Theme.colors.secondaryLight,
     borderRadius: Theme.radius.md,
-    padding: 10,
+    padding: 16,
+    marginBottom: 12,
+  },
+  todayHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  todayLabel: { fontSize: 12, fontWeight: '800', letterSpacing: 0.8, color: Theme.colors.secondaryDark },
+  todayText: { fontSize: 16, fontWeight: '800', lineHeight: 22, color: Theme.colors.textPrimary, marginTop: 8 },
+  todayNote: { fontSize: 14, lineHeight: 20, color: Theme.colors.textSecondary, marginTop: 8 },
+  todayBtns: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12 },
+  todayUseText: { fontSize: 14, fontWeight: '800', color: '#FFFFFF' },
+  todayAnotherText: { fontSize: 14, fontWeight: '700', color: Theme.colors.secondaryDark },
+  prompt: {
     borderLeftWidth: 3,
     borderLeftColor: Theme.colors.secondary,
   },
-  promptText: { fontSize: 12.5, color: Theme.colors.textPrimary, lineHeight: 17 },
+  promptText: { fontSize: 14, color: Theme.colors.textPrimary, lineHeight: 20 },
   saveButton: {
-    backgroundColor: Theme.colors.primary,
-    borderRadius: Theme.radius.lg,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    ...Theme.shadows.glowing,
   },
   saveOff: { opacity: 0.55 },
-  saveButtonText: { fontSize: 15, fontWeight: '800', color: '#FFFFFF' },
-  entry: { paddingVertical: 10, borderTopWidth: 1, borderTopColor: Theme.colors.cardBorder },
+  saveButtonText: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
+  entry: { paddingVertical: 12, borderTopWidth: 1, borderTopColor: Theme.colors.cardBorder },
   entryHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  entryDate: { fontSize: 12, fontWeight: '700', color: Theme.colors.textSecondary },
-  entryText: { fontSize: 13.5, lineHeight: 20, color: Theme.colors.textPrimary, marginTop: 4 },
-  entryNote: { fontSize: 12, color: Theme.colors.textTertiary, marginTop: 6, fontStyle: 'italic' },
+  entryDate: { fontSize: 14, fontWeight: '700', color: Theme.colors.textSecondary },
+  entryText: { fontSize: 14, lineHeight: 20, color: Theme.colors.textPrimary, marginTop: 4 },
+  entryNote: { fontSize: 14, color: Theme.colors.textTertiary, marginTop: 8, fontStyle: 'italic' },
 }));

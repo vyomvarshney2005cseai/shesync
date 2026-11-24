@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { Modal, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { BatteryCharging, Moon, Calendar, X } from 'lucide-react-native';
-import { Theme, createStyles, themed } from '@/constants/theme';
+import { X } from 'lucide-react-native';
+import { Theme, createStyles } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { Stepper } from '@/components/common/ui';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
+import { Button, Card, IconBadge, badgeColors, type BadgeTone } from '@/components/ds';
+import type { BrandIconName } from '@/components/icons/BrandIcon';
 import type { BiometricSnapshot, CycleData } from '@/types';
 
 interface BiometricScrollProps {
@@ -14,35 +15,31 @@ interface BiometricScrollProps {
 }
 
 interface MetricCardProps {
-  icon: React.ReactNode;
+  icon: BrandIconName;
+  tone: BadgeTone;
   title: string;
   value: string;
   subtitle: string;
-  accentColor: string;
-  bgColor: string;
   onPress?: () => void;
   actionLabel?: string;
 }
 
-const MetricCard: React.FC<MetricCardProps> = ({ icon, title, value, subtitle, accentColor, bgColor, onPress, actionLabel }) => (
-  <Pressable
-    onPress={onPress}
-    disabled={!onPress}
-    accessibilityRole={onPress ? 'button' : undefined}
-    accessibilityLabel={`${title}: ${value}. ${subtitle}`}
-    style={({ pressed }) => [styles.card, { borderColor: themed(bgColor) }, pressed && { opacity: 0.85 }]}
-  >
-    <View style={[styles.iconCircle, { backgroundColor: themed(bgColor) }]}>{icon}</View>
-    <Text style={styles.cardTitle}>{title}</Text>
-    <Text style={[styles.cardValue, { color: themed(accentColor) }]} numberOfLines={1} adjustsFontSizeToFit>
-      {value}
-    </Text>
-    <Text style={styles.cardSubtitle} numberOfLines={2}>
-      {subtitle}
-    </Text>
-    {actionLabel ? <Text style={[styles.action, { color: themed(accentColor) }]}>{actionLabel}</Text> : null}
-  </Pressable>
-);
+const MetricCard: React.FC<MetricCardProps> = ({ icon, tone, title, value, subtitle, onPress, actionLabel }) => {
+  const ink = badgeColors(tone).fg;
+  return (
+    <Card onPress={onPress} accessibilityLabel={`${title}: ${value}. ${subtitle}${actionLabel ? `. ${actionLabel}` : ''}`} style={styles.card}>
+      <IconBadge name={icon} tone={tone} size={40} />
+      <Text style={styles.cardTitle}>{title}</Text>
+      <Text style={styles.cardValue} numberOfLines={1} adjustsFontSizeToFit>
+        {value}
+      </Text>
+      <Text style={styles.cardSubtitle} numberOfLines={2}>
+        {subtitle}
+      </Text>
+      {actionLabel ? <Text style={[styles.action, { color: ink }]}>{actionLabel}</Text> : null}
+    </Card>
+  );
+};
 
 /**
  * Today's snapshot. Every number comes from the user's own logs:
@@ -63,20 +60,18 @@ export const BiometricScroll: React.FC<BiometricScrollProps> = ({ biometrics, cy
       <Text style={styles.sectionTitle}>Today’s Snapshot</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <MetricCard
-          icon={<BatteryCharging size={18} color={Theme.colors.strainOptimal} />}
+          icon="checkIn"
+          tone="mint"
           title="Readiness"
           value={`${readiness}%`}
           subtitle={readinessText}
-          accentColor={Theme.colors.strainOptimal}
-          bgColor={themed('#D1FAE5')}
         />
         <MetricCard
-          icon={<Moon size={18} color={Theme.colors.secondary} />}
+          icon="sleep"
+          tone="lilac"
           title="Sleep"
           value={biometrics.sleep.logged ? `${biometrics.sleep.hoursSlept}h ${biometrics.sleep.minutesSlept}m` : '—'}
           subtitle={biometrics.sleep.logged ? biometrics.sleep.label.replace(/^\S+ \S+ /, '') : `Target ${sleepTarget}h`}
-          accentColor={Theme.colors.secondary}
-          bgColor={Theme.colors.secondaryLight}
           onPress={() => {
             setHours(biometrics.sleep.logged ? biometrics.sleep.hoursSlept + biometrics.sleep.minutesSlept / 60 : 7);
             setSleepOpen(true);
@@ -84,12 +79,11 @@ export const BiometricScroll: React.FC<BiometricScrollProps> = ({ biometrics, cy
           actionLabel={biometrics.sleep.logged ? 'Edit' : 'Log last night'}
         />
         <MetricCard
-          icon={<Calendar size={18} color={Theme.colors.strainAmber} />}
+          icon="calendar"
+          tone="rose"
           title="Cycle Day"
           value={cycle.hasCycleData ? `Day ${cycle.currentDay}` : '—'}
           subtitle={cycle.hasCycleData ? (cycle.isIrregular ? 'Irregular pattern' : cycle.phase) : 'Add period dates'}
-          accentColor={Theme.colors.strainAmber}
-          bgColor={themed('#FEF3C7')}
           onPress={() => router.push('/log-cycle')}
           actionLabel={cycle.hasCycleData ? 'Update' : 'Add'}
         />
@@ -100,12 +94,17 @@ export const BiometricScroll: React.FC<BiometricScrollProps> = ({ biometrics, cy
           <View style={styles.sheet}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>How long did you sleep?</Text>
-              <Pressable onPress={() => setSleepOpen(false)} style={styles.close} accessibilityLabel="Close">
-                <X size={18} color={Theme.colors.textSecondary} />
-              </Pressable>
+              <Button
+                variant="tertiary"
+                size="sm"
+                iconOnly
+                onPress={() => setSleepOpen(false)}
+                accessibilityLabel="Close"
+                icon={<X size={20} color={Theme.colors.textSecondary} />}
+              />
             </View>
             <Text style={styles.sheetHint}>Last night, roughly. Your target is {sleepTarget} hours.</Text>
-            <View style={{ alignItems: 'center', marginVertical: 18 }}>
+            <View style={{ alignItems: 'center', marginVertical: 20 }}>
               <Stepper
                 label="Hours slept"
                 value={hours}
@@ -116,7 +115,7 @@ export const BiometricScroll: React.FC<BiometricScrollProps> = ({ biometrics, cy
                 format={(v) => `${Math.floor(v)}h ${Math.round((v % 1) * 60)}m`}
               />
             </View>
-            <PrimaryButton
+            <Button
               title="Save sleep"
               onPress={() => {
                 logSleep(hours);
@@ -132,38 +131,18 @@ export const BiometricScroll: React.FC<BiometricScrollProps> = ({ biometrics, cy
 };
 
 const styles = createStyles(() => ({
-  container: { marginTop: 8 },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Theme.colors.textPrimary,
-    paddingHorizontal: 20,
-  },
-  sectionHint: {
-    fontSize: 11,
-    color: Theme.colors.textTertiary,
-    paddingHorizontal: 20,
-    marginBottom: 12,
-    marginTop: 2,
-  },
-  scrollContent: { paddingHorizontal: 16, gap: 12, paddingBottom: 4 },
-  card: {
-    backgroundColor: Theme.colors.card,
-    borderRadius: Theme.radius.xl,
-    padding: 16,
-    width: 150,
-    borderWidth: 1,
-    ...Theme.shadows.card,
-  },
-  iconCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  cardTitle: { fontSize: 12, fontWeight: '600', color: Theme.colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.6 },
-  cardValue: { fontSize: 22, fontWeight: '800', marginTop: 2, letterSpacing: -0.5 },
-  cardSubtitle: { fontSize: 11, fontWeight: '500', color: Theme.colors.textTertiary, marginTop: 2, textTransform: 'capitalize' },
-  action: { fontSize: 11, fontWeight: '800', marginTop: 6 },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  sheet: { width: '100%', maxWidth: 380, backgroundColor: '#FFFFFF', borderRadius: Theme.radius.xl, padding: 20 },
+  container: { marginTop: Theme.space.lg },
+  sectionTitle: { ...Theme.type.title, color: Theme.colors.textPrimary, paddingHorizontal: Theme.space.md },
+  sectionHint: { ...Theme.type.bodySm, color: Theme.colors.textSecondary, paddingHorizontal: Theme.space.md, marginBottom: Theme.space.sm, marginTop: 4 },
+  scrollContent: { paddingHorizontal: Theme.space.md, gap: Theme.space.sm, paddingTop: Theme.space.sm, paddingBottom: 4 },
+  card: { width: 152, gap: 4 },
+  cardTitle: { ...Theme.type.caption, color: Theme.colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: Theme.space.xs },
+  cardValue: { ...Theme.type.h3, color: Theme.colors.textPrimary, letterSpacing: -0.4 },
+  cardSubtitle: { ...Theme.type.bodySm, color: Theme.colors.textSecondary, textTransform: 'capitalize' },
+  action: { ...Theme.type.label, marginTop: 4 },
+  overlay: { flex: 1, backgroundColor: Theme.colors.overlay, alignItems: 'center', justifyContent: 'center', padding: Theme.space.lg },
+  sheet: { width: '100%', maxWidth: 380, backgroundColor: Theme.colors.surfaceRaised, borderRadius: Theme.radius.xl, padding: Theme.space.lg, borderWidth: 1, borderColor: Theme.colors.cardBorder },
   sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sheetTitle: { fontSize: 18, fontWeight: '800', color: Theme.colors.textPrimary },
-  sheetHint: { fontSize: 13, color: Theme.colors.textSecondary, marginTop: 6 },
-  close: { width: 32, height: 32, borderRadius: 16, backgroundColor: Theme.colors.backgroundMuted, alignItems: 'center', justifyContent: 'center' },
+  sheetTitle: { ...Theme.type.title, color: Theme.colors.textPrimary },
+  sheetHint: { ...Theme.type.bodySm, color: Theme.colors.textSecondary, marginTop: Theme.space.xs },
 }));

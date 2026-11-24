@@ -25,16 +25,18 @@ import type {
 import { calculateArchetype } from '@/constants/assessment';
 import { calculateCyclePredictionAndPrecautions } from '@/constants/cyclePrediction';
 import { signOutSupabase } from '@/lib/supabaseService';
-import { daysBetweenKeys, daysSinceKey, lastNDaysKeys, todayKey } from '@/lib/dates';
+import { addDaysToKey, daysBetweenKeys, daysSinceKey, lastNDaysKeys, todayKey } from '@/lib/dates';
 import { recommendWorkout } from '@/lib/fitness';
 import { recentLog, recentSignals } from '@/lib/recent';
 import { cleanDigestive, joinSymptoms, summariseDigestive } from '@/lib/digestive';
+import { SYNC_STEPS, isStepDone } from '@/lib/syncDetails';
 import { useFitnessStore } from './useFitnessStore';
 import { useStudyStore } from './useStudyStore';
 import { useGamesStore } from './useGamesStore';
 import { usePcosStore } from './usePcosStore';
 import { useConfidenceStore } from './useConfidenceStore';
 import { usePadCareStore } from './usePadCareStore';
+import { useSafetyStore } from './useSafetyStore';
 
 // ============================================================
 // Defaults for a brand-new account.
@@ -87,7 +89,11 @@ function freshUserData() {
     userPhoto: undefined as string | undefined,
     isAuthenticated: false,
     isOfflineAccount: false,
+    isGuest: false,
     focusAreas: [] as string[],
+    focusPromptSnoozedUntil: '',
+    skippedSyncSteps: [] as string[],
+    personalisePromptSnoozedUntil: '',
     isAssessmentCompleted: false,
     assessmentAnswers: {} as Record<string, string>,
     fineTuningSettings: { ...DEFAULT_SETTINGS },
@@ -574,9 +580,14 @@ function resetFeatureStores() {
   usePcosStore.getState().reset();
   useConfidenceStore.getState().reset();
   usePadCareStore.getState().reset();
+  useSafetyStore.getState().reset();
   // Scheduled pad reminders belong to the person signing out too.
   import('@/lib/padReminders')
     .then((m) => m.cancelPadReminders())
+    .catch(() => {});
+  // So are the check-in and cycle reminders (they would point at data that is gone).
+  import('@/lib/reminders')
+    .then((m) => m.cancelReminders())
     .catch(() => {});
 }
 
@@ -667,6 +678,7 @@ export const useAppStore = create<AppState>()(
           userEmail: cleanEmail,
           userName: (name || get().userName || cleanEmail.split('@')[0] || 'Friend').trim(),
           isOfflineAccount: !!options?.offline,
+          isGuest: false,
         });
       },
 
@@ -681,8 +693,56 @@ export const useAppStore = create<AppState>()(
           userName: name.trim(),
           userEmail: email.trim(),
           isOfflineAccount: !!options?.offline,
+          isGuest: false,
         });
       },
+
+      startGuest: () => {
+        resetFeatureStores();
+        void clearPrivateDeviceData();
+        const fresh = freshUserData();
+        set({
+          ...fresh,
+          ...derivedState(computeDerived(engineInput(fresh))),
+          isAuthenticated: true,
+          isGuest: true,
+          // On this phone only: nothing is backed up until she creates an account.
+          isOfflineAccount: true,
+        });
+      },
+
+      upgradeGuest: (name: string, email: string, options?: { offline?: boolean }) => {
+        // Keeps every log: only who she is and where it is backed up change.
+        set({
+          userName: name.trim(),
+          userEmail: email.trim(),
+          isGuest: false,
+          isOfflineAccount: !!options?.offline,
+          isAuthenticated: true,
+        });
+      },
+
+      setFocusAreas: (areas: string[]) => {
+        set({ focusAreas: Array.from(new Set(areas.map((a) => a.trim()).filter(Boolean))).slice(0, 10) });
+        get().fineTuneAllAnalytics();
+      },
+
+      snoozeFocusPrompt: (days: number) => set({ focusPromptSnoozedUntil: addDaysToKey(todayKey(), Math.max(1, days)) }),
+
+      skipSyncStep: (step: string) =>
+        set((s) => (s.skippedSyncSteps.includes(step) ? {} : { skippedSyncSteps: [...s.skippedSyncSteps, step] })),
+
+      skipSetup: () => {
+        const s = get();
+        const notDone = SYNC_STEPS.filter((st) => !isStepDone(st.id, s)).map((st) => st.id as string);
+        set({
+          skippedSyncSteps: Array.from(new Set([...s.skippedSyncSteps, ...notDone])),
+          syncCompletedAt: s.syncCompletedAt || new Date().toISOString(),
+        });
+      },
+
+      snoozePersonalise: (days: number) =>
+        set({ personalisePromptSnoozedUntil: addDaysToKey(todayKey(), Math.max(1, days)) }),
 
       logout: async () => {
         await signOutSupabase();
@@ -811,6 +871,13 @@ export const useAppStore = create<AppState>()(
       deleteYourGoGirlMessage: (id: string) =>
         set((state) => ({ yourGoGirlMessages: state.yourGoGirlMessages.filter((m) => m.id !== id) })),
 
+      rateYourGoGirlMessage: (id: string, rating: 'up' | 'down', reason?: string) =>
+        set((state) => ({
+          yourGoGirlMessages: state.yourGoGirlMessages.map((m) =>
+            m.id === id ? { ...m, feedback: rating, ...(reason ? { feedbackReason: reason } : {}) } : m
+          ),
+        })),
+
       // The chat screen adds a fresh welcome message in her language.
       clearYourGoGirlChat: () => set({ yourGoGirlMessages: [] }),
 
@@ -880,7 +947,11 @@ export const useAppStore = create<AppState>()(
         userPhoto: s.userPhoto,
         isAuthenticated: s.isAuthenticated,
         isOfflineAccount: s.isOfflineAccount,
+        isGuest: s.isGuest,
         focusAreas: s.focusAreas,
+        focusPromptSnoozedUntil: s.focusPromptSnoozedUntil,
+        skippedSyncSteps: s.skippedSyncSteps,
+        personalisePromptSnoozedUntil: s.personalisePromptSnoozedUntil,
         isAssessmentCompleted: s.isAssessmentCompleted,
         assessmentAnswers: s.assessmentAnswers,
         fineTuningSettings: s.fineTuningSettings,

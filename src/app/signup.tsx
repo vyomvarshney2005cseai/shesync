@@ -1,68 +1,43 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, TextInput, ScrollView, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { isOfflineAuthError, signUpWithSupabase } from '@/lib/supabaseService';
-import {
-  ArrowLeft,
-  User,
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  Check,
-  CheckCircle2,
-} from 'lucide-react-native';
+import { PasswordField, StrengthMeter } from '@/components/auth/PasswordField';
+import { ROUTES } from '@/lib/routes';
+import { ArrowLeft, User, Mail, CheckCircle2 } from 'lucide-react-native';
+import { Button } from '@/components/ds';
 
-const FOCUS_TAGS = [
-  'Cycle Syncing',
-  'Hormonal Balance',
-  'PCOS & PMDD Support',
-  'Stress & Calm',
-  'Sleep & Recovery',
-  'Fitness & Weight',
-  'Study Focus',
-];
-
+/**
+ * Sign-up asks for name, email and password only. Focus areas are asked
+ * later on Home, once she has seen what SheSync does. A guest who signs up
+ * keeps everything she logged.
+ */
 export default function SignUpScreen() {
   const signup = useAppStore((s) => s.signup);
+  const upgradeGuest = useAppStore((s) => s.upgradeGuest);
+  const isGuest = useAppStore((s) => s.isGuest && s.isAuthenticated);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  // Only one neutral default: focus areas are shown on her profile, so the
-  // app must not pre-select a condition like PCOS for her.
-  const [selectedFocus, setSelectedFocus] = useState<string[]>(['Cycle Syncing']);
-  const [agreedToTerms, setAgreedToTerms] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const toggleFocus = (tag: string) => {
-    setSelectedFocus((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+  const clearError = () => {
+    if (errorMsg) setErrorMsg('');
   };
+  const matches = confirmPassword.length > 0 && confirmPassword === password;
 
   const handleSignUp = async () => {
     if (!name.trim()) {
       setErrorMsg('Please enter your name');
       return;
     }
-    if (!email.trim() || !email.includes('@')) {
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setErrorMsg('Please enter a valid email address');
       return;
     }
@@ -74,23 +49,23 @@ export default function SignUpScreen() {
       setErrorMsg('Passwords do not match');
       return;
     }
-    if (!agreedToTerms) {
-      setErrorMsg('Please agree to terms and privacy');
-      return;
-    }
 
     setLoading(true);
     setErrorMsg('');
 
+    const finish = (offline: boolean) => {
+      if (isGuest) upgradeGuest(name.trim(), email.trim(), { offline });
+      else signup(name.trim(), email.trim(), [], { offline });
+      router.replace('/(tabs)');
+    };
+
     try {
       await signUpWithSupabase(email.trim(), password, name.trim());
-      signup(name.trim(), email.trim(), selectedFocus);
-      router.replace('/(tabs)');
+      finish(false);
     } catch (err: any) {
       if (isOfflineAuthError(err)) {
         // No server reachable (or none configured): create the account on this device.
-        signup(name.trim(), email.trim(), selectedFocus, { offline: true });
-        router.replace('/(tabs)');
+        finish(true);
       } else {
         // The server answered (e.g. "User already registered"): show it instead of faking success.
         const msg = String(err?.message || '');
@@ -116,17 +91,19 @@ export default function SignUpScreen() {
             style={styles.scrollWrapper}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
           {/* Top Bar Navigation */}
           <View style={styles.topBar}>
-            <TouchableOpacity
+            <Button
+              variant="secondary"
+              size="sm"
+              iconOnly
+              onPress={() => (router.canGoBack() ? router.back() : router.replace(isGuest ? '/(tabs)' : '/welcome'))}
+              accessibilityLabel="Go back"
+              icon={<ArrowLeft size={20} color={Theme.colors.textPrimary} />}
               style={styles.backButton}
-              onPress={() => router.back()}
-              activeOpacity={0.7}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <ArrowLeft size={20} color={Theme.colors.textPrimary} />
-            </TouchableOpacity>
+            />
 
             <View style={styles.brandRow}>
               <Image
@@ -142,8 +119,10 @@ export default function SignUpScreen() {
 
           {/* Heading */}
           <View style={styles.headerBlock}>
-            <Text style={styles.title}>Join SheSync</Text>
-            <Text style={styles.subtitle}>Create your account.</Text>
+            <Text style={styles.title}>{isGuest ? 'Save your progress' : 'Join SheSync'}</Text>
+            <Text style={styles.subtitle}>
+              {isGuest ? 'Create an account to back up what you have logged. Nothing is lost.' : 'Three quick things and you’re in.'}
+            </Text>
           </View>
 
           {/* Form Container */}
@@ -161,13 +140,16 @@ export default function SignUpScreen() {
                 <User size={18} color={Theme.colors.textTertiary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. Maya Chen"
+                  placeholder="e.g. Ananya Sharma"
                   placeholderTextColor={Theme.colors.textTertiary}
                   value={name}
                   onChangeText={(val) => {
                     setName(val);
-                    if (errorMsg) setErrorMsg('');
+                    clearError();
                   }}
+                  autoComplete="name"
+                  textContentType="name"
+                  accessibilityLabel="Your name"
                 />
               </View>
             </View>
@@ -184,135 +166,64 @@ export default function SignUpScreen() {
                   value={email}
                   onChangeText={(val) => {
                     setEmail(val);
-                    if (errorMsg) setErrorMsg('');
+                    clearError();
                   }}
                   autoCapitalize="none"
                   keyboardType="email-address"
+                  autoComplete="email"
+                  textContentType="emailAddress"
+                  accessibilityLabel="Email address"
                 />
               </View>
             </View>
 
-            {/* Password Field */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>PASSWORD (MIN 6 CHARACTERS)</Text>
-              <View style={styles.inputWrapper}>
-                <Lock size={18} color={Theme.colors.textTertiary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Create a strong password"
-                  placeholderTextColor={Theme.colors.textTertiary}
-                  value={password}
-                  onChangeText={(val) => {
-                    setPassword(val);
-                    if (errorMsg) setErrorMsg('');
-                  }}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeButton}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  {showPassword ? (
-                    <EyeOff size={18} color={Theme.colors.textSecondary} />
-                  ) : (
-                    <Eye size={18} color={Theme.colors.textSecondary} />
-                  )}
-                </TouchableOpacity>
-              </View>
-            </View>
+            <PasswordField
+              label="PASSWORD"
+              placeholder="At least 6 characters"
+              value={password}
+              onChangeText={(val) => {
+                setPassword(val);
+                clearError();
+              }}
+              autoComplete="new-password"
+              textContentType="newPassword"
+            />
+            <StrengthMeter password={password} personal={[name, email]} />
 
-            {/* Confirm Password Field */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>CONFIRM PASSWORD</Text>
-              <View style={styles.inputWrapper}>
-                <Lock size={18} color={Theme.colors.textTertiary} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Repeat your password"
-                  placeholderTextColor={Theme.colors.textTertiary}
-                  value={confirmPassword}
-                  onChangeText={(val) => {
-                    setConfirmPassword(val);
-                    if (errorMsg) setErrorMsg('');
-                  }}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                />
+            <PasswordField
+              label="CONFIRM PASSWORD"
+              placeholder="Type it again"
+              value={confirmPassword}
+              onChangeText={(val) => {
+                setConfirmPassword(val);
+                clearError();
+              }}
+              autoComplete="new-password"
+              textContentType="newPassword"
+            />
+            {confirmPassword ? (
+              <View style={styles.matchRow}>
+                {matches ? <CheckCircle2 size={14} color={themed('#15803D')} /> : null}
+                <Text style={[styles.matchText, { color: themed(matches ? '#15803D' : '#B45309') }]}>
+                  {matches ? 'Passwords match' : 'Passwords don’t match yet'}
+                </Text>
               </View>
-            </View>
-
-            {/* Personalized Focus Chips */}
-            <View style={styles.focusSection}>
-              <Text style={styles.inputLabel}>WHAT WOULD YOU LIKE TO SYNC?</Text>
-              <View style={styles.chipsContainer}>
-                {FOCUS_TAGS.map((tag) => {
-                  const isSelected = selectedFocus.includes(tag);
-                  return (
-                    <TouchableOpacity
-                      key={tag}
-                      onPress={() => toggleFocus(tag)}
-                      activeOpacity={0.7}
-                      style={[
-                        styles.chip,
-                        isSelected ? styles.chipSelected : styles.chipUnselected,
-                      ]}
-                    >
-                      {isSelected ? (
-                        <Check size={13} color={themed('#FFFFFF')} style={{ marginRight: 4 }} />
-                      ) : null}
-                      <Text
-                        style={[
-                          styles.chipText,
-                          isSelected ? styles.chipTextSelected : styles.chipTextUnselected,
-                        ]}
-                      >
-                        {tag}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Terms and Privacy Checkbox */}
-            <TouchableOpacity
-              style={styles.agreeRow}
-              onPress={() => setAgreedToTerms(!agreedToTerms)}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.checkbox, agreedToTerms && styles.checkboxActive]}>
-                {agreedToTerms && <CheckCircle2 size={16} color={themed('#FFFFFF')} />}
-              </View>
-              <Text style={styles.agreeText}>
-                I agree to the Terms of Service & Privacy Policy.
-              </Text>
-            </TouchableOpacity>
+            ) : null}
 
             {/* Sign Up Submit Button */}
-            <TouchableOpacity
-              style={[styles.submitButton, loading && { opacity: 0.7 }]}
-              activeOpacity={0.88}
-              onPress={handleSignUp}
-              disabled={loading}
-            >
-              {loading ? <ActivityIndicator size="small" color={themed('#FFFFFF')} style={{ marginRight: 8 }} /> : null}
-              <Text style={styles.submitButtonText}>{loading ? 'Creating account…' : 'Create account'}</Text>
-            </TouchableOpacity>
+            <Button size="lg" fullWidth title={loading ? 'Creating account' : 'Create account'} loading={loading} onPress={handleSignUp} style={styles.submitButton} />
+
+            <Text style={styles.agreeText}>By creating an account you agree to the Terms of Service and to how we handle your data.</Text>
+            <Button variant="link" title="How we handle your data" onPress={() => router.push(ROUTES.privacy)} style={{ alignSelf: 'center' }} />
           </View>
 
           {/* Footer Link to Log In */}
-          <View style={styles.footerRow}>
-            <Text style={styles.footerText}>Already have an account?</Text>
-            <TouchableOpacity
-              onPress={() => router.push('/login')}
-              activeOpacity={0.7}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Text style={styles.footerLink}> Log In</Text>
-            </TouchableOpacity>
-          </View>
+          {!isGuest ? (
+            <View style={styles.footerRow}>
+              <Text style={styles.footerText}>Already have an account?</Text>
+              <Button variant="link" title="Log In" onPress={() => router.push('/login')} />
+            </View>
+          ) : null}
         </ScrollView>
         </View>
       </KeyboardAvoidingView>
@@ -321,6 +232,8 @@ export default function SignUpScreen() {
 }
 
 const styles = createStyles(() => ({
+  matchRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: -8 },
+  matchText: { fontSize: 14, fontWeight: '700' },
   safeArea: {
     flex: 1,
     backgroundColor: '#FFF4F7',
@@ -348,17 +261,7 @@ const styles = createStyles(() => ({
     justifyContent: 'space-between',
     paddingVertical: 12,
   },
-  backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: Theme.radius.full,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#FFE2EB',
-    ...Theme.shadows.soft,
-  },
+  backButton: { width: 38 },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -396,26 +299,25 @@ const styles = createStyles(() => ({
     padding: 20,
     borderWidth: 1,
     borderColor: '#FFE2EB',
-    ...Theme.shadows.soft,
     gap: 16,
   },
   errorBanner: {
     backgroundColor: '#FFE4E8',
-    padding: 10,
+    padding: 12,
     borderRadius: Theme.radius.md,
     borderWidth: 1,
     borderColor: '#FFA6BA',
   },
   errorText: {
-    fontSize: 13,
+    fontSize: 14,
     color: Theme.colors.primaryDark,
     fontWeight: '600',
   },
   inputGroup: {
-    gap: 6,
+    gap: 8,
   },
   inputLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: Theme.colors.textSecondary,
     letterSpacing: 0.8,
@@ -430,16 +332,17 @@ const styles = createStyles(() => ({
     paddingHorizontal: 12,
   },
   inputIcon: {
-    marginRight: 10,
+    marginRight: 12,
   },
   input: {
+    minHeight: 48,
     flex: 1,
-    paddingVertical: 14,
-    fontSize: 15,
+    paddingVertical: 16,
+    fontSize: 16,
     color: Theme.colors.textPrimary,
   },
   eyeButton: {
-    padding: 6,
+    padding: 8,
   },
   focusSection: {
     gap: 8,
@@ -454,7 +357,7 @@ const styles = createStyles(() => ({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderRadius: Theme.radius.full,
     borderWidth: 1,
   },
@@ -467,7 +370,7 @@ const styles = createStyles(() => ({
     borderColor: '#FFD3E0',
   },
   chipText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
   chipTextSelected: {
@@ -479,40 +382,32 @@ const styles = createStyles(() => ({
   agreeRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
+    gap: 12,
     marginTop: 4,
   },
   checkbox: {
     width: 20,
     height: 20,
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 1.5,
     borderColor: '#FFADC4',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
-    marginTop: 2,
+    marginTop: 4,
   },
   checkboxActive: {
     backgroundColor: Theme.colors.feminismAccent,
     borderColor: Theme.colors.feminismAccent,
   },
   agreeText: {
-    flex: 1,
-    fontSize: 12,
-    lineHeight: 18,
+    textAlign: 'center',
+    fontSize: 14,
+    lineHeight: 20,
     color: Theme.colors.textSecondary,
   },
   submitButton: {
-    backgroundColor: '#46375A',
-    borderRadius: Theme.radius.md,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 6,
-    ...Theme.shadows.card,
+    marginTop: 8,
   },
   submitButtonText: {
     color: '#FFFFFF',

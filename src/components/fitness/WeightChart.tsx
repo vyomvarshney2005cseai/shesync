@@ -72,5 +72,5 @@ const styles = createStyles(() => ({
     justifyContent: 'center',
     padding: 12,
   },
-  emptyText: { fontSize: 12, color: Theme.colors.textSecondary, textAlign: 'center' },
+  emptyText: { fontSize: 14, color: Theme.colors.textSecondary, textAlign: 'center' },
 }));

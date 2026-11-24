@@ -1,444 +1,226 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  ScrollView,
-  Animated,
-} from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, View, Text, Image, ScrollView, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect, router } from 'expo-router';
+import { ArrowRight, ShieldCheck, Smartphone, UserPlus, LogIn } from 'lucide-react-native';
 import { useAppStore } from '@/store/useAppStore';
+import { useSettingsStore } from '@/store/useSettingsStore';
 import { useStoresHydrated } from '@/store/hydration';
+import { reduceMotionNow } from '@/lib/motion';
 import { Theme, createStyles, themed } from '@/constants/theme';
-import { ArrowRight, UserCheck, Quote as QuoteIcon } from 'lucide-react-native';
+import { ROUTES } from '@/lib/routes';
+import { Button, Card, ScreenSkeleton } from '@/components/ds';
 
+/** Three real app screens, one promise each. */
 const SLIDES = [
   {
-    tag: 'Feminism',
-    headline: 'I am a woman!\nAnd what’s your\nsuper power?',
-    quote: 'Feminism isn’t about making women stronger. Women are already strong. It’s about changing the way the world perceives that strength.',
-    author: 'G.D. Anderson',
-    image: require('@/../assets/images/slide1.jpg'),
+    image: require('@/../assets/images/welcome-1.jpg'),
+    title: 'Know what’s coming',
+    text: 'Your next period, energy and mood — a few days ahead, worked out from your own logs.',
   },
   {
-    tag: 'Empowerment',
-    headline: 'Limitless Power\nWithin You.',
-    quote: 'There is no limit to what we, as women, can accomplish together.',
-    author: 'Michelle Obama',
-    image: require('@/../assets/images/slide2.jpg'),
+    image: require('@/../assets/images/welcome-2.jpg'),
+    title: 'Ask anything, in your language',
+    text: 'Periods, pain, mood or exams — in English, Hinglish or हिन्दी. It tells you clearly when to see a doctor.',
   },
   {
-    tag: 'Sisterhood & Voice',
-    headline: 'Stand for Yourself,\nStand for All Women.',
-    quote: 'Each time a woman stands up for herself, without knowing it possibly, without claiming it, she stands up for all women.',
-    author: 'Maya Angelou',
-    image: require('@/../assets/images/slide3.jpg'),
-  },
-  {
-    tag: 'Sovereign Health',
-    headline: 'Deliberate and\nAfraid of Nothing.',
-    quote: 'Caring for myself is not self-indulgence, it is self-preservation, and that is an act of political warfare.',
-    author: 'Audre Lorde',
-    image: require('@/../assets/images/slide4.jpg'),
+    image: require('@/../assets/images/welcome-3.jpg'),
+    title: 'Private by default',
+    text: 'Lock it with a PIN or Face ID, and use it without an account — your data stays on your phone.',
   },
 ];
 
+const MAX_WIDTH = 440;
+
 export default function WelcomeScreen() {
-  const [activeSlide, setActiveSlide] = useState(0);
-  // useState (not useRef().current) so the React Compiler never reads a ref during render.
-  const [fadeAnim] = useState(() => new Animated.Value(1));
-  const [slideAnim] = useState(() => new Animated.Value(0));
   const hydrated = useStoresHydrated();
   const isAuthenticated = useAppStore((s) => s.isAuthenticated);
   const isAssessmentCompleted = useAppStore((s) => s.isAssessmentCompleted);
+  const startGuest = useAppStore((s) => s.startGuest);
+  const welcomeSeen = useSettingsStore((s) => s.welcomeSeen);
+  const setWelcomeSeen = useSettingsStore((s) => s.setWelcomeSeen);
+  const { width: windowWidth } = useWindowDimensions();
+  const pageWidth = Math.min(windowWidth, MAX_WIDTH);
 
-  const transitionToSlide = useCallback((newIndex: number) => {
-    // Fade out and slight shift
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 180,
-        useNativeDriver: false,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: -10,
-        duration: 180,
-        useNativeDriver: false,
-      }),
-    ]).start(() => {
-      setActiveSlide(newIndex);
-      slideAnim.setValue(12);
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 260,
-          useNativeDriver: false,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 260,
-          useNativeDriver: false,
-        }),
-      ]).start();
-    });
-  }, [fadeAnim, slideAnim]);
+  // null = follow the saved choice; true/false once she taps something.
+  const [showTour, setShowTour] = useState<boolean | null>(null);
+  const [index, setIndex] = useState(0);
+  const scroller = React.useRef<React.ElementRef<typeof ScrollView>>(null);
 
-  // Auto-sliding quotes timer: automatically advances every 3.8 seconds
-  useEffect(() => {
-    const timer = setInterval(() => {
-      transitionToSlide((activeSlide + 1) % SLIDES.length);
-    }, 3800);
-
-    return () => clearInterval(timer);
-  }, [activeSlide, transitionToSlide]);
-
-  const handleManualSlide = (index: number) => {
-    if (index === activeSlide) return;
-    transitionToSlide(index);
-  };
-
-  const currentContent = SLIDES[activeSlide] || SLIDES[0];
-
-  // Wait for saved data, then skip the welcome screen for signed-in users.
-  if (!hydrated) return null;
+  if (!hydrated) return <ScreenSkeleton label="Loading" />;
   if (isAuthenticated) {
     return <Redirect href={isAssessmentCompleted ? '/(tabs)' : '/assessment'} />;
   }
 
+  const tour = showTour ?? !welcomeSeen;
+
+  const finishTour = () => {
+    setWelcomeSeen(true);
+    setShowTour(false);
+  };
+
+  const goTo = (i: number) => {
+    setIndex(i);
+    scroller.current?.scrollTo({ x: i * pageWidth, animated: !reduceMotionNow() });
+  };
+
+  const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const i = Math.round(e.nativeEvent.contentOffset.x / pageWidth);
+    if (i !== index) setIndex(Math.max(0, Math.min(SLIDES.length - 1, i)));
+  };
+
+  if (tour) {
+    const last = index === SLIDES.length - 1;
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <View style={[styles.column, { width: pageWidth }]}>
+          <View style={styles.topBar}>
+            <View style={styles.brandRow}>
+              <Image source={require('@/../assets/images/logo.png')} style={styles.logo} resizeMode="contain" />
+              <Text style={styles.brand}>SheSync</Text>
+            </View>
+            <Button variant="tertiary" size="sm" title="Skip" onPress={finishTour} accessibilityLabel="Skip the tour" testID="tour-skip" />
+          </View>
+
+          <ScrollView
+            ref={scroller}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={onScrollEnd}
+            onScrollEndDrag={onScrollEnd}
+            scrollEventThrottle={16}
+            style={{ flex: 1 }}
+          >
+            {SLIDES.map((s, i) => (
+              <View key={i} style={[styles.slide, { width: pageWidth }]} accessibilityLabel={`${i + 1} of ${SLIDES.length}. ${s.title}. ${s.text}`}>
+                <View style={styles.phone}>
+                  <Image source={s.image} style={styles.phoneImage} resizeMode="cover" accessibilityIgnoresInvertColors />
+                </View>
+                <Text style={styles.slideTitle}>{s.title}</Text>
+                <Text style={styles.slideText}>{s.text}</Text>
+              </View>
+            ))}
+          </ScrollView>
+
+          <View style={styles.bottom}>
+            <View style={styles.dots}>
+              {SLIDES.map((_, i) => (
+                <Pressable key={i} onPress={() => goTo(i)} style={styles.dotHit} accessibilityRole="button" accessibilityLabel={`Slide ${i + 1} of ${SLIDES.length}`} accessibilityState={{ selected: i === index }}>
+                  <View style={[styles.dot, i === index && styles.dotOn]} />
+                </Pressable>
+              ))}
+            </View>
+            <Button
+              variant="primary"
+              title={last ? 'Get started' : 'Next'}
+              onPress={() => (last ? finishTour() : goTo(index + 1))}
+              iconRight={<ArrowRight size={20} color={Theme.colors.onPrimary} />}
+            />
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <View style={styles.outerCenterWrapper}>
-        <ScrollView
-          style={styles.scrollWrapper}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          bounces={false}
+      <ScrollView contentContainerStyle={[styles.startContent, { width: pageWidth }]} bounces={false}>
+        <View style={styles.startHead}>
+          <Image source={require('@/../assets/images/logo.png')} style={styles.startLogo} resizeMode="contain" />
+          <Text style={styles.startTitle}>Welcome to SheSync</Text>
+          <Text style={styles.startSub}>Your period & wellbeing companion</Text>
+        </View>
+
+        <Card
+          tone="inverse"
+          style={styles.tryBtn}
+          onPress={() => {
+            setWelcomeSeen(true);
+            startGuest();
+            router.replace('/(tabs)');
+          }}
+          accessibilityLabel="Try without an account. Everything stays on this phone."
+          testID="try-without-account"
         >
-          {/* Brand Bar Header */}
-          <View style={styles.brandBar}>
-            <View style={styles.brandLogoRow}>
-              <Image
-                source={require('@/../assets/images/logo.png')}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
-              <View>
-                <Text style={styles.brandTitle}>SheSync</Text>
-                <Text style={styles.brandSubtitle}>Period & wellbeing companion</Text>
-              </View>
-            </View>
+          <View style={styles.tryIcon}>
+            <Smartphone size={20} color={Theme.colors.primaryDark} />
           </View>
-
-          {/* Hero Card Container */}
-          <View style={styles.heroCard}>
-            {/* Pagination Indicators */}
-            <View style={styles.paginationRow}>
-              <View style={styles.indicatorsGroup}>
-                {SLIDES.map((_, index) => {
-                  const isActive = index === activeSlide;
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      onPress={() => handleManualSlide(index)}
-                      activeOpacity={0.7}
-                      hitSlop={{ top: 12, bottom: 12, left: 6, right: 6 }}
-                    >
-                      <View
-                        style={[
-                          styles.indicatorBase,
-                          isActive ? styles.indicatorActive : styles.indicatorInactive,
-                        ]}
-                      />
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Animated Auto-Sliding Quote Section */}
-            <Animated.View
-              style={[
-                styles.slidingQuoteArea,
-                {
-                  opacity: fadeAnim,
-                  transform: [{ translateX: slideAnim }],
-                },
-              ]}
-            >
-              {/* Main Hero Illustration */}
-              <View style={styles.illustrationContainer}>
-                <Image
-                  source={currentContent.image}
-                  style={styles.heroImage}
-                  resizeMode="contain"
-                />
-              </View>
-
-              {/* Headline */}
-              <Text style={styles.headlineText}>
-                {currentContent.headline}
-              </Text>
-
-              {/* Quote & Author */}
-              <View style={styles.quoteBox}>
-                <QuoteIcon size={14} color={Theme.colors.feminismAccent} style={styles.quoteIcon} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.quoteBody}>
-                    &ldquo;{currentContent.quote}&rdquo;
-                  </Text>
-                  <Text style={styles.quoteAuthor}>
-                    — {currentContent.author}
-                  </Text>
-                </View>
-              </View>
-            </Animated.View>
-
-            {/* Action CTAs in place of "Read Now! It's Free" */}
-            <View style={styles.actionSection}>
-              {/* Primary: Sign Up Button */}
-              <TouchableOpacity
-                style={styles.signUpButton}
-                activeOpacity={0.88}
-                onPress={() => router.push('/signup')}
-              >
-                <Text style={styles.signUpText}>Sign Up</Text>
-                <ArrowRight size={18} color={themed('#FFFFFF')} />
-              </TouchableOpacity>
-
-              {/* Secondary: Log In Button */}
-              <TouchableOpacity
-                style={styles.logInButton}
-                activeOpacity={0.8}
-                onPress={() => router.push('/login')}
-              >
-                <UserCheck size={16} color={Theme.colors.textPrimary} style={{ marginRight: 6 }} />
-                <Text style={styles.logInText}>Log In</Text>
-              </TouchableOpacity>
-            </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.tryTitle}>Try without an account</Text>
+            <Text style={styles.trySub}>Everything stays on this phone. Create an account any time to back it up.</Text>
           </View>
-        </ScrollView>
-      </View>
+          <ArrowRight size={18} color={themed('#FFFFFF')} />
+        </Card>
+
+        <Button variant="secondary" title="Create an account" onPress={() => router.push('/signup')} icon={<UserPlus size={20} color={Theme.colors.textPrimary} />} style={styles.outlineBtn} />
+
+        <Button variant="link" title="I already have an account · Log in" onPress={() => router.push('/login')} icon={<LogIn size={18} color={Theme.colors.primaryDark} />} style={styles.loginRow} />
+
+        <Button variant="secondary" title="What stays on your phone, what is backed up, and what we never do" onPress={() => router.push(ROUTES.privacy)} icon={<ShieldCheck size={20} color={Theme.colors.textPrimary} />} iconRight={<ArrowRight size={20} color={Theme.colors.textPrimary} />} style={styles.privacyRow} />
+
+        <Button
+          variant="link"
+          title="See the 3-step tour"
+          onPress={() => {
+            setIndex(0);
+            setShowTour(true);
+          }}
+          style={styles.tourAgain}
+        />
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = createStyles(() => ({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#FFEBF2',
+  safeArea: { flex: 1, backgroundColor: '#FFEBF2', alignItems: 'center' },
+  column: { flex: 1, alignSelf: 'center' },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  logo: { width: 30, height: 30, borderRadius: 8 },
+  brand: { fontSize: 18, fontWeight: '800', color: Theme.colors.textPrimary, letterSpacing: -0.3 },
+  skip: { fontSize: 16, fontWeight: '700', color: Theme.colors.textSecondary },
+  slide: { alignItems: 'center', paddingHorizontal: 28, paddingTop: 8 },
+  phone: {
+    width: '78%',
+    maxWidth: 300,
+    aspectRatio: 0.62,
+    borderRadius: 24,
+    borderWidth: 6,
+    borderColor: '#2A2238',
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
   },
-  outerCenterWrapper: {
-    flex: 1,
-    width: '100%',
-    alignItems: 'stretch',
-  },
-  scrollWrapper: {
-    flex: 1,
-    width: '100%',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    width: '100%',
-    maxWidth: 440,
-    alignSelf: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-  },
-  brandBar: {
+  phoneImage: { width: '100%', height: '100%' },
+  slideTitle: { fontSize: 24, fontWeight: '900', color: '#1F1530', textAlign: 'center', marginTop: 24, letterSpacing: -0.5 },
+  slideText: { fontSize: 16, lineHeight: 20, color: '#4B4358', textAlign: 'center', marginTop: 8 },
+  bottom: { paddingHorizontal: 24, paddingBottom: 16, paddingTop: 8, gap: 16 },
+  dots: { flexDirection: 'row', justifyContent: 'center', gap: 8 },
+  dotHit: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(70, 55, 90, 0.25)' },
+  dotOn: { width: 26, backgroundColor: '#1F1530' },
+  nextText: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
+  startContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24, alignSelf: 'center' },
+  startHead: { alignItems: 'center', marginBottom: 28 },
+  startLogo: { width: 64, height: 64, borderRadius: 16 },
+  startTitle: { fontSize: 24, fontWeight: '900', color: '#1F1530', marginTop: 16, letterSpacing: -0.5 },
+  startSub: { fontSize: 14, color: '#4B4358', marginTop: 4 },
+  tryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    marginBottom: 4,
+    gap: 12,
   },
-  brandLogoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  logoImage: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-  },
-  brandTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Theme.colors.textPrimary,
-    letterSpacing: -0.3,
-  },
-  brandSubtitle: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: Theme.colors.textSecondary,
-    letterSpacing: 0.2,
-  },
-  versionBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: Theme.radius.full,
-    borderWidth: 1,
-    borderColor: '#FFD7E3',
-  },
-  versionText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: Theme.colors.feminismAccent,
-    letterSpacing: 0.8,
-  },
-  heroCard: {
-    backgroundColor: '#FFEBF2',
-    borderRadius: 32,
-    paddingHorizontal: 6,
-    paddingVertical: 6,
-  },
-  illustrationContainer: {
-    width: '100%',
-    height: 220,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-  heroImage: {
-    width: '100%',
-    height: '100%',
-  },
-  paginationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    paddingHorizontal: 4,
-  },
-  indicatorsGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  indicatorBase: {
-    height: 6,
-    borderRadius: 3,
-  },
-  indicatorActive: {
-    width: 28,
-    backgroundColor: '#000000',
-  },
-  indicatorInactive: {
-    width: 7,
-    borderWidth: 1.5,
-    borderColor: '#46375A',
-    backgroundColor: 'transparent',
-  },
-  heartButton: {
-    padding: 4,
-  },
-  slidingQuoteArea: {
-    minHeight: 160,
-    paddingHorizontal: 4,
-    justifyContent: 'flex-start',
-  },
-  tagRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
-  },
-  tagText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: Theme.colors.feminismAccent,
-    letterSpacing: 0.8,
-  },
-  autoSlideHint: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#9CA3AF',
-    letterSpacing: 0.5,
-  },
-  headlineText: {
-    fontSize: 26,
-    lineHeight: 32,
-    fontWeight: '800',
-    color: '#000000',
-    letterSpacing: -0.5,
-    marginBottom: 8,
-  },
-  quoteBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
-    borderRadius: Theme.radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#FFD7E3',
-  },
-  quoteIcon: {
-    marginRight: 6,
-    marginTop: 2,
-  },
-  quoteBody: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '600',
-    color: '#374151',
-    fontStyle: 'italic',
-  },
-  quoteAuthor: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Theme.colors.feminismAccent,
-    marginTop: 4,
-  },
-  actionSection: {
-    gap: 10,
-    marginTop: 6,
-    paddingHorizontal: 4,
-  },
-  signUpButton: {
-    backgroundColor: '#000000',
-    borderRadius: Theme.radius.md,
-    paddingVertical: 15,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    ...Theme.shadows.card,
-  },
-  signUpText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.2,
-    flexShrink: 1,
-    textAlign: 'center',
-  },
-  logInButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    borderRadius: Theme.radius.md,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderWidth: 1.5,
-    borderColor: '#FFD3E0',
-    ...Theme.shadows.soft,
-  },
-  logInText: {
-    color: Theme.colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '700',
-    flexShrink: 1,
-    textAlign: 'center',
-  },
+  tryIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+  tryTitle: { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
+  trySub: { fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.9)', marginTop: 4 },
+  outlineBtn: { marginTop: 12 },
+  outlineText: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary },
+  loginRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 20 },
+  loginText: { fontSize: 14, color: Theme.colors.textSecondary },
+  loginLink: { fontWeight: '800', color: Theme.colors.primaryDark },
+  privacyRow: { marginTop: 28 },
+  privacyText: { flex: 1, fontSize: 14, lineHeight: 20, fontWeight: '700', color: Theme.colors.secondaryDark },
+  tourAgain: { alignSelf: 'center', marginTop: 16 },
+  tourAgainText: { fontSize: 14, fontWeight: '700', color: Theme.colors.textTertiary, textDecorationLine: 'underline' },
 }));

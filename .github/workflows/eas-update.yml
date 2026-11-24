@@ -1,0 +1,45 @@
+# Ship a small JavaScript fix over the air (EAS Update), without a store release.
+# Run it from the Actions tab. Needs repository secrets:
+#   EXPO_TOKEN                      (expo.dev → Account settings → Access tokens)
+#   EXPO_PUBLIC_SUPABASE_URL        (same values as your .env)
+#   EXPO_PUBLIC_SUPABASE_ANON_KEY
+# Only phones whose installed build has the same native fingerprint receive it;
+# a change to native code (a new native module, app.json plugins…) still needs a new build.
+name: EAS Update
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: Which builds get the fix
+        type: choice
+        options: [preview, production]
+        default: preview
+      message:
+        description: What this update fixes
+        required: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Publish the update
+        env:
+          CHANNEL: ${{ inputs.channel }}
+          MESSAGE: ${{ inputs.message }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+        run: eas update --channel "$CHANNEL" --message "$MESSAGE" --non-interactive

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import {
@@ -13,7 +13,7 @@ import {
 } from 'lucide-react-native';
 import { AdaptiveBackground } from '@/components/common/AdaptiveBackground';
 import { AuthGate } from '@/components/common/AuthGate';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
+import { Button } from '@/components/ds';
 import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { assessReferral, REFERRAL_LEVEL_TEXT } from '@/lib/referral';
@@ -62,7 +62,7 @@ export default function SyncResultScreen() {
   const referable = result.referable;
   const text = REFERRAL_LEVEL_TEXT[result.level];
   const tone = !referable
-    ? { bg: themed('#E9F6F0'), border: themed('#BFE3D4'), ink: themed('#2F7D69'), icon: <ShieldCheck size={30} color={themed('#2F7D69')} /> }
+    ? { bg: themed('#E9F6F0'), border: themed('#BFE3D4'), ink: themed('#276C5C'), icon: <ShieldCheck size={30} color={themed('#276C5C')} /> }
     : result.level === 'urgent'
     ? { bg: themed('#FDECEF'), border: themed('#F3BFCB'), ink: themed('#A33B55'), icon: <AlertTriangle size={30} color={themed('#A33B55')} /> }
     : { bg: themed('#FFF3E6'), border: themed('#F4D6B5'), ink: themed('#9A5A2E'), icon: <Stethoscope size={30} color={themed('#9A5A2E')} /> };
@@ -76,9 +76,7 @@ export default function SyncResultScreen() {
               <Sparkles size={13} color={Theme.colors.primary} />
               <Text style={styles.topBadgeText}>YOUR SYNC RESULT</Text>
             </View>
-            <Pressable onPress={goHome} style={styles.closeBtn} accessibilityRole="button" accessibilityLabel="Close">
-              <X size={20} color={Theme.colors.textPrimary} />
-            </Pressable>
+            <Button variant="secondary" size="sm" iconOnly onPress={goHome} accessibilityLabel="Close" icon={<X size={20} color={Theme.colors.textPrimary} />} style={styles.closeBtn} />
           </View>
 
           <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -99,15 +97,15 @@ export default function SyncResultScreen() {
                   confidential and open 24×7. If you are in danger, call 112.
                 </Text>
                 <View style={styles.row}>
-                  <PrimaryButton
+                  <Button
                     title="Call Tele-MANAS 14416"
                     icon={<Phone size={16} color={themed('#FFFFFF')} />}
                     onPress={() => callNumber(CRISIS_LINES.teleManas.number, CRISIS_LINES.teleManas.label)}
                     style={{ flex: 1 }}
                   />
-                  <PrimaryButton
+                  <Button
                     title="112"
-                    variant="dark"
+                    variant="primary"
                     onPress={() => callNumber(CRISIS_LINES.emergency.number, CRISIS_LINES.emergency.label)}
                   />
                 </View>
@@ -180,17 +178,17 @@ export default function SyncResultScreen() {
               </Text>
             ) : null}
 
-            <View style={{ gap: 10, marginTop: 18 }}>
+            <View style={{ gap: 12, marginTop: 20 }}>
               {(referable || result.counsellorSuggested) && (
-                <PrimaryButton
+                <Button
                   title={referable ? 'Find a gynaecologist · Care Connect' : 'Talk to a counsellor · Care Connect'}
                   icon={<HeartHandshake size={17} color={themed('#FFFFFF')} />}
-                  variant="lilac"
+                  variant="primary"
                   onPress={() => router.push(ROUTES.care)}
                   fullWidth
                 />
               )}
-              <PrimaryButton title="Go to my dashboard" onPress={goHome} fullWidth />
+              <Button title="Go to my dashboard" onPress={goHome} fullWidth />
             </View>
 
             <Text style={styles.disclaimer}>
@@ -226,7 +224,7 @@ const styles = createStyles(() => ({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 12,
     width: '100%',
     maxWidth: 520,
     alignSelf: 'center',
@@ -234,23 +232,14 @@ const styles = createStyles(() => ({
   topBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     backgroundColor: Theme.colors.primaryLight,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: Theme.radius.full,
   },
-  topBadgeText: { fontSize: 11, fontWeight: '800', color: Theme.colors.primary, letterSpacing: 0.8 },
-  closeBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Theme.colors.cardBorder,
-  },
+  topBadgeText: { fontSize: 12, fontWeight: '800', color: Theme.colors.primary, letterSpacing: 0.8 },
+  closeBtn: { width: 38 },
   scroll: { padding: 20, paddingBottom: 48, width: '100%', maxWidth: 520, alignSelf: 'center' },
   pending: {
     backgroundColor: '#FFF7E8',
@@ -260,22 +249,22 @@ const styles = createStyles(() => ({
     borderColor: '#F4E0B8',
     marginBottom: 12,
   },
-  pendingText: { fontSize: 12.5, color: '#8A5A1F', lineHeight: 18, fontWeight: '600' },
+  pendingText: { fontSize: 14, color: '#8A5A1F', lineHeight: 20, fontWeight: '600' },
   crisis: {
     backgroundColor: Theme.colors.secondaryLight,
-    borderRadius: 22,
+    borderRadius: 24,
     padding: 16,
     borderWidth: 1,
     borderColor: Theme.colors.secondaryBorder,
-    gap: 10,
-    marginBottom: 14,
+    gap: 12,
+    marginBottom: 16,
   },
   crisisTitle: { fontSize: 16, fontWeight: '800', color: Theme.colors.secondaryDark },
-  crisisBody: { fontSize: 13, color: Theme.colors.textPrimary, lineHeight: 19 },
+  crisisBody: { fontSize: 14, color: Theme.colors.textPrimary, lineHeight: 20 },
   row: { flexDirection: 'row', gap: 8 },
   verdict: {
-    borderRadius: 28,
-    padding: 22,
+    borderRadius: 24,
+    padding: 24,
     alignItems: 'center',
     borderWidth: 1.5,
   },
@@ -286,28 +275,28 @@ const styles = createStyles(() => ({
     backgroundColor: 'rgba(255,255,255,0.85)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  verdictLabel: { fontSize: 13, fontWeight: '800', letterSpacing: 2 },
+  verdictLabel: { fontSize: 12, fontWeight: '800', letterSpacing: 2 },
   verdictTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: Theme.colors.textPrimary,
     textAlign: 'center',
-    marginTop: 6,
+    marginTop: 8,
     letterSpacing: -0.4,
   },
-  verdictWhen: { fontSize: 13.5, color: Theme.colors.textSecondary, textAlign: 'center', marginTop: 6, lineHeight: 20 },
+  verdictWhen: { fontSize: 14, color: Theme.colors.textSecondary, textAlign: 'center', marginTop: 8, lineHeight: 20 },
   info: {
-    marginTop: 14,
+    marginTop: 16,
     backgroundColor: '#EEF5FB',
-    borderRadius: 20,
-    padding: 14,
+    borderRadius: 24,
+    padding: 16,
     borderWidth: 1,
     borderColor: '#D3E4F2',
   },
   infoTitle: { fontSize: 14, fontWeight: '800', color: '#3A6E94' },
-  infoBody: { fontSize: 12.5, color: Theme.colors.textPrimary, lineHeight: 18, marginTop: 4 },
+  infoBody: { fontSize: 14, color: Theme.colors.textPrimary, lineHeight: 20, marginTop: 4 },
   section: {
     marginTop: 16,
     backgroundColor: 'rgba(255,255,255,0.92)',
@@ -316,18 +305,18 @@ const styles = createStyles(() => ({
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
   },
-  sectionTitle: { fontSize: 15, fontWeight: '800', color: Theme.colors.textPrimary, marginBottom: 6 },
-  reason: { paddingVertical: 10, borderTopWidth: 1, borderTopColor: Theme.colors.backgroundMuted },
+  sectionTitle: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary, marginBottom: 8 },
+  reason: { paddingVertical: 12, borderTopWidth: 1, borderTopColor: Theme.colors.backgroundMuted },
   reasonHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   reasonTitle: { fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary },
-  reasonDetail: { fontSize: 12.5, color: Theme.colors.textSecondary, lineHeight: 18, marginTop: 3 },
-  chip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: Theme.radius.full },
-  chipText: { fontSize: 10.5, fontWeight: '800' },
-  bulletRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginTop: 8 },
-  bullet: { width: 7, height: 7, borderRadius: 4, backgroundColor: Theme.colors.primary, marginTop: 6 },
-  bulletText: { flex: 1, fontSize: 13, color: Theme.colors.textPrimary, lineHeight: 19 },
+  reasonDetail: { fontSize: 14, color: Theme.colors.textSecondary, lineHeight: 20, marginTop: 4 },
+  chip: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: Theme.radius.full },
+  chipText: { fontSize: 14, fontWeight: '800' },
+  bulletRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginTop: 8 },
+  bullet: { width: 7, height: 7, borderRadius: 4, backgroundColor: Theme.colors.primary, marginTop: 8 },
+  bulletText: { flex: 1, fontSize: 14, color: Theme.colors.textPrimary, lineHeight: 20 },
   counsellor: { backgroundColor: Theme.colors.secondaryLight, borderColor: Theme.colors.secondaryBorder },
   counsellorHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  profileLine: { marginTop: 16, fontSize: 12.5, color: Theme.colors.textSecondary, textAlign: 'center' },
-  disclaimer: { fontSize: 11, color: Theme.colors.textTertiary, textAlign: 'center', marginTop: 16, lineHeight: 16 },
+  profileLine: { marginTop: 16, fontSize: 14, color: Theme.colors.textSecondary, textAlign: 'center' },
+  disclaimer: { fontSize: 14, color: Theme.colors.textTertiary, textAlign: 'center', marginTop: 16, lineHeight: 20 },
 }));

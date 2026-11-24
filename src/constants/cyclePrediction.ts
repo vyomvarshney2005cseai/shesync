@@ -109,6 +109,17 @@ export function calculateCyclePredictionAndPrecautions(
     confidencePercentage = Math.min(97, 91 + Math.min(validCycles.length * 2, 6));
   }
 
+  // "I don't remember exactly": an approximate start can be ~5 days off, so the
+  // prediction gets a wider margin and lower confidence. Regularity and the
+  // stability score still use her real spread (`variance`), not our guesswork.
+  const approxCount = validCycles.filter((c) => (c as PastCycleRecord).approximate).length;
+  const latestApprox = !!(validCycles[0] as PastCycleRecord | undefined)?.approximate;
+  let spread = variance;
+  if (approxCount > 0) {
+    spread = Math.max(variance, latestApprox ? 5 : 3.5);
+    confidencePercentage = Math.max(45, confidencePercentage - (latestApprox ? 25 : 10) - (approxCount - 1) * 5);
+  }
+
   // Today normalized to midnight for day-accurate calculations
   const today = new Date();
   const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -397,7 +408,9 @@ export function calculateCyclePredictionAndPrecautions(
     advice:
       currentPhase === 'luteal'
         ? 'Your period is getting closer. Keep sleep regular, go easy on caffeine and plan lighter days if you can.'
-        : `PMS days usually start in about ${daysUntilLuteal} days. Plan lighter days and keep your sleep steady.`,
+        : daysUntilLuteal <= 0
+          ? 'PMS days may be starting now. Plan lighter days and keep your sleep steady.'
+          : `PMS days usually start in about ${daysUntilLuteal} ${daysUntilLuteal === 1 ? 'day' : 'days'}. Plan lighter days and keep your sleep steady.`,
   });
 
   // Precaution 2: Dysmenorrhea / Cramp Preparedness
@@ -415,7 +428,7 @@ export function calculateCyclePredictionAndPrecautions(
               ? 'Keep a heat pad ready and take your usual pain relief early, with food.'
               : 'Keep pads, a heat pad and water handy.'
           }`
-        : `Next period in about ${countdownToDisplay} days. ${
+        : `Next period in about ${countdownToDisplay} ${countdownToDisplay === 1 ? 'day' : 'days'}. ${
             painLevel >= 6 ? 'Keep a heat pad and your usual pain relief ready.' : 'Keep pads and a heat pad handy.'
           }`,
   });
@@ -447,9 +460,9 @@ export function calculateCyclePredictionAndPrecautions(
     urgency: currentPhase === 'menstrual' || currentPhase === 'luteal' ? 'moderate' : 'low',
     daysUntilActive: 0,
     title: 'Your cycle rhythm',
-    advice: `Your cycles average ${avgCycleLength} days (±${variance} days) — ${
+    advice: `Your cycles average ${avgCycleLength} days (±${spread} days) — ${
       regularityStatus === 'regular' ? 'a steady rhythm' : 'quite variable'
-    }.`,
+    }.${approxCount > 0 ? ' Some dates are approximate, so treat this as a rough guide.' : ''}`,
   });
 
   return {
@@ -461,7 +474,8 @@ export function calculateCyclePredictionAndPrecautions(
     regularityStatus,
     confidencePercentage,
     precautionMeasures: precautions,
-    cycleVarianceDays: variance,
+    cycleVarianceDays: spread,
+    approximateDates: approxCount > 0,
     fertileWindow: fertileWindowStr,
     ovulationDate: ovulationDateStr,
     cyclePhaseBreakdown,

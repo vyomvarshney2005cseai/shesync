@@ -57,6 +57,8 @@ export interface CycleRow {
   end_date: string | null;
   cycle_length: number | null;
   period_days: number | null;
+  /** Added 24 Nov 2026; older servers do not have it (the client then leaves it out). */
+  approximate?: boolean | null;
 }
 
 export interface LogRow {
@@ -124,6 +126,7 @@ export function cycleToRow(userId: string, c: PastCycleRecord): CycleRow {
     end_date: c.endDate || null,
     cycle_length: clampInt(c.lengthDays, 10, 120),
     period_days: clampInt(c.periodDurationDays, 1, 20),
+    approximate: !!c.approximate,
   };
 }
 
@@ -132,9 +135,12 @@ const LOG_KNOWN = new Set([
   'painLocation', 'reliefMethods', 'flowColor', 'notes',
 ]);
 
+/** Fields that only make sense on this phone and are never backed up (the voice recording's file path). */
+export const LOG_DEVICE_ONLY = new Set(['audioFile']);
+
 export function logToRow(userId: string, l: SymptomLog): LogRow {
   const extra: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(l)) if (!LOG_KNOWN.has(k) && v !== undefined) extra[k] = v;
+  for (const [k, v] of Object.entries(l)) if (!LOG_KNOWN.has(k) && !LOG_DEVICE_ONLY.has(k) && v !== undefined) extra[k] = v;
   return {
     user_id: userId,
     id: l.id,
@@ -174,6 +180,7 @@ export function rowToCycle(r: CycleRow): PastCycleRecord {
     daysAgo: 0,
     lengthDays: r.cycle_length ?? 28,
     periodDurationDays: r.period_days ?? 5,
+    ...(r.approximate ? { approximate: true } : {}),
   };
 }
 
@@ -221,7 +228,7 @@ export function isEmptyDoc(doc: DocName, data: Record<string, unknown> | undefin
   if (!data) return true;
   const len = (k: string) => (Array.isArray(data[k]) ? (data[k] as unknown[]).length : 0);
   if (doc === 'fitness') return !data.profile && len('sessions') === 0 && len('weights') === 0;
-  if (doc === 'study') return len('sessions') === 0 && len('tasks') === 0 && len('wins') === 0;
+  if (doc === 'study') return len('sessions') === 0 && len('tasks') === 0 && len('wins') === 0 && len('exams') === 0;
   if (doc === 'pcos') {
     const ticks = Object.keys((data.checklist as object) ?? {}).length;
     return len('checkins') === 0 && ticks === 0 && (data.diagnosed ?? 'unknown') === 'unknown' && (data.scan ?? 'unknown') === 'unknown';

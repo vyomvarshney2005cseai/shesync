@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
 import { router, type Href } from 'expo-router';
 import { Soup } from 'lucide-react-native';
 import { Theme, createStyles } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { DIGESTIVE_SYMPTOMS, summariseDigestive } from '@/lib/digestive';
+import { Button } from '@/components/ds';
 
 /** Tummy symptoms in the last 30 days, and how many fell around her period. */
 export function DigestiveCard() {
@@ -25,9 +26,7 @@ export function DigestiveCard() {
             Bloating, constipation, loose motions and nausea often come with periods. Tick them in the daily check-in to
             see your pattern here.
           </Text>
-          <TouchableOpacity onPress={() => router.push('/check-in' as Href)} activeOpacity={0.8} style={styles.link}>
-            <Text style={styles.linkText}>Open the 10-second check-in</Text>
-          </TouchableOpacity>
+          <Button variant="link" title="Open the 10-second check-in" onPress={() => router.push('/check-in' as Href)} style={styles.link} />
         </>
       ) : (
         <>
@@ -64,17 +63,16 @@ const styles = createStyles(() => ({
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
     gap: 8,
-    ...Theme.shadows.card,
   },
-  head: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  title: { fontSize: 15, fontWeight: '800', color: Theme.colors.textPrimary },
-  empty: { fontSize: 13, lineHeight: 19, color: Theme.colors.textSecondary },
+  head: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  title: { fontSize: 16, fontWeight: '800', color: Theme.colors.textPrimary },
+  empty: { fontSize: 14, lineHeight: 20, color: Theme.colors.textSecondary },
   link: { alignSelf: 'flex-start' },
-  linkText: { fontSize: 13, fontWeight: '800', color: Theme.colors.primaryDark },
+  linkText: { fontSize: 14, fontWeight: '800', color: Theme.colors.primaryDark },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  label: { width: 120, fontSize: 12.5, fontWeight: '700', color: Theme.colors.textPrimary },
+  label: { width: 120, fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary },
   barTrack: { flex: 1, height: 8, borderRadius: 4, backgroundColor: Theme.colors.backgroundMuted, overflow: 'hidden' },
   bar: { height: 8, borderRadius: 4, backgroundColor: Theme.colors.roseGold },
   count: { width: 34, textAlign: 'right', fontSize: 12, fontWeight: '700', color: Theme.colors.textSecondary },
-  note: { fontSize: 12, color: Theme.colors.textSecondary, marginTop: 2 },
+  note: { fontSize: 14, color: Theme.colors.textSecondary, marginTop: 4 },
 }));

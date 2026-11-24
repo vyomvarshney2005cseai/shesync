@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": false,
+    "jsx": "react-jsx",
+    "skipLibCheck": true,
+    "paths": {
+      "@/lib/supabaseService": ["./shims/empty.ts"],
+      "@/lib/supabase": ["./shims/supabase.ts"],
+      "@/*": ["../src/*"],
+      "react-native": ["./shims/react-native.ts"],
+      "@react-native-async-storage/async-storage": ["./shims/async-storage.ts"],
+      "expo-secure-store": ["./shims/secure-store.ts"],
+      "expo-crypto": ["./shims/crypto.ts"],
+      "expo-updates": ["./shims/expo-updates.ts"],
+      "expo-constants": ["./shims/expo-constants.ts"],
+      "expo": ["./shims/expo.ts"],
+      "expo-file-system": ["./shims/file-system.ts"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.mts"]
+}

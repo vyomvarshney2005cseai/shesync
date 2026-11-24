@@ -86,7 +86,7 @@ export const HINGLISH: Record<string, T> = {
     why: 'Aapki chat isi phone par rehti hai. Main aapke logged cycle day aur symptoms se answers ko personal banati hoon.',
   }),
   app_help: () => ({
-    text: `SheSync mein cheezein yahan milengi:\n\n• **Period dates** — Home → Log Period (ya calendar). Har period ka pehla aur aakhri din tick karo.\n• **Pain, flow, mood** — Home → 10-second check-in ya quick log buttons. Roz 10 second bhi log karne se predictions aur advice kaafi better ho jaati hai.\n• **Doctor report** — Report tab aapke last 90 din ka PDF banata hai, gynaecologist ko dikhane ke liye.\n• **Pad change reminder** — Home → Pad Care. “I just changed” tap karo, time hone par yaad dila dega.\n• **Care Connect** — free helplines aur gynaecologist ya counsellor dhoondhne ke tareeke.`,
+    text: `SheSync mein cheezein yahan milengi:\n\n• **Period dates** — Home → Log Period (ya calendar). Har period ka pehla aur aakhri din tick karo.\n• **Pain, flow, mood** — Home → 10-second check-in ya quick log buttons. Roz 10 second bhi log karne se predictions aur advice kaafi better ho jaati hai.\n• **Doctor report** — Report tab aapke last 90 din ka PDF banata hai, gynaecologist ko dikhane ke liye.\n• **Pad change reminder** — Home → Pad Care. “I just changed” tap karo, time hone par yaad dila dega.\n• **Exams** — Home → Exam planner batata hai kaunse exam heavy ya PMS din par padenge, prep plan ke saath. Study Focus mein leave note bhi ban jaata hai.\n• **SOS** — Mind tab → SOS: grounding, breathing aur trusted person ya Tele-MANAS 14416 ko ek tap mein call.\n• **Care Connect** — free helplines aur gynaecologist ya counsellor dhoondhne ke tareeke.`,
   }),
 
   // ─── Cycle & periods ─────────────────────────────────────

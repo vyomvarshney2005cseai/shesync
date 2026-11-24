@@ -9,6 +9,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { ShieldAlert, Sparkles } from 'lucide-react-native';
+import { useReduceMotion } from '@/lib/motion';
 import { Theme, createStyles, themed } from '@/constants/theme';
 
 interface InterventionBannerProps {
@@ -27,8 +28,15 @@ interface InterventionBannerProps {
 export const InterventionBanner: React.FC<InterventionBannerProps> = ({ isOverride, strainScore, phaseLabel, note }) => {
   const pulseOpacity = useSharedValue(1);
   const slideIn = useSharedValue(-20);
+  const reduceMotion = useReduceMotion();
 
   useEffect(() => {
+    // Reduced motion: no pulsing, no slide-in.
+    if (reduceMotion) {
+      pulseOpacity.value = 1;
+      slideIn.value = 0;
+      return;
+    }
     if (isOverride) {
       pulseOpacity.value = withRepeat(
         withSequence(
@@ -40,7 +48,7 @@ export const InterventionBanner: React.FC<InterventionBannerProps> = ({ isOverri
       );
     }
     slideIn.value = withTiming(0, { duration: 600, easing: Easing.out(Easing.cubic) });
-  }, [isOverride, pulseOpacity, slideIn]);
+  }, [isOverride, pulseOpacity, slideIn, reduceMotion]);
 
   const pulseStyle = useAnimatedStyle(() => ({ opacity: pulseOpacity.value }));
   const slideStyle = useAnimatedStyle(() => ({ transform: [{ translateY: slideIn.value }] }));
@@ -85,7 +93,6 @@ const styles = createStyles(() => ({
     padding: 16,
     borderWidth: 1.5,
     marginHorizontal: 20,
-    ...Theme.shadows.soft,
   },
   iconRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   iconCircle: {
@@ -97,18 +104,18 @@ const styles = createStyles(() => ({
     borderWidth: 1,
   },
   textCol: { flex: 1 },
-  title: { fontSize: 15, fontWeight: '800', letterSpacing: -0.2 },
-  subtitle: { fontSize: 13, fontWeight: '500', marginTop: 2, lineHeight: 18 },
+  title: { fontSize: 16, fontWeight: '800', letterSpacing: -0.2 },
+  subtitle: { fontSize: 14, fontWeight: '500', marginTop: 4, lineHeight: 20 },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 12,
-    paddingTop: 10,
+    paddingTop: 12,
     borderTopWidth: 1,
-    gap: 6,
+    gap: 8,
   },
-  detailLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.4, flexShrink: 1 },
-  detailValue: { fontSize: 12, fontWeight: '800' },
+  detailLabel: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.4, flexShrink: 1 },
+  detailValue: { fontSize: 14, fontWeight: '800' },
   dot: { width: 4, height: 4, borderRadius: 2 },
-  source: { fontSize: 11, marginTop: 6, opacity: 0.85 },
+  source: { fontSize: 14, marginTop: 8, opacity: 0.85 },
 }));

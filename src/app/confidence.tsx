@@ -6,7 +6,7 @@ import { Theme, createStyles, themed } from '@/constants/theme';
 import { Screen } from '@/components/common/Screen';
 import { ScreenHeader } from '@/components/common/ScreenHeader';
 import { AuthGate } from '@/components/common/AuthGate';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
+import { Button, CheckRow } from '@/components/ds';
 import { Card, MiniBars, ProgressBar, SectionHeader } from '@/components/common/ui';
 import { useConfidenceStore } from '@/store/useConfidenceStore';
 import { addDaysToKey, lastNDaysKeys, shortDateLabel, todayKey, weekdayLabel } from '@/lib/dates';
@@ -65,7 +65,7 @@ export default function ConfidenceScreen() {
 
         <View style={styles.stats}>
           <View style={styles.stat}>
-            <Flame size={18} color={themed('#E3A048')} />
+            <Flame size={20} color={Theme.colors.strainAmber} />
             <Text style={styles.statValue}>{run}</Text>
             <Text style={styles.statLabel}>day streak</Text>
           </View>
@@ -86,18 +86,15 @@ export default function ConfidenceScreen() {
           <Text style={styles.affirmation}>{affirmation.text}</Text>
           <Text style={styles.help}>Say it out loud, slowly, three times.</Text>
           <View style={styles.affirmActions}>
-            <Pressable onPress={() => setShift((n) => n + 1)} style={styles.linkBtn} accessibilityRole="button">
-              <Text style={styles.linkText}>Another one</Text>
-            </Pressable>
-            <Pressable
+            <Button variant="link" title="Another one" onPress={() => setShift((n) => n + 1)} style={styles.linkBtn} />
+            <Button
+              variant="tertiary"
+              size="sm"
+              title={isSaved ? 'Saved' : 'Save'}
               onPress={() => toggleSaved(affirmation.id)}
-              style={styles.linkBtn}
-              accessibilityRole="button"
               accessibilityLabel={isSaved ? 'Remove from saved' : 'Save affirmation'}
-            >
-              {isSaved ? <BookmarkCheck size={16} color={Theme.colors.primaryDark} /> : <Bookmark size={16} color={Theme.colors.primaryDark} />}
-              <Text style={styles.linkText}>{isSaved ? 'Saved' : 'Save'}</Text>
-            </Pressable>
+              icon={isSaved ? <BookmarkCheck size={18} color={Theme.colors.primaryDark} /> : <Bookmark size={18} color={Theme.colors.primaryDark} />}
+            />
           </View>
         </Card>
 
@@ -110,7 +107,7 @@ export default function ConfidenceScreen() {
                 onPress={() => setLevel(n)}
                 style={[styles.level, level === n && styles.levelOn]}
                 accessibilityRole="radio"
-                accessibilityState={{ selected: level === n }}
+                accessibilityState={{ selected: level === n, checked: level === n }}
                 accessibilityLabel={LEVEL_LABELS[n]}
               >
                 <Text style={[styles.levelNum, level === n && styles.levelTextOn]}>{n}</Text>
@@ -134,10 +131,14 @@ export default function ConfidenceScreen() {
               ) : (
                 <Text style={styles.body}>Try the small step below, or talk it through.</Text>
               )}
-              <Pressable onPress={() => router.push(ROUTES.yourGoGirl)} style={[styles.linkBtn, { marginTop: 6 }]} accessibilityRole="button">
-                <MessageCircleHeart size={16} color={Theme.colors.primaryDark} />
-                <Text style={styles.linkText}>Talk to YourGoGirl</Text>
-              </Pressable>
+              <Button
+                variant="tertiary"
+                size="sm"
+                title="Talk to YourGoGirl"
+                onPress={() => router.push(ROUTES.yourGoGirl)}
+                icon={<MessageCircleHeart size={18} color={Theme.colors.primaryDark} />}
+                style={{ marginTop: 8, alignSelf: 'flex-start' }}
+              />
             </View>
           ) : null}
         </Card>
@@ -148,14 +149,12 @@ export default function ConfidenceScreen() {
           <Text style={styles.body}>{challenge.why}</Text>
           {doneToday ? (
             <View style={styles.doneRow}>
-              <Check size={16} color={themed('#2F7D69')} />
+              <Check size={16} color={themed('#276C5C')} />
               <Text style={styles.doneText}>Done — that took courage.</Text>
-              <Pressable onPress={undoChallenge} hitSlop={8} accessibilityRole="button">
-                <Text style={styles.undo}>Undo</Text>
-              </Pressable>
+              <Button variant="link" title="Undo" onPress={undoChallenge} />
             </View>
           ) : (
-            <PrimaryButton title="I did it" variant="lilac" onPress={() => completeChallenge(challenge.id)} style={{ marginTop: 12 }} fullWidth />
+            <Button title="I did it" variant="primary" onPress={() => completeChallenge(challenge.id)} style={{ marginTop: 12 }} fullWidth />
           )}
         </Card>
 
@@ -166,19 +165,7 @@ export default function ConfidenceScreen() {
             {GLOW_HABITS.map((h) => {
               const on = glowToday.includes(h.id);
               return (
-                <Pressable
-                  key={h.id}
-                  onPress={() => toggleGlow(h.id)}
-                  style={styles.checkRow}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: on }}
-                >
-                  <View style={[styles.box, on && styles.boxOn]}>{on ? <Check size={13} color={themed('#FFFFFF')} /> : null}</View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.checkLabel}>{h.label}</Text>
-                    <Text style={styles.help}>{h.hint}</Text>
-                  </View>
-                </Pressable>
+                <CheckRow key={h.id} label={h.label} detail={h.hint} checked={on} onToggle={() => toggleGlow(h.id)} />
               );
             })}
           </View>
@@ -198,21 +185,17 @@ export default function ConfidenceScreen() {
               returnKeyType="done"
               accessibilityLabel="New proud moment"
             />
-            <Pressable onPress={submitProud} style={styles.addBtn} accessibilityRole="button" accessibilityLabel="Add proud moment">
-              <Plus size={20} color={themed('#FFFFFF')} />
-            </Pressable>
+            <Button iconOnly onPress={submitProud} accessibilityLabel="Add proud moment" icon={<Plus size={22} color={Theme.colors.onPrimary} />} style={styles.addBtn} />
           </View>
-          {proud.length === 0 ? <Text style={[styles.help, { marginTop: 10 }]}>Your first one can be tiny.</Text> : null}
+          {proud.length === 0 ? <Text style={[styles.help, { marginTop: 12 }]}>Your first one can be tiny.</Text> : null}
           {proud.slice(0, 20).map((p) => (
             <View key={p.id} style={styles.proudRow}>
-              <Sparkles size={14} color={Theme.colors.primary} style={{ marginTop: 3 }} />
+              <Sparkles size={14} color={Theme.colors.primary} style={{ marginTop: 4 }} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.proudText}>{p.text}</Text>
                 <Text style={styles.help}>{shortDateLabel(p.date)}</Text>
               </View>
-              <Pressable onPress={() => removeProud(p.id)} hitSlop={10} accessibilityRole="button" accessibilityLabel="Delete proud moment">
-                <Trash2 size={15} color={Theme.colors.textTertiary} />
-              </Pressable>
+              <Button variant="secondary" size="sm" iconOnly onPress={() => removeProud(p.id)} accessibilityLabel="Delete proud moment" icon={<Trash2 size={20} color={Theme.colors.textTertiary} />} />
             </View>
           ))}
         </Card>
@@ -223,11 +206,9 @@ export default function ConfidenceScreen() {
             <Card style={styles.gap}>
               {savedList.map((a) => (
                 <View key={a.id} style={styles.proudRow}>
-                  <BookmarkCheck size={14} color={Theme.colors.primaryDark} style={{ marginTop: 3 }} />
+                  <BookmarkCheck size={14} color={Theme.colors.primaryDark} style={{ marginTop: 4 }} />
                   <Text style={[styles.proudText, { flex: 1 }]}>{a.text}</Text>
-                  <Pressable onPress={() => toggleSaved(a.id)} hitSlop={10} accessibilityRole="button" accessibilityLabel="Remove saved affirmation">
-                    <Trash2 size={15} color={Theme.colors.textTertiary} />
-                  </Pressable>
+                  <Button variant="secondary" size="sm" iconOnly onPress={() => toggleSaved(a.id)} accessibilityLabel="Remove saved affirmation" icon={<Trash2 size={20} color={Theme.colors.textTertiary} />} />
                 </View>
               ))}
             </Card>
@@ -239,8 +220,8 @@ export default function ConfidenceScreen() {
 }
 
 const styles = createStyles(() => ({
-  gap: { marginBottom: 14 },
-  stats: { flexDirection: 'row', gap: 10, marginBottom: 14 },
+  gap: { marginBottom: 16 },
+  stats: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   stat: {
     flex: 1,
     alignItems: 'center',
@@ -251,39 +232,41 @@ const styles = createStyles(() => ({
     borderColor: Theme.colors.cardBorder,
   },
   statValue: { fontSize: 20, fontWeight: '800', color: Theme.colors.textPrimary, marginTop: 4 },
-  statLabel: { fontSize: 11, color: Theme.colors.textSecondary, fontWeight: '600' },
-  kicker: { fontSize: 11, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase', color: Theme.colors.primaryDark },
-  affirmation: { fontSize: 20, lineHeight: 28, fontWeight: '700', color: Theme.colors.textPrimary, marginTop: 8, marginBottom: 6 },
-  affirmActions: { flexDirection: 'row', gap: 18, marginTop: 10 },
-  linkBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 },
-  linkText: { fontSize: 13, fontWeight: '700', color: Theme.colors.primaryDark },
-  body: { fontSize: 13, lineHeight: 19, color: Theme.colors.textSecondary },
-  help: { fontSize: 12, lineHeight: 17, color: Theme.colors.textSecondary },
-  signLabel: { fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary, marginBottom: 2 },
-  levels: { flexDirection: 'row', gap: 6 },
+  statLabel: { fontSize: 14, color: Theme.colors.textSecondary, fontWeight: '600' },
+  kicker: { fontSize: 12, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase', color: Theme.colors.primaryDark },
+  affirmation: { fontSize: 20, lineHeight: 28, fontWeight: '700', color: Theme.colors.textPrimary, marginTop: 8, marginBottom: 8 },
+  affirmActions: { flexDirection: 'row', gap: 20, marginTop: 12 },
+  linkBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 },
+  linkText: { fontSize: 14, fontWeight: '700', color: Theme.colors.primaryDark },
+  body: { fontSize: 14, lineHeight: 20, color: Theme.colors.textSecondary },
+  help: { fontSize: 14, lineHeight: 20, color: Theme.colors.textSecondary },
+  signLabel: { fontSize: 14, fontWeight: '700', color: Theme.colors.textPrimary, marginBottom: 4 },
+  levels: { flexDirection: 'row', gap: 8 },
   level: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 10,
+    minHeight: 64,
+    justifyContent: 'center',
+    paddingVertical: 8,
     borderRadius: Theme.radius.md,
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
-    backgroundColor: Theme.colors.background,
+    backgroundColor: Theme.colors.card,
   },
   levelOn: { backgroundColor: Theme.colors.primary, borderColor: Theme.colors.primary },
-  levelNum: { fontSize: 17, fontWeight: '800', color: Theme.colors.textPrimary },
-  levelLabel: { fontSize: 10, fontWeight: '600', color: Theme.colors.textSecondary, marginTop: 2 },
-  levelTextOn: { color: '#FFFFFF' },
-  lowBox: { marginTop: 14, padding: 12, borderRadius: Theme.radius.md, backgroundColor: Theme.colors.secondaryLight },
-  challenge: { fontSize: 17, lineHeight: 23, fontWeight: '800', color: Theme.colors.textPrimary, marginBottom: 4 },
+  levelNum: { fontSize: 18, fontWeight: '800', color: Theme.colors.textPrimary },
+  levelLabel: { fontSize: 14, fontWeight: '600', color: Theme.colors.textSecondary, marginTop: 4 },
+  levelTextOn: { color: Theme.colors.onPrimary },
+  lowBox: { marginTop: 16, padding: 12, borderRadius: Theme.radius.md, backgroundColor: Theme.colors.secondaryLight },
+  challenge: { fontSize: 18, lineHeight: 22, fontWeight: '800', color: Theme.colors.textPrimary, marginBottom: 4 },
   doneRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
-  doneText: { flex: 1, fontSize: 14, fontWeight: '700', color: '#2F7D69' },
-  undo: { fontSize: 13, fontWeight: '700', color: Theme.colors.textSecondary },
-  checkRow: { flexDirection: 'row', gap: 12, paddingVertical: 9, alignItems: 'flex-start' },
+  doneText: { flex: 1, fontSize: 14, fontWeight: '700', color: Theme.colors.strainOptimal },
+  undo: { fontSize: 14, fontWeight: '700', color: Theme.colors.textSecondary },
+  checkRow: { flexDirection: 'row', gap: 12, paddingVertical: 8, alignItems: 'flex-start' },
   box: {
     width: 22,
     height: 22,
-    borderRadius: 7,
+    borderRadius: 8,
     borderWidth: 1.5,
     borderColor: Theme.colors.secondaryBorder,
     alignItems: 'center',
@@ -294,17 +277,18 @@ const styles = createStyles(() => ({
   checkLabel: { fontSize: 14, lineHeight: 20, color: Theme.colors.textPrimary, fontWeight: '600' },
   addRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   input: {
+    minHeight: 48,
     flex: 1,
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
     backgroundColor: Theme.colors.white,
     borderRadius: Theme.radius.md,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
+    paddingVertical: 12,
+    fontSize: 16,
     color: Theme.colors.textPrimary,
   },
-  addBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: Theme.colors.primary, alignItems: 'center', justifyContent: 'center' },
-  proudRow: { flexDirection: 'row', gap: 10, paddingTop: 12, alignItems: 'flex-start' },
+  addBtn: { width: 48, height: 48 },
+  proudRow: { flexDirection: 'row', gap: 12, paddingTop: 12, alignItems: 'flex-start' },
   proudText: { fontSize: 14, lineHeight: 20, color: Theme.colors.textPrimary },
 }));

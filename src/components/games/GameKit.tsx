@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Theme, createStyles } from '@/constants/theme';
 import { Card, Chip, uiStyles } from '@/components/common/ui';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
+import { Button } from '@/components/ds';
 import { useGamesStore, type Feel } from '@/store/useGamesStore';
 import { formatClock } from '@/lib/dates';
 
@@ -78,11 +78,11 @@ export function GameResult({
       <Text style={styles.resultTitle}>{title}</Text>
       {newBest ? <Text style={styles.best}>🏆 New personal best!</Text> : null}
       {lines.map((l) => (
-        <Text key={l} style={[uiStyles.body, { color: '#065F46' }]}>
+        <Text key={l} style={[uiStyles.body, { color: Theme.colors.textPrimary }]}>
           {l}
         </Text>
       ))}
-      <Text style={[uiStyles.label, { marginTop: 12, color: '#047857' }]}>How do you feel now?</Text>
+      <Text style={[uiStyles.label, { marginTop: 12, color: Theme.colors.strainOptimal }]}>How do you feel now?</Text>
       <View style={[uiStyles.wrap, { marginTop: 8 }]}>
         {FEELS.map((f) => (
           <Chip
@@ -90,7 +90,7 @@ export function GameResult({
             label={f.label}
             small
             selected={feel === f.id}
-            color="#059669"
+            color={Theme.colors.strainOptimal}
             onPress={() => {
               setLocalFeel(f.id);
               if (recordId) setFeel(recordId, f.id);
@@ -101,9 +101,9 @@ export function GameResult({
       {feel === 'tense' ? (
         <Text style={[uiStyles.muted, { marginTop: 8 }]}>Try two minutes of Calm Breathing — slow exhales settle the body fastest.</Text>
       ) : null}
-      <View style={[uiStyles.row, { gap: 10, marginTop: 14 }]}>
-        <PrimaryButton title="Play again" onPress={onReplay} style={{ flex: 1 }} />
-        <PrimaryButton title="All games" variant="outline" onPress={() => router.replace('/games')} style={{ flex: 1 }} />
+      <View style={[uiStyles.row, { gap: 12, marginTop: 16 }]}>
+        <Button title="Play again" onPress={onReplay} style={{ flex: 1 }} />
+        <Button title="All games" variant="secondary" onPress={() => router.replace('/games')} style={{ flex: 1 }} />
       </View>
     </Card>
   );
@@ -118,14 +118,14 @@ const styles = createStyles(() => ({
     borderRadius: Theme.radius.lg,
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
-    paddingVertical: 10,
-    marginBottom: 14,
+    paddingVertical: 12,
+    marginBottom: 16,
   },
   stripItem: { flex: 1, alignItems: 'center' },
   stripValue: { fontSize: 18, fontWeight: '800', color: Theme.colors.textPrimary, fontVariant: ['tabular-nums'] },
-  stripLabel: { fontSize: 10, fontWeight: '700', color: Theme.colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.6 },
+  stripLabel: { fontSize: 12, fontWeight: '700', color: Theme.colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.6 },
   resultTitle: { fontSize: 20, fontWeight: '800', color: '#065F46' },
-  best: { fontSize: 13, fontWeight: '800', color: '#B45309', marginVertical: 4 },
+  best: { fontSize: 14, fontWeight: '800', color: '#B45309', marginVertical: 4 },
 }));
 
 /** Current time for event handlers (kept out of render on purpose). */

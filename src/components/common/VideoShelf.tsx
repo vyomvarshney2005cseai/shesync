@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { Image, ScrollView, Text, View } from 'react-native';
 import { ExternalLink, Play } from 'lucide-react-native';
-import { Theme, createStyles, themed } from '@/constants/theme';
+import { Theme, createStyles, themed, fixedColor } from '@/constants/theme';
 import { openUrl, youtubeThumb, youtubeUrl } from '@/lib/openExternal';
+import { Card, Chip } from '@/components/ds';
 
 export interface ShelfVideo {
   youtubeId: string;
@@ -33,31 +34,24 @@ export function VideoShelf({ videos, categories, initialCategory = 'all' }: Vide
         {[{ id: 'all', label: 'All' }, ...categories].map((c) => {
           const active = c.id === category;
           return (
-            <Pressable
-              key={c.id}
-              onPress={() => setCategory(c.id)}
-              style={[styles.filter, active && styles.filterActive]}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-            >
-              <Text style={[styles.filterText, active && styles.filterTextActive]}>{c.label}</Text>
-            </Pressable>
+            <Chip key={c.id} small label={c.label} selected={active} onPress={() => setCategory(c.id)} accessibilityRole="radio" />
           );
         })}
       </ScrollView>
 
       {shown.map((v) => (
-        <Pressable
+        <Card
+          padding="none"
           key={v.youtubeId}
           onPress={() => openUrl(youtubeUrl(v.youtubeId))}
-          style={({ pressed }) => [styles.item, pressed && { opacity: 0.85 }]}
           accessibilityRole="link"
           accessibilityLabel={`Watch ${v.title} by ${v.channel} on YouTube`}
+          style={styles.item}
         >
           <View style={styles.thumbWrap}>
             <Image source={{ uri: youtubeThumb(v.youtubeId) }} style={styles.thumb} resizeMode="cover" />
             <View style={styles.playDot}>
-              <Play size={12} color={themed('#FFFFFF')} fill={themed('#FFFFFF')} style={{ marginLeft: 1 }} />
+              <Play size={12} color={fixedColor('#FFFFFF')} fill={fixedColor('#FFFFFF')} style={{ marginLeft: 1 }} />
             </View>
             {v.length ? (
               <View style={styles.lengthPill}>
@@ -77,7 +71,7 @@ export function VideoShelf({ videos, categories, initialCategory = 'all' }: Vide
             </Text>
           </View>
           <ExternalLink size={15} color={Theme.colors.primary} />
-        </Pressable>
+        </Card>
       ))}
       <Text style={styles.footnote}>Videos open on YouTube. SheSync is not affiliated with these creators.</Text>
     </View>
@@ -88,33 +82,28 @@ const styles = createStyles(() => ({
   filters: { gap: 8, paddingBottom: 12 },
   filter: {
     paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
+    paddingVertical: 8,
+    borderRadius: 24,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: Theme.colors.cardBorder,
   },
   filterActive: { backgroundColor: Theme.colors.primary, borderColor: Theme.colors.primary },
-  filterText: { fontSize: 12, fontWeight: '600', color: Theme.colors.textSecondary },
+  filterText: { fontSize: 14, fontWeight: '600', color: Theme.colors.textSecondary },
   filterTextActive: { color: '#FFFFFF', fontWeight: '700' },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: Theme.radius.lg,
-    padding: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: Theme.colors.cardBorder,
-    ...Theme.shadows.card,
+    marginBottom: 12,
   },
   thumbWrap: {
     width: 104,
     height: 64,
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#1E1B2E',
+    // Grey placeholder until the thumbnail loads.
+    backgroundColor: Theme.colors.skeleton,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -123,7 +112,8 @@ const styles = createStyles(() => ({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: 'rgba(255, 0, 0, 0.88)',
+    // YouTube red, a shade deeper so the white play mark reads; the same in both modes.
+    backgroundColor: fixedColor('#CC0000'),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -131,15 +121,15 @@ const styles = createStyles(() => ({
     position: 'absolute',
     right: 4,
     bottom: 4,
-    backgroundColor: 'rgba(0,0,0,0.75)',
+    backgroundColor: fixedColor('rgba(15,23,42,0.82)'), // scrim over the photo, same in both modes
     borderRadius: 4,
     paddingHorizontal: 4,
     paddingVertical: 1,
   },
-  lengthText: { color: '#FFFFFF', fontSize: 9, fontWeight: '700' },
+  lengthText: { color: fixedColor('#FFFFFF'), fontSize: 14, fontWeight: '700' },
   info: { flex: 1 },
-  title: { fontSize: 13, fontWeight: '800', color: Theme.colors.textPrimary, lineHeight: 17 },
-  channel: { fontSize: 11, fontWeight: '600', color: Theme.colors.secondary, marginTop: 2 },
-  why: { fontSize: 11, color: Theme.colors.textSecondary, marginTop: 3, lineHeight: 15 },
-  footnote: { fontSize: 10, color: Theme.colors.textTertiary, textAlign: 'center', marginTop: 2 },
+  title: { fontSize: 14, fontWeight: '800', color: Theme.colors.textPrimary, lineHeight: 20 },
+  channel: { fontSize: 14, fontWeight: '600', color: Theme.colors.secondary, marginTop: 4 },
+  why: { fontSize: 14, color: Theme.colors.textSecondary, marginTop: 4, lineHeight: 20 },
+  footnote: { fontSize: 12, color: Theme.colors.textTertiary, textAlign: 'center', marginTop: 4 },
 }));
