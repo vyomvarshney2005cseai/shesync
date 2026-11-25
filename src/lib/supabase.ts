@@ -1,7 +1,10 @@
 import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+import * as SecureStore from 'expo-secure-store';
 import { AppState, Platform } from 'react-native';
+import { createSecureSessionStorage } from './secureSessionStorage';
+import { withTimeout } from './fetchWithTimeout';
 
 const supabaseUrl = (process.env.EXPO_PUBLIC_SUPABASE_URL || '').trim();
 const supabaseAnonKey = (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '').trim();
@@ -22,14 +25,30 @@ if (!isSupabaseConfigured) {
   );
 }
 
+/**
+ * Sign-in tokens live in the Keychain / Keystore on phones (older sessions
+ * in AsyncStorage are moved there on first read). The web has no secure
+ * store, so the browser's storage is used.
+ */
+const authStorage =
+  Platform.OS === 'web'
+    ? AsyncStorage
+    : createSecureSessionStorage(SecureStore, AsyncStorage, {
+        // Readable after the first unlock so a background backup can still
+        // refresh; never copied to another device or into a backup.
+        keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
+      });
+
 // A syntactically valid placeholder keeps the client constructible; every
 // service call checks `isSupabaseConfigured` before touching the network.
 export const supabase = createClient(
   isSupabaseConfigured ? supabaseUrl : 'https://offline.invalid',
   isSupabaseConfigured ? supabaseAnonKey : 'offline-anon-key',
   {
+    // A request that never answers would hold up every later backup.
+    global: { fetch: withTimeout((input, init) => fetch(input, init)) },
     auth: {
-      storage: AsyncStorage,
+      storage: authStorage,
       autoRefreshToken: isSupabaseConfigured,
       persistSession: isSupabaseConfigured,
       detectSessionInUrl: false,

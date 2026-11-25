@@ -384,6 +384,14 @@ export interface AppState {
   skippedSyncSteps: string[];
   /** Home's "Personalise SheSync" card is hidden until this date (YYYY-MM-DD). */
   personalisePromptSnoozedUntil: string;
+  /**
+   * Backup bookkeeping: entries she deleted on this phone that the server may
+   * still have (log ids, period start dates, care-contact ids). Cleared once
+   * the server has deleted them too.
+   */
+  deletedLogIds: string[];
+  deletedCycleStarts: string[];
+  deletedContactIds: string[];
 
   // Assessment & Fine-Tuning
   isAssessmentCompleted: boolean;
@@ -470,4 +478,6 @@ export interface AppState {
   markSyncComplete: () => void;
   addCareContact: (contact: Omit<CareContact, 'id'>) => void;
   removeCareContact: (id: string) => void;
+  /** Backup calls this once the server no longer has these deleted entries. */
+  forgetDeletions: (done: { logs?: string[]; cycles?: string[]; contacts?: string[] }) => void;
 }

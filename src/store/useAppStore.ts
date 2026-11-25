@@ -30,6 +30,7 @@ import { recommendWorkout } from '@/lib/fitness';
 import { recentLog, recentSignals } from '@/lib/recent';
 import { cleanDigestive, joinSymptoms, summariseDigestive } from '@/lib/digestive';
 import { SYNC_STEPS, isStepDone } from '@/lib/syncDetails';
+import { hasMalformedRecords, repairSavedRecords } from '@/lib/importValidation';
 import { useFitnessStore } from './useFitnessStore';
 import { useStudyStore } from './useStudyStore';
 import { useGamesStore } from './useGamesStore';
@@ -94,6 +95,9 @@ function freshUserData() {
     focusPromptSnoozedUntil: '',
     skippedSyncSteps: [] as string[],
     personalisePromptSnoozedUntil: '',
+    deletedLogIds: [] as string[],
+    deletedCycleStarts: [] as string[],
+    deletedContactIds: [] as string[],
     isAssessmentCompleted: false,
     assessmentAnswers: {} as Record<string, string>,
     fineTuningSettings: { ...DEFAULT_SETTINGS },
@@ -120,6 +124,23 @@ type UserData = ReturnType<typeof freshUserData>;
 // ============================================================
 // Helpers
 // ============================================================
+
+/**
+ * A new log id. `log-<ms>` alone collides when two entries are saved in the
+ * same millisecond (a check-in and a detailed log), and the second one then
+ * replaced the first — here and in the backup.
+ */
+function newLogId(state: { symptomLogs: SymptomLog[]; deletedLogIds?: string[] }, now: Date): string {
+  const taken = new Set([...state.symptomLogs.map((l) => l.id), ...(state.deletedLogIds ?? [])]);
+  const base = `log-${now.getTime()}`;
+  let id = base;
+  for (let n = 2; taken.has(id); n++) id = `${base}-${n}`;
+  return id;
+}
+
+/** Remembers deleted entries for the backup (newest 500 are plenty). */
+const addDeleted = (list: string[] | undefined, ids: string[]) =>
+  ids.length ? Array.from(new Set([...(list ?? []), ...ids])).slice(-500) : list ?? [];
 
 /** `daysAgo` is stored at save time and goes stale; always re-derive it from the start date. */
 export function withFreshDaysAgo(cycles: PastCycleRecord[]): PastCycleRecord[] {
@@ -528,7 +549,7 @@ function computeDerived(input: EngineInput): Derived {
       lastPeriodDate: mostRecent?.startDate ?? '',
       label,
       progesteroneStatus: phase === 'luteal' ? 'peak' : phase === 'menstrual' ? 'low' : 'rising',
-      conditions: input.focusAreas.slice(0, 3),
+      conditions: Array.isArray(input.focusAreas) ? input.focusAreas.slice(0, 3) : [],
       hasCycleData,
     },
     cyclePrediction: prediction,
@@ -591,13 +612,20 @@ function resetFeatureStores() {
     .catch(() => {});
 }
 
-/** Voice recordings and the app lock belong to the person signing out. */
+/** Voice recordings, exported files and the app lock belong to the person signing out. */
 async function clearPrivateDeviceData() {
   try {
     const { deleteAllJournalAudio } = await import('@/lib/journalAudio');
     await deleteAllJournalAudio();
   } catch (e) {
     console.warn('[logout] could not remove journal audio', e);
+  }
+  try {
+    // Exported backups / CSVs waiting in the cache.
+    const { clearExportCache } = await import('@/lib/files');
+    await clearExportCache();
+  } catch (e) {
+    console.warn('[logout] could not remove exported files', e);
   }
   try {
     const { disableAppLock } = await import('@/lib/appLock');
@@ -640,7 +668,12 @@ export const useAppStore = create<AppState>()(
       // ─── Past cycles ─────────────────────────────────
       savePastCycles: (count: number, cycles: PastCycleRecord[]) => {
         const fresh = withFreshDaysAgo(cycles);
-        set({ rememberedCyclesCount: count, pastCycles: fresh });
+        // Periods she removed must not come back from the backup; a period
+        // added again is no longer deleted.
+        const starts = new Set(fresh.map((c) => c.startDate));
+        const removed = get().pastCycles.map((c) => c.startDate).filter((d) => !!d && !starts.has(d));
+        const deletedCycleStarts = addDeleted(get().deletedCycleStarts, removed).filter((d) => !starts.has(d));
+        set({ rememberedCyclesCount: count, pastCycles: fresh, deletedCycleStarts });
         get().fineTuneAllAnalytics();
       },
 
@@ -810,13 +843,15 @@ export const useAppStore = create<AppState>()(
       // ─── Logging ─────────────────────────────────────
       logSymptom: (log: Partial<SymptomLog>) => {
         const now = new Date();
-        const newLog: SymptomLog = {
-          ...log,
-          id: `log-${now.getTime()}`,
-          date: log.date ?? todayKey(),
-          timestamp: now.toISOString(),
-        };
-        set((state) => ({ symptomLogs: [newLog, ...state.symptomLogs].slice(0, 1500) }));
+        set((state) => {
+          const newLog: SymptomLog = {
+            ...log,
+            id: newLogId(state, now),
+            date: log.date ?? todayKey(),
+            timestamp: now.toISOString(),
+          };
+          return { symptomLogs: [newLog, ...state.symptomLogs].slice(0, 1500) };
+        });
         get().fineTuneAllAnalytics();
       },
 
@@ -833,7 +868,7 @@ export const useAppStore = create<AppState>()(
               const updated: SymptomLog = { ...existing, ...clean, timestamp: now.toISOString() };
               return { symptomLogs: [updated, ...state.symptomLogs.filter((l) => l.id !== existing.id)] };
             }
-            const fresh: SymptomLog = { ...clean, checkIn: true, id: `log-${now.getTime()}`, date: today, timestamp: now.toISOString() };
+            const fresh: SymptomLog = { ...clean, checkIn: true, id: newLogId(state, now), date: today, timestamp: now.toISOString() };
             return { symptomLogs: [fresh, ...state.symptomLogs].slice(0, 1500) };
           });
         }
@@ -845,7 +880,11 @@ export const useAppStore = create<AppState>()(
       },
 
       deleteSymptomLog: (id: string) => {
-        set((state) => ({ symptomLogs: state.symptomLogs.filter((l) => l.id !== id) }));
+        set((state) =>
+          state.symptomLogs.some((l) => l.id === id)
+            ? { symptomLogs: state.symptomLogs.filter((l) => l.id !== id), deletedLogIds: addDeleted(state.deletedLogIds, [id]) }
+            : {}
+        );
         get().fineTuneAllAnalytics();
       },
 
@@ -904,7 +943,21 @@ export const useAppStore = create<AppState>()(
         })),
 
       removeCareContact: (id: string) =>
-        set((state) => ({ careContacts: state.careContacts.filter((c) => c.id !== id) })),
+        set((state) =>
+          state.careContacts.some((c) => c.id === id)
+            ? { careContacts: state.careContacts.filter((c) => c.id !== id), deletedContactIds: addDeleted(state.deletedContactIds, [id]) }
+            : {}
+        ),
+
+      forgetDeletions: (done) =>
+        set((state) => {
+          const drop = (list: string[] | undefined, ids?: string[]) => (ids?.length ? (list ?? []).filter((x) => !ids.includes(x)) : list ?? []);
+          return {
+            deletedLogIds: drop(state.deletedLogIds, done.logs),
+            deletedCycleStarts: drop(state.deletedCycleStarts, done.cycles),
+            deletedContactIds: drop(state.deletedContactIds, done.contacts),
+          };
+        }),
     }),
     {
       name: 'shesync.app',
@@ -952,6 +1005,9 @@ export const useAppStore = create<AppState>()(
         focusPromptSnoozedUntil: s.focusPromptSnoozedUntil,
         skippedSyncSteps: s.skippedSyncSteps,
         personalisePromptSnoozedUntil: s.personalisePromptSnoozedUntil,
+        deletedLogIds: s.deletedLogIds,
+        deletedCycleStarts: s.deletedCycleStarts,
+        deletedContactIds: s.deletedContactIds,
         isAssessmentCompleted: s.isAssessmentCompleted,
         assessmentAnswers: s.assessmentAnswers,
         fineTuningSettings: s.fineTuningSettings,
@@ -969,8 +1025,27 @@ export const useAppStore = create<AppState>()(
         yourGoGirlMode: s.yourGoGirlMode,
       }),
       onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        // Records an old version (or an edited file) saved in a shape the app
+        // cannot use are dropped; everything well-formed is kept.
+        if (hasMalformedRecords(state)) {
+          console.warn('[app] some saved records could not be read and were left out');
+          useAppStore.setState(repairSavedRecords(state) as Partial<AppState>);
+        }
         // Dates move on between launches: recompute phase, prediction and trend.
-        state?.fineTuneAllAnalytics();
+        // This runs before the app is marked as loaded, so it must never throw:
+        // a throw here would leave the splash / loading screen up for good.
+        try {
+          state.fineTuneAllAnalytics();
+        } catch (e) {
+          console.warn('[app] saved data needed repair', e);
+          useAppStore.setState(repairSavedRecords(useAppStore.getState()) as Partial<AppState>);
+          try {
+            useAppStore.getState().fineTuneAllAnalytics();
+          } catch (e2) {
+            console.warn('[app] analytics unavailable for this saved data', e2);
+          }
+        }
       },
     }
   )

@@ -12,14 +12,18 @@ import { useEffect } from 'react';
 import { Linking, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 // Enums imported by name: eslint-plugin-import cannot see them through the namespace.
-import { AndroidImportance, IosAuthorizationStatus } from 'expo-notifications';
+import { AndroidImportance, AndroidNotificationVisibility, IosAuthorizationStatus } from 'expo-notifications';
 import { router, type Href } from 'expo-router';
 import { ROUTES } from '@/lib/routes';
 import { PRODUCT_GUIDES } from '@/constants/padCare';
 import { HOUR_MS, reminderHours } from '@/lib/padCare';
 import { usePadCareStore } from '@/store/usePadCareStore';
 
-const CHANNEL_ID = 'pad-care';
+// Android: the lock screen shows "SheSync" but hides what the reminder says
+// until the phone is unlocked. Channel settings cannot change after creation,
+// so this is a new channel; the old public one is removed.
+const CHANNEL_ID = 'pad-care-private';
+const OLD_CHANNEL_ID = 'pad-care';
 const DUE_ID = 'shesync-pad-due';
 const OVER_ID = 'shesync-pad-over';
 const PAD_CARE_URL = '/pad-care';
@@ -46,7 +50,10 @@ function configure(): Promise<void> {
             name: 'Pad change reminders',
             importance: AndroidImportance.HIGH,
             vibrationPattern: [0, 250, 150, 250],
-          }).then(() => undefined)
+            lockscreenVisibility: AndroidNotificationVisibility.PRIVATE,
+          })
+            .then(() => Notifications.deleteNotificationChannelAsync(OLD_CHANNEL_ID).catch(() => undefined))
+            .then(() => undefined)
         : Promise.resolve();
   }
   return configured;

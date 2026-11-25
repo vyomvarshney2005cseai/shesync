@@ -12,6 +12,7 @@
  */
 import type { FlowIntensity, PastCycleRecord, SymptomLog } from '@/types';
 import { DOC_NAMES, isEmptyDoc, type LocalSnapshot } from '@/lib/sync/mappers';
+import { sanitizeBackupData } from '@/lib/importValidation';
 
 export const BACKUP_FORMAT = 1;
 
@@ -303,7 +304,8 @@ export function parseImport(text: string, fileName = '', now = new Date()): Impo
 
   if (isJson && looksLikeBackup(json)) {
     if (json.formatVersion > BACKUP_FORMAT) notes.push('This backup was made by a newer SheSync. Update the app if something is missing.');
-    return { source: 'shesync', backup: json.data, periods: [], days: [], notes };
+    // The file may have been edited: keep only well-formed records.
+    return { source: 'shesync', backup: sanitizeBackupData(json.data), periods: [], days: [], notes };
   }
 
   if (isJson) walk(json, found, nowYear);

@@ -97,13 +97,13 @@ export const SomaticVideoLibrary: React.FC<SomaticVideoLibraryProps> = ({
   const handleOpenYouTube = async (url: string, title: string) => {
     try {
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.open(url, '_blank');
+        window.open(url, '_blank', 'noopener,noreferrer');
         return;
       }
       await Linking.openURL(url);
     } catch {
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.open(url, '_blank');
+        window.open(url, '_blank', 'noopener,noreferrer');
       } else {
         Alert.alert(
           'Open YouTube',

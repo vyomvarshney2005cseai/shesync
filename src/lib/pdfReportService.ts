@@ -6,7 +6,8 @@ import { buildDoctorQuestions } from '@/lib/doctorVisitPrep';
 import { DIGESTIVE_SYMPTOMS, summariseDigestive } from '@/lib/digestive';
 import { usePcosStore } from '@/store/usePcosStore';
 
-const escapeHtml = (value: unknown) =>
+/** Makes any value safe to place in the report's HTML (text or attribute). */
+export const escapeHtml = (value: unknown) =>
   String(value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -14,7 +15,12 @@ const escapeHtml = (value: unknown) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
-export async function generateAndDownloadClinicalPDF(state: AppState): Promise<string | null> {
+/**
+ * Builds the doctor report. Every value placed in the HTML goes through
+ * escapeHtml — numbers too, because restored backups and server rows are not
+ * guaranteed to hold the types the app expects.
+ */
+export function buildClinicalReportHtml(state: AppState): string {
   // Everything in this report comes from the user's own logs. Values she
   // never logged are shown as "not logged", never filled with defaults.
   const userName = escapeHtml(state.userName || 'Patient');
@@ -22,8 +28,9 @@ export async function generateAndDownloadClinicalPDF(state: AppState): Promise<s
   const archetype = escapeHtml(state.fineTuningSettings?.archetypeName || 'Not assessed yet');
   const archetypeTagline = escapeHtml(state.fineTuningSettings?.archetypeTagline || '');
   const focusAreas = escapeHtml((state.focusAreas ?? []).join(', ') || 'Not specified');
-  const strainScore = state.biometrics?.strainScore ?? 0;
-  const sleepTarget = state.fineTuningSettings?.dailySleepTargetHours ?? 8;
+  const strainScore = escapeHtml(state.biometrics?.strainScore ?? 0);
+  const sleepTargetValue = state.fineTuningSettings?.dailySleepTargetHours ?? 8;
+  const sleepTarget = escapeHtml(sleepTargetValue);
   const cyclePrediction = state.cyclePrediction;
   const hasCycles = (state.pastCycles ?? []).length > 0;
   const nextPeriod = hasCycles ? escapeHtml(cyclePrediction?.nextPeriodDate) : 'Needs saved period dates';
@@ -39,7 +46,7 @@ export async function generateAndDownloadClinicalPDF(state: AppState): Promise<s
   const avgPain = pains.length ? (pains.reduce((a, b) => a + b, 0) / pains.length).toFixed(1) : null;
   const maxPain = pains.length ? Math.max(...pains) : null;
   const sleepLogs = (state.sleepLogs ?? []).slice(0, 14);
-  const avgSleep = sleepLogs.length ? (sleepLogs.reduce((a, b) => a + b.hours, 0) / sleepLogs.length).toFixed(1) : null;
+  const avgSleep = sleepLogs.length ? (sleepLogs.reduce((a, b) => a + (Number(b.hours) || 0), 0) / sleepLogs.length).toFixed(1) : null;
   const cycleRows = (state.pastCycles ?? [])
     .slice(0, 6)
     .map(
@@ -65,7 +72,7 @@ export async function generateAndDownloadClinicalPDF(state: AppState): Promise<s
       cyclePrediction: state.cyclePrediction,
       healthCheck: state.healthCheck ?? {},
       assessmentAnswers: state.assessmentAnswers ?? {},
-      sleepTarget,
+      sleepTarget: Number(sleepTargetValue) || 8,
       pcosDiagnosed: pcos.diagnosed === 'yes',
       pcosSigns: !!latestPcos && (latestPcos.acne >= 2 || latestPcos.bodyHair >= 2),
     },
@@ -74,11 +81,13 @@ export async function generateAndDownloadClinicalPDF(state: AppState): Promise<s
   const questionRows = prep.questions
     .map((q) => `<li style="margin-bottom:6px;">${escapeHtml(q.question)} <span style="color:#718096;">(${escapeHtml(q.because)})</span></li>`)
     .join('');
-  const currentDate = new Date().toLocaleDateString('en-IN', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  const currentDate = escapeHtml(
+    new Date().toLocaleDateString('en-IN', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    })
+  );
 
   const anomalyRows = anomalies.length > 0
     ? anomalies.map((a) => `
@@ -232,11 +241,11 @@ export async function generateAndDownloadClinicalPDF(state: AppState): Promise<s
       <div class="section-title">90-Day Summary (self-logged)</div>
       <div class="metrics-grid">
         <div class="metric-box">
-          <div class="metric-num">${avgPain ?? '—'}${avgPain ? '/10' : ''}</div>
-          <div class="metric-lbl">Average logged pain${maxPain != null ? ` (max ${maxPain})` : ''} · ${pains.length} days</div>
+          <div class="metric-num">${escapeHtml(avgPain ?? '—')}${avgPain ? '/10' : ''}</div>
+          <div class="metric-lbl">Average logged pain${maxPain != null ? ` (max ${escapeHtml(maxPain)})` : ''} · ${escapeHtml(pains.length)} days</div>
         </div>
         <div class="metric-box">
-          <div class="metric-num">${avgSleep ?? '—'}${avgSleep ? 'h' : ''}</div>
+          <div class="metric-num">${escapeHtml(avgSleep ?? '—')}${avgSleep ? 'h' : ''}</div>
           <div class="metric-lbl">Average logged sleep (target ${sleepTarget}h)</div>
         </div>
         <div class="metric-box">
@@ -244,7 +253,7 @@ export async function generateAndDownloadClinicalPDF(state: AppState): Promise<s
           <div class="metric-lbl">SheSync strain score today (app estimate)</div>
         </div>
         <div class="metric-box">
-          <div class="metric-num">${cycleRegularity}</div>
+          <div class="metric-num">${escapeHtml(cycleRegularity)}</div>
           <div class="metric-lbl">Cycle regularity</div>
         </div>
       </div>
@@ -272,6 +281,11 @@ export async function generateAndDownloadClinicalPDF(state: AppState): Promise<s
     </html>
   `;
 
+  return html;
+}
+
+export async function generateAndDownloadClinicalPDF(state: AppState): Promise<string | null> {
+  const html = buildClinicalReportHtml(state);
   try {
     if (Platform.OS === 'web') {
       // In web browser: print dialog directly or open printable window

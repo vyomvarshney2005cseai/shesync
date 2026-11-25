@@ -4,11 +4,11 @@ import { Stack, usePathname, type ErrorBoundaryProps } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { View, Platform } from 'react-native';
+import { View, Platform, Appearance } from 'react-native';
 import { Theme, createStyles, setThemeMode } from '@/constants/theme';
 import { useStoresHydrated } from '@/store/hydration';
 import { startCloudSync } from '@/lib/sync';
-import { useNightActive } from '@/store/useSettingsStore';
+import { appearanceOverride, useNightActive, useSettingsStore } from '@/store/useSettingsStore';
 import { AppLockGate } from '@/components/lock/AppLockGate';
 import { usePadReminderTaps } from '@/lib/padReminders';
 import { FriendlyError } from '@/components/errors/FriendlyError';
@@ -18,7 +18,7 @@ import { LucideProvider } from 'lucide-react-native';
 import { useReduceMotion } from '@/lib/motion';
 import { syncReminders } from '@/lib/reminders';
 import { useAppStore } from '@/store/useAppStore';
-import { useSettingsStore } from '@/store/useSettingsStore';
+import { clearExportCache } from '@/lib/files';
 
 // Keep the splash visible until saved data has loaded from the device.
 // The navigator always renders (expo-router requires it on first render);
@@ -52,6 +52,18 @@ export default function RootLayout() {
   const push = reduceMotion ? still : pushMotion;
   const fade = reduceMotion ? 'none' : 'fade';
 
+  // Phones: alerts, the keyboard and date pickers follow the app's choice,
+  // not the phone's dark mode (only "Match phone" follows the phone).
+  const nightMode = useSettingsStore((s) => s.nightMode);
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    try {
+      Appearance.setColorScheme?.(appearanceOverride(nightMode, night));
+    } catch {
+      // Older native code without overrides: the app's own colours still apply.
+    }
+  }, [nightMode, night]);
+
   // Web: the keyboard focus ring follows the theme (see global.css).
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -63,6 +75,11 @@ export default function RootLayout() {
   useEffect(() => {
     if (hydrated) SplashScreen.hideAsync().catch(() => {});
   }, [hydrated]);
+
+  // Exports from last time have been shared by now: remove them from the cache.
+  useEffect(() => {
+    void clearExportCache();
+  }, []);
 
   // Automatic cloud backup for online accounts (no-op in on-device mode).
   useEffect(() => startCloudSync(), []);

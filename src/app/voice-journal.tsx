@@ -1,3 +1,4 @@
+import { AuthGate } from '@/components/common/AuthGate';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, View, Text, ScrollView, TextInput, Platform, Alert, Animated, AppState } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -70,7 +71,16 @@ function say(title: string, msg: string) {
  *   adds a few words herself.
  * Audio stays on this phone; only the text is backed up.
  */
+/** Signed-out visitors (for example from a link) go to the welcome screen. */
 export default function VoiceJournalScreen() {
+  return (
+    <AuthGate>
+      <VoiceJournalScreenContent />
+    </AuthGate>
+  );
+}
+
+function VoiceJournalScreenContent() {
   const logSymptom = useAppStore((s) => s.logSymptom);
   const journalLang = useSettingsStore((s) => s.journalLang);
   const setJournalLang = useSettingsStore((s) => s.setJournalLang);

@@ -127,6 +127,16 @@ await rejects(user(B, `select * from public.crash_summary`), 'crash summary is o
 const crash = (await db.query(`select signature, reports::int, fatal_reports::int from public.crash_summary`)).rows;
 ok(crash.length === 1 && crash[0].reports === 2 && crash[0].fatal_reports === 1, 'crash summary groups by signature');
 
+// ── 8. Legacy daily_logs: owner-only (25 Nov hardening) ──
+await db.exec(`insert into public.daily_logs (user_id, log_date, pain_level) values ('${A}', '2026-01-02', 7)`);
+ok((await db.query(`select relrowsecurity from pg_class where oid = 'public.daily_logs'::regclass`)).rows[0].relrowsecurity === true, 'daily_logs has RLS on');
+await rejects(anon(`select * from public.daily_logs`), 'anon cannot read legacy daily_logs');
+ok((await user(B, `select * from public.daily_logs`)).rows.length === 0, "she cannot see another user's legacy logs");
+ok((await user(A, `select * from public.daily_logs`)).rows.length === 1, 'she still sees her own legacy logs');
+await rejects(user(B, `insert into public.daily_logs (user_id, log_date) values ('${A}', '2026-01-03')`), "cannot write legacy logs as someone else");
+const invoker = (await db.query(`select c.relname, c.reloptions from pg_class c where c.relname in ('answer_feedback_summary','crash_summary') order by 1`)).rows;
+ok(invoker.length === 2 && invoker.every((r) => (r.reloptions ?? []).includes('security_invoker=true')), 'summary views use invoker rights');
+
 // ── Account deletion still removes everything of hers ──
 await user(A, `select public.delete_my_account()`);
 const left = (await db.query(`select (select count(*)::int from auth.users) users, (select count(*)::int from public.cycles) cycles, (select count(*)::int from public.answer_feedback) feedback`)).rows[0];

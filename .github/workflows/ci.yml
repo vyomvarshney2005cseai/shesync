@@ -12,6 +12,10 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# The workflow token can only read the code.
+permissions:
+  contents: read
+
 jobs:
   checks:
     name: Typecheck, lint, privacy, tests
@@ -31,7 +35,7 @@ jobs:
       - name: Unit, sync and database tests
         run: npm test
       - name: Web build
-        run: npx expo export --platform web --output-dir dist-web
+        run: npm run export:web -- --output-dir dist-web
 
   e2e-android:
     name: End-to-end (Maestro, Android)

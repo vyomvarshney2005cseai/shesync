@@ -9,7 +9,9 @@ import {
   authenticateWithBiometrics,
   getBiometricInfo,
   isAppLockPaused,
+  noteLeftWhilePaused,
   resumeAppLock,
+  shouldLockOnReturn,
   verifyPin,
 } from '@/lib/appLock';
 import { Button } from '@/components/ds';
@@ -30,12 +32,17 @@ export function AppLockGate() {
       const lock = useLockStore.getState();
       if (!lock.enabled) return;
       if (state === 'background') {
-        if (isAppLockPaused()) return;
+        if (isAppLockPaused()) {
+          // A picker or share sheet is open; lock on return if she stays away too long.
+          noteLeftWhilePaused();
+          return;
+        }
         lock.setLocked(true);
       } else if (state === 'inactive') {
         // iOS: app switcher / notification centre. Hide content, don't lock yet.
         if (!isAppLockPaused()) setCovered(true);
       } else if (state === 'active') {
+        if (shouldLockOnReturn()) lock.setLocked(true);
         setCovered(false);
         resumeAppLock();
       }

@@ -63,9 +63,17 @@ reqs.length = 0;
 await c.upsert('symptom_logs', [{ user_id: 'u1', id: 'log-2', approximate: 1 }], 'user_id,id');
 assert.ok(reqs[0].body.includes('"approximate"'));
 
+// Deleting the entries she deleted: only her rows, only those ids, in small batches.
+reqs.length = 0;
+await c.deleteRows('symptom_logs', 'u1', 'id', ['log-1', 'we"ird,id', ...Array.from({ length: 60 }, (_, i) => `log-x${i}`)]);
+assert.equal(reqs.length, 2, '62 ids → 2 requests');
+assert.ok(reqs.every((r) => r.method === 'DELETE' && r.url.startsWith('/rest/v1/symptom_logs?') && r.url.includes('user_id=eq.u1')));
+assert.ok(reqs[0].url.includes('id=in.("log-1","we\\"ird,id","log-x0"'), reqs[0].url);
+assert.ok(!reqs[0].url.includes('not.in'));
+
 assert.equal(missingColumn("Could not find the 'approximate' column of 'cycles' in the schema cache"), 'approximate');
 assert.equal(missingColumn('column "approximate" of relation "cycles" does not exist'), 'approximate');
 assert.equal(missingColumn('new row violates row-level security policy'), null);
 
 server.close();
-console.log('supabase client requests OK (incl. missing-column retry)');
+console.log('supabase client requests OK (incl. missing-column retry and targeted deletes)');

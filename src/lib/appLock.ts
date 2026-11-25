@@ -150,8 +150,26 @@ export function pauseAppLock(ms = 120_000): void {
 
 export function resumeAppLock(): void {
   pausedUntil = 0;
+  leftWhilePausedAt = 0;
 }
 
-export function isAppLockPaused(): boolean {
-  return Date.now() < pausedUntil;
+export function isAppLockPaused(now = Date.now()): boolean {
+  return now < pausedUntil;
+}
+
+// The app went to the background while a picker / share sheet was open.
+let leftWhilePausedAt = 0;
+
+/** Called when SheSync goes to the background during a pause. */
+export function noteLeftWhilePaused(now = Date.now()): void {
+  if (!leftWhilePausedAt) leftWhilePausedAt = now;
+}
+
+/**
+ * Coming back after a pause: lock if she stayed away longer than the pause
+ * allowed (for example pressed Home while the share sheet was open and put
+ * the phone down). Otherwise the picker simply returned.
+ */
+export function shouldLockOnReturn(now = Date.now()): boolean {
+  return leftWhilePausedAt > 0 && now >= pausedUntil;
 }

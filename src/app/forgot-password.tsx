@@ -15,10 +15,11 @@ import {
   ShieldCheck,
 } from 'lucide-react-native';
 import { Button } from '@/components/ds';
+import { emailParam } from '@/lib/linkParams';
 
 export default function ForgotPasswordScreen() {
   const params = useLocalSearchParams<{ email?: string }>();
-  const [email, setEmail] = useState(params.email || '');
+  const [email, setEmail] = useState(emailParam(params.email));
   const [loading, setLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');

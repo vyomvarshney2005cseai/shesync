@@ -42,7 +42,16 @@ export function deviceStorage<S>(): PersistStorage<S> {
     async getItem(name) {
       if (pending.has(name)) return pending.get(name) as StorageValue<S>;
       const raw = await AsyncStorage.getItem(name);
-      return raw ? (JSON.parse(raw) as StorageValue<S>) : null;
+      if (!raw) return null;
+      try {
+        return JSON.parse(raw) as StorageValue<S>;
+      } catch {
+        // Unreadable saved data must never keep the app from opening (the
+        // splash would stay forever): keep a copy for recovery, start fresh.
+        console.warn(`[storage] ${name} could not be read; starting fresh (copy kept as ${name}.unreadable)`);
+        await AsyncStorage.setItem(`${name}.unreadable`, raw).catch(() => {});
+        return null;
+      }
     },
     setItem(name, value) {
       // Store snapshots are immutable, so keeping the reference is safe.

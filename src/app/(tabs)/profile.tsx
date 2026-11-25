@@ -21,8 +21,8 @@ import { Button, Card, Chip, GroupLabel, ListGroup, ListRow, SwitchRow } from '@
 import type { SettingsSection } from '@/app/settings';
 
 const APPEARANCE: { id: NightMode; label: string }[] = [
-  { id: 'system', label: 'Match phone' },
   { id: 'off', label: 'Light' },
+  { id: 'system', label: 'Match phone' },
   { id: 'on', label: 'Dark' },
   { id: 'auto', label: 'Dark at night' },
 ];

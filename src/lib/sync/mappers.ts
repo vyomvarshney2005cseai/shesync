@@ -245,6 +245,11 @@ export function isEmptyDoc(doc: DocName, data: Record<string, unknown> | undefin
  * merged by id/date (the device wins when both have the same record);
  * profile answers come from the server only where the device has none.
  */
+const timeOf = (t: unknown) => {
+  const ms = typeof t === 'string' ? Date.parse(t) : NaN;
+  return Number.isFinite(ms) ? ms : 0;
+};
+
 export function mergeSnapshot(local: LocalSnapshot, remote: RemoteData): LocalSnapshot {
   const lp = local.profile;
   const rp = remote.profile;
@@ -268,8 +273,13 @@ export function mergeSnapshot(local: LocalSnapshot, remote: RemoteData): LocalSn
   const byStart = new Map(remote.cycles.map((r) => [r.start_date, rowToCycle(r)]));
   for (const c of local.cycles) byStart.set(c.startDate, c);
 
+  // The newer version of an entry wins: a check-in saved again on another
+  // phone has a later time stamp than the copy on this one.
   const logs = new Map(remote.logs.map((r) => [r.id, rowToLog(r)]));
-  for (const l of local.logs) logs.set(l.id, l);
+  for (const l of local.logs) {
+    const r = logs.get(l.id);
+    if (!r || timeOf(l.timestamp) >= timeOf(r.timestamp)) logs.set(l.id, l);
+  }
 
   const sleep = new Map(remote.sleep.map((r) => [r.log_date, rowToSleep(r)]));
   for (const s of local.sleep) sleep.set(s.date, s);

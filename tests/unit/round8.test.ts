@@ -260,9 +260,9 @@ test('privacy dashboard: on-the-phone and backed-up lists match what sync sends'
 });
 
 // ── Settings defaults ──
-test('settings: follow the phone’s light/dark setting by default; reminders start off', () => {
+test('settings: light theme by default; reminders start off', () => {
   const s = useSettingsStore.getState();
-  assert.equal(s.nightMode, 'system');
+  assert.equal(s.nightMode, 'off');
   assert.equal(s.checkInReminder, false);
   assert.equal(s.periodReminder, false);
   assert.equal(s.checkInReminderHour, 20);

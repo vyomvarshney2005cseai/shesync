@@ -23,7 +23,9 @@ export function todayKey(): string {
 
 /** Local midnight for a "YYYY-MM-DD" key (falls back to today for bad input). */
 export function parseDateKey(key: string | undefined | null): Date {
-  if (key) {
+  // Saved data is not always what the types promise (old versions, edited
+  // files): anything that is not text falls back to today instead of throwing.
+  if (typeof key === 'string' && key) {
     const parts = key.split('T')[0].split('-').map(Number);
     if (parts.length === 3 && parts.every((p) => !Number.isNaN(p))) {
       return new Date(parts[0], parts[1] - 1, parts[2]);

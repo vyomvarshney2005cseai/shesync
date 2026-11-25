@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Theme, createStyles, themed } from '@/constants/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { isOfflineAuthError, signInWithSupabase } from '@/lib/supabaseService';
+import { emailParam } from '@/lib/linkParams';
 import { pullCloudData } from '@/lib/sync';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { PasswordField } from '@/components/auth/PasswordField';
@@ -20,7 +21,7 @@ export default function LoginScreen() {
   const rememberedEmail = useSettingsStore((s) => s.rememberedEmail);
   const setRememberedEmail = useSettingsStore((s) => s.setRememberedEmail);
   const guestWithData = useAppStore((s) => s.isGuest && s.isAuthenticated && (s.symptomLogs.length > 0 || s.pastCycles.length > 0));
-  const [email, setEmail] = useState(typeof params.email === 'string' && params.email ? params.email : rememberedEmail);
+  const [email, setEmail] = useState(emailParam(params.email) || rememberedEmail);
   const [password, setPassword] = useState('');
   const [rememberEmail, setRememberEmail] = useState(true);
   const [loading, setLoading] = useState(false);

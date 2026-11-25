@@ -1,3 +1,4 @@
+import { AuthGate } from '@/components/common/AuthGate';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 import { router } from 'expo-router';
@@ -21,7 +22,16 @@ import { ROUTES } from '@/lib/routes';
 import { NEVER_ROWS, backedUpRows, backupSummary, onPhoneRows, type InventoryInput } from '@/lib/privacySummary';
 
 /** What is on this phone, what is backed up, and when it was last backed up. */
+/** Signed-out visitors (for example from a link) go to the welcome screen. */
 export default function PrivacyDashboardScreen() {
+  return (
+    <AuthGate>
+      <PrivacyDashboardScreenContent />
+    </AuthGate>
+  );
+}
+
+function PrivacyDashboardScreenContent() {
   const logs = useAppStore((s) => s.symptomLogs);
   const periods = useAppStore((s) => s.pastCycles.length);
   const sleepLogs = useAppStore((s) => s.sleepLogs.length);

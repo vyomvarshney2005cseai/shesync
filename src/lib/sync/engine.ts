@@ -30,7 +30,21 @@ export interface SyncClient {
   upsert(table: string, rows: object[], onConflict: string): Promise<void>;
   /** Deletes the user's rows whose `keyColumn` is not in `keep`. */
   deleteMissing(table: string, userId: string, keyColumn: string, keep: string[]): Promise<void>;
+  /** Deletes the user's rows whose `keyColumn` is in `keys`. */
+  deleteRows(table: string, userId: string, keyColumn: string, keys: string[]): Promise<void>;
   selectAll<T>(table: string, userColumn: string, userId: string): Promise<T[]>;
+}
+
+/**
+ * Entries she deleted on this phone that the server may still have:
+ * log ids, period start dates and care-contact ids. Only deliberate deletions
+ * are listed here, so a phone whose data was wiped never deletes anything on
+ * the server — it simply gets everything back.
+ */
+export interface Deleted {
+  logs: string[];
+  cycles: string[];
+  contacts: string[];
 }
 
 export interface KeyValueStore {
@@ -39,10 +53,19 @@ export interface KeyValueStore {
 }
 
 interface SyncMeta {
+  /** Ids of logs the server has (kept for older app versions; see logStamps). */
   pushedLogIds: string[];
+  /** Log id → time stamp (ms) of the version the server has, so edits are sent too. */
+  logStamps?: Record<string, number>;
   hashes: Record<string, string>;
   lastSyncedAt: number;
 }
+
+/** A log's version: its time stamp, which changes whenever it is edited. */
+const stampOf = (timestamp: unknown): number => {
+  const t = typeof timestamp === 'string' ? Date.parse(timestamp) : NaN;
+  return Number.isFinite(t) ? t : 0;
+};
 
 /**
  * off      on-device account (nothing is uploaded)
@@ -57,6 +80,10 @@ export interface SyncEngineOptions {
   applyLocal: (snapshot: LocalSnapshot) => void;
   /** False for on-device-only accounts. */
   isCloudAccount: () => boolean;
+  /** Deletions made on this phone that the server may not have yet. */
+  getDeleted?: () => Deleted;
+  /** The server no longer has these: the phone can forget them. */
+  onDeletedSynced?: (done: Partial<Deleted>) => void;
   onStatus?: (state: SyncState, info?: { lastSyncedAt?: number; error?: string }) => void;
   debounceMs?: number;
 }
@@ -96,6 +123,11 @@ export function createSyncEngine(opts: SyncEngineOptions) {
     for (let i = 0; i < rows.length; i += CHUNK) await client.upsert(table, rows.slice(i, i + CHUNK), onConflict);
   }
 
+  const deletedNow = (): Deleted => {
+    const d = opts.getDeleted?.();
+    return { logs: d?.logs ?? [], cycles: d?.cycles ?? [], contacts: d?.contacts ?? [] };
+  };
+
   /** Downloads the account's rows and merges them into the device. */
   async function mergeFromServer(uid: string) {
     const [profiles, cycles, logs, sleep, contacts, docs] = await Promise.all([
@@ -106,13 +138,30 @@ export function createSyncEngine(opts: SyncEngineOptions) {
       client.selectAll<RemoteData['contacts'][number]>('care_contacts', 'user_id', uid),
       client.selectAll<RemoteData['docs'][number]>('app_documents', 'user_id', uid),
     ]);
+    // Entries she deleted here (maybe offline, or just before the app was
+    // closed) are still on the server until the next upload: never bring them back.
+    const gone = deletedNow();
+    const goneLogs = new Set(gone.logs);
+    const goneCycles = new Set(gone.cycles);
+    const goneContacts = new Set(gone.contacts);
+    const remote = {
+      profile: profiles[0] ?? null,
+      cycles: cycles.filter((c) => !goneCycles.has(c.start_date)),
+      logs: logs.filter((l) => !goneLogs.has(l.id)),
+      sleep,
+      contacts: contacts.filter((c) => !goneContacts.has(c.id)),
+      docs,
+    };
     const local = opts.getLocal();
-    const merged = mergeSnapshot(local, { profile: profiles[0] ?? null, cycles, logs, sleep, contacts, docs });
+    const merged = mergeSnapshot(local, remote);
     if (hashOf(merged) !== hashOf(local)) opts.applyLocal(merged);
 
-    // Everything downloaded is already on the server.
+    // What the server has now, so only new or edited logs are sent.
     const meta = await readMeta(uid);
-    meta.pushedLogIds = [...new Set([...meta.pushedLogIds, ...logs.map((l) => l.id)])];
+    const stamps = { ...(meta.logStamps ?? {}) };
+    for (const l of logs) stamps[l.id] = stampOf(l.logged_at);
+    meta.logStamps = stamps;
+    meta.pushedLogIds = Object.keys(stamps);
     await writeMeta(uid, meta);
     mergedFor = uid;
   }
@@ -144,6 +193,8 @@ export function createSyncEngine(opts: SyncEngineOptions) {
       meta.hashes.profile = ph;
     }
 
+    const gone = deletedNow();
+
     const cycleRows = local.cycles.filter((c) => !!c.startDate).map((c) => cycleToRow(uid, c));
     const ch = fresh('cycles', cycleRows);
     if (ch) {
@@ -151,16 +202,31 @@ export function createSyncEngine(opts: SyncEngineOptions) {
       await client.deleteMissing('cycles', uid, 'start_date', cycleRows.map((r) => r.start_date));
       meta.hashes.cycles = ch;
     }
+    // The server's periods now match this phone, deleted ones included.
+    if (gone.cycles.length) opts.onDeletedSynced?.({ cycles: gone.cycles });
 
-    const pushed = new Set(meta.pushedLogIds);
-    const newLogs = local.logs.filter((l) => !pushed.has(l.id));
-    if (newLogs.length) {
-      await upsertChunked('symptom_logs', newLogs.map((l) => logToRow(uid, l)), 'user_id,id');
-      newLogs.forEach((l) => pushed.add(l.id));
+    // Logs: send new and edited ones (a check-in saved again keeps its id but
+    // gets a new time stamp), then delete the ones she deleted here.
+    // (The download at the start of each session filled in what the server has.)
+    const stamps = { ...(meta.logStamps ?? {}) };
+    const changedLogs = local.logs.filter((l) => {
+      const known = stamps[l.id];
+      if (known === undefined) return true; // new
+      const t = stampOf(l.timestamp);
+      return t !== 0 && t > known; // edited here (never send an older copy over a newer one)
+    });
+    if (changedLogs.length) {
+      await upsertChunked('symptom_logs', changedLogs.map((l) => logToRow(uid, l)), 'user_id,id');
+      changedLogs.forEach((l) => (stamps[l.id] = stampOf(l.timestamp)));
     }
-    // Remember only ids still on the device, so the list cannot grow forever.
     const onDevice = new Set(local.logs.map((l) => l.id));
-    meta.pushedLogIds = [...pushed].filter((id) => onDevice.has(id));
+    const deletedLogs = gone.logs.filter((id) => !onDevice.has(id));
+    if (deletedLogs.length) await client.deleteRows('symptom_logs', uid, 'id', deletedLogs);
+    if (gone.logs.length) opts.onDeletedSynced?.({ logs: gone.logs });
+    // Remember only logs still on the device, so the list cannot grow forever.
+    for (const id of Object.keys(stamps)) if (!onDevice.has(id)) delete stamps[id];
+    meta.logStamps = stamps;
+    meta.pushedLogIds = Object.keys(stamps);
 
     const sleepRows = local.sleep.map((s) => sleepToRow(uid, s));
     const sh = fresh('sleep', sleepRows);
@@ -176,6 +242,7 @@ export function createSyncEngine(opts: SyncEngineOptions) {
       await client.deleteMissing('care_contacts', uid, 'id', contactRows.map((r) => r.id));
       meta.hashes.contacts = kh;
     }
+    if (gone.contacts.length) opts.onDeletedSynced?.({ contacts: gone.contacts });
 
     for (const doc of DOC_NAMES) {
       const data = local.docs[doc] ?? {};

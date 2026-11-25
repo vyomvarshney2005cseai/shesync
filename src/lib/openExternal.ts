@@ -14,11 +14,23 @@ function notify(title: string, message: string) {
   }
 }
 
+/** Link types SheSync opens. Anything else (javascript:, file:, intent:, data: …) is refused. */
+const SAFE_SCHEMES = new Set(['https:', 'http:', 'tel:', 'sms:', 'mailto:']);
+
+export function isSafeExternalUrl(url: string): boolean {
+  const m = /^([a-z][a-z0-9+.-]*:)/i.exec(String(url ?? '').trim());
+  return !!m && SAFE_SCHEMES.has(m[1].toLowerCase());
+}
+
 /** Opens a web link in a new tab on web, or in the system handler on a phone. */
 export async function openUrl(url: string): Promise<void> {
+  if (!isSafeExternalUrl(url)) {
+    notify('Could not open link', 'This link type is not supported.');
+    return;
+  }
   try {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.open(url, '_blank', 'noopener');
+      window.open(url, '_blank', 'noopener,noreferrer');
       return;
     }
     await Linking.openURL(url);

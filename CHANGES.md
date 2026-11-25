@@ -1,3 +1,51 @@
+# SheSync — Faster repeat visits, smaller web build, deleted entries stay deleted (25 Nov 2026)
+
+**Web (Vercel)**
+- Files whose names contain a content hash (`/_expo/static/*`, `/assets/*`) are cached by browsers for a year (`immutable`); pages still check for a new version every time. A return visit now makes **1 request instead of 13** (measured), which is what Vercel's free plan counts.
+- Vercel now builds with `npm run export:web` (tree-shaking on): first-load JavaScript ≈ 572 KB instead of 756 KB (brotli), 3.7 MB instead of 6.1 MB to parse. Tested with 8 users at once: 72/72 flows, 344/344 screens, 0 errors. To make CI build the same thing, change the "Web build" step in `.github/workflows/ci.yml` to `run: npm run export:web -- --output-dir dist-web` (workflow files can't be edited remotely).
+- Each deploy changes the file names, so returning visitors download the app once more — deploy in batches rather than many times a day.
+
+**Backup (cloud accounts)** — tests: `tests/unit/sync-deletions.test.ts`
+- **Fixed: deleted entries came back.** Deleting a journal entry/log never reached the server, so it reappeared the next time the app was opened from closed (and on a new phone). Periods and care contacts deleted while offline could come back the same way.
+- The app now remembers deliberate deletions (`deletedLogIds`, `deletedCycleStarts`, `deletedContactIds`), the backup deletes them on the server (`deleteRows`, only her rows, 50 ids per request), never re-imports them, and then forgets them. A phone whose data was wiped records no deletions, so it restores everything and never deletes server data.
+- **Fixed: an edited check-in was never backed up** (saving today's check-in again keeps its id). Logs now carry the version (time stamp) the server has; edits are sent, and when two phones edit the same entry the newer one wins in both directions.
+- Updating needs no migration: the first launch reads what the server has, so nothing is re-uploaded.
+- **Fixed: two entries saved in the same millisecond shared an id**, so the second replaced the first (on the phone and in the backup). New log ids are now always unique. This was also why the round-4 check-in test failed now and then.
+
+# SheSync — Crash audit, live multi-user test, capacity check (25 Nov 2026)
+
+**Live site** (https://shesync-rust.vercel.app — on-device mode, no server)
+- **Fixed: every page except `/` returned Vercel's 404** (refresh, bookmarks, shared links). With `cleanUrls: true`, the rewrite must go to `/`, not `/index.html` — `vercel.json` now follows Expo's Vercel setup (`"framework": null`, `/:path*` → `/`). Takes effect on the next Vercel deploy.
+- Tested: 4 separate test users on the live site (sign-up, period + pain + chat, reload, 43 screens, sign-out, sign-in) and 8 users at once on an exact copy of the live build (same bundle hashes): 0 crashes, 0 console errors, no data shared between users.
+- Load test on the live CDN: 5 → 10 → 25 → 50 simultaneous users, 1,440 requests, 0 errors, no 429s, p95 370 ms at 50 users.
+
+**Crash fixes** (tests: `tests/unit/crash.test.ts`)
+- Saved data that cannot be read (cut-off JSON) no longer leaves the app on the splash / loading screen forever: the store starts fresh and keeps a copy as `<name>.unreadable`.
+- Saved records of the wrong type (from old versions or edited files) are repaired on launch — good records kept, broken ones left out — and the launch step can no longer throw. `parseDateKey` accepts only text; `focusAreas` that are not a list no longer crash the dashboard.
+- Supabase requests now give up after 20 s (`src/lib/fetchWithTimeout.ts`): one stalled request used to hold up every later backup until the app was restarted.
+
+# SheSync — Security audit fixes, light theme by default, folder clean-up (25 Nov 2026)
+
+**Security** (full report in the chat of 25 Nov; tests in `tests/unit/security.test.ts` and `tests/db/migrations.test.mjs`)
+- Sign-in tokens are kept in the phone's Keychain / Keystore (`expo-secure-store`, split into chunks), not in plain AsyncStorage. Old sessions move over on first launch — nobody is signed out. (`src/lib/secureSessionStorage.ts`, `src/lib/supabase.ts`)
+- Web: Content-Security-Policy, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy and HSTS in `vercel.json` (checked on the web build: no violations).
+- Doctor report: every value in the HTML is escaped (`buildClinicalReportHtml`).
+- Backup import: a SheSync backup file is checked before merging — known fields only, server text limits, capped lists, no recording file names. (`src/lib/importValidation.ts`)
+- Exports (backup JSON / CSV / chat) go to their own cache folder, which is emptied at the next export, at launch and at sign-out.
+- App lock: leaving SheSync while the share sheet or a picker is open now locks it if she stays away longer than the picker allowance.
+- Pad-change reminders: Android hides their text on the lock screen (new channel `pad-care-private`).
+- Links open only for https/http/tel/sms/mailto; `noopener` on new tabs. `?email=` in links is used only if it is a plain email address.
+- Settings, Privacy dashboard and Voice journal need a signed-in (or guest) session.
+- Database: new migration `20261125000000_security_hardening.sql` — owner-only RLS on the legacy `daily_logs` table, invoker rights on the two summary views. **Run it in Supabase → SQL editor.**
+- CI workflows: read-only token. Lockfile: `source-map-js` 1.2.4 and `zod` 4.6.7 (fixes the two high npm advisories; build tools only).
+
+**Light by default**
+- Every page is light unless she picks Dark or Dark at night. Phones that had the old "Match phone" default switch to Light once (settings version 2); Light, Dark and Dark at night choices are kept.
+- The phone's own alerts, keyboard and pickers follow the app's choice (`Appearance.setColorScheme`); only "Match phone" follows the phone.
+
+**Folder clean-up**
+- `docs/papers`: kept the final versions only — the 12-page ICNQC and ICOFE papers, and the 5 Nov hackathon deck (renamed `SheSync_Hackathon_Deck.pptx`). Removed the 6-page drafts and the 2 Nov deck. Removed Expo build caches in `.expo/`.
+
 # SheSync — One design system, light & dark themes, bespoke icons, Settings, privacy dashboard, skeletons, 44pt targets, reduce motion (24 Nov 2026)
 
 Direction: a women's health / period & wellbeing companion, **warm, rounded and gently empowering**.
@@ -8,7 +56,7 @@ Direction: a women's health / period & wellbeing companion, **warm, rounded and 
 - Clear hierarchy: one filled rose button per screen for the main action, outlined secondary buttons, quiet links. Only floating things (the SOS button) cast a shadow.
 
 **Light & dark mode**
-- Profile → Preferences → Appearance: **Match phone** (new default), Light, Dark, Dark at night. Dark is deep slate — page #0F172A, cards #1E293B, raised #273449 — never pure black; every token has a hand-picked dark value, other colours convert to slate tones. Photo scrims and YouTube red stay the same in both modes.
+- Profile → Preferences → Appearance: **Light** (default), Match phone, Dark, Dark at night. Dark is deep slate — page #0F172A, cards #1E293B, raised #273449 — never pure black; every token has a hand-picked dark value, other colours convert to slate tones. Photo scrims and YouTube red stay the same in both modes.
 - `app.json` → `userInterfaceStyle: "automatic"`, so phones report their dark setting. **This needs a new build** (an over-the-air update can't change it).
 
 **Visibility & accessibility (WCAG AA)**

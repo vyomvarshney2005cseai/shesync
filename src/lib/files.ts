@@ -19,14 +19,44 @@ export async function saveTextFile(name: string, text: string, mimeType: string)
     setTimeout(() => URL.revokeObjectURL(url), 2000);
     return;
   }
-  const { File, Paths } = await import('expo-file-system');
+  const { File, Directory, Paths } = await import('expo-file-system');
   const Sharing = await import('expo-sharing');
+  // Exports hold her health data: keep only the newest one, in its own folder,
+  // which is emptied again at the next launch and at sign-out.
+  await clearExportCache();
+  const dir = new Directory(Paths.cache, EXPORT_DIR);
+  if (!dir.exists) dir.create({ intermediates: true, idempotent: true });
   pauseAppLock(); // the share sheet is not "leaving" SheSync
-  const file = new File(Paths.cache, name);
-  if (file.exists) file.delete();
+  const file = new File(dir, safeFileName(name));
   file.create();
   await file.write(text);
   await Sharing.shareAsync(file.uri, { mimeType, dialogTitle: name });
+}
+
+const EXPORT_DIR = 'exports';
+const LEGACY_EXPORT = /^shesync-.*\.(json|csv|txt)$/i;
+
+/** A plain file name: no folders, no hidden files. */
+export function safeFileName(name: string): string {
+  const clean = name.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').replace(/^\.+/, '').slice(0, 100);
+  return clean || 'shesync-export.txt';
+}
+
+/** Deletes exported files left in the app's cache (no-op on the web). */
+export async function clearExportCache(): Promise<void> {
+  if (Platform.OS === 'web') return;
+  try {
+    const { Directory, File, Paths } = await import('expo-file-system');
+    const dir = new Directory(Paths.cache, EXPORT_DIR);
+    if (dir.exists) dir.delete();
+    // Versions before 25 Nov 2026 saved exports straight into the cache folder.
+    const cache = new Directory(Paths.cache);
+    for (const item of cache.exists ? cache.list() : []) {
+      if (item instanceof File && LEGACY_EXPORT.test(item.name)) item.delete();
+    }
+  } catch {
+    // Nothing to remove.
+  }
 }
 
 export interface PickedFile {

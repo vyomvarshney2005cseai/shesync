@@ -115,6 +115,12 @@ const engine = createSyncEngine({
   getLocal,
   applyLocal,
   isCloudAccount,
+  // Deletions made on this phone reach the server and never come back from it.
+  getDeleted: () => {
+    const s = useAppStore.getState();
+    return { logs: s.deletedLogIds ?? [], cycles: s.deletedCycleStarts ?? [], contacts: s.deletedContactIds ?? [] };
+  },
+  onDeletedSynced: (done) => useAppStore.getState().forgetDeletions(done),
   onStatus: (state, info) =>
     useSyncStatus.setState((prev) => ({
       state,

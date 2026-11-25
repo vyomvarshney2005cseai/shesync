@@ -60,6 +60,14 @@ export function supabaseSyncClient(supabase: SupabaseClient): SyncClient {
       const { error } = await q;
       if (error) throw new Error(`${table}: ${error.message}`);
     },
+    async deleteRows(table, userId, keyColumn, keys) {
+      // A few dozen ids per request keeps the address short.
+      for (let i = 0; i < keys.length; i += 50) {
+        const chunk = keys.slice(i, i + 50);
+        const { error } = await supabase.from(table).delete().eq('user_id', userId).filter(keyColumn, 'in', `(${chunk.map(quote).join(',')})`);
+        if (error) throw new Error(`${table}: ${error.message}`);
+      }
+    },
     async selectAll<T>(table: string, userColumn: string, userId: string) {
       const out: T[] = [];
       for (let from = 0; ; from += PAGE) {

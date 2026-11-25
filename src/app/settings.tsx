@@ -1,3 +1,4 @@
+import { AuthGate } from '@/components/common/AuthGate';
 import React, { useRef, useState } from 'react';
 import { Alert, Linking, Platform, ScrollView, Text, View, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -43,7 +44,16 @@ function notify(title: string, msg: string) {
  * Settings, in five sections: Account, Privacy, Reminders, Data, About.
  * /settings?section=privacy opens it scrolled to that section.
  */
+/** Signed-out visitors (for example from a link) go to the welcome screen. */
 export default function SettingsScreen() {
+  return (
+    <AuthGate>
+      <SettingsScreenContent />
+    </AuthGate>
+  );
+}
+
+function SettingsScreenContent() {
   const { section } = useLocalSearchParams<{ section?: SettingsSection }>();
   const scroller = useRef<React.ElementRef<typeof ScrollView>>(null);
   const [jumped, setJumped] = useState(false);

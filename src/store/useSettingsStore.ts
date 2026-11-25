@@ -4,8 +4,35 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { deviceStorage } from './storage';
 
-/** off = light, on = dark, auto = dark from 9 pm to 6 am, system = follow the phone. */
+/**
+ * off = light, on = dark, auto = dark from 9 pm to 6 am, system = follow the phone.
+ * Light is the default: every page is light unless she picks a dark option.
+ */
 export type NightMode = 'off' | 'on' | 'auto' | 'system';
+
+export const DEFAULT_NIGHT_MODE: NightMode = 'off';
+
+/**
+ * Saved settings from older versions. Version 1 defaulted to "Match phone",
+ * which turned SheSync dark on phones in dark mode although she never chose
+ * dark; those phones now start in light. Light/Dark/Dark at night are kept.
+ */
+export function migrateSettings(persisted: unknown, version: number): Record<string, unknown> {
+  const s = { ...((persisted as Record<string, unknown>) ?? {}) };
+  if (version < 2 && (s.nightMode === 'system' || s.nightMode === undefined)) s.nightMode = DEFAULT_NIGHT_MODE;
+  if (!['off', 'on', 'auto', 'system'].includes(s.nightMode as string)) s.nightMode = DEFAULT_NIGHT_MODE;
+  return s;
+}
+
+/**
+ * What the phone's own UI (alerts, keyboard, pickers, status bar) should use,
+ * so it matches the app: light/dark when she chose one, the phone's own
+ * setting only for "Match phone".
+ */
+export function appearanceOverride(nightMode: NightMode, nightActive: boolean): 'light' | 'dark' | 'unspecified' {
+  if (nightMode === 'system') return 'unspecified';
+  return nightActive ? 'dark' : 'light';
+}
 
 /** YourGoGirl's reply language. `auto` answers in the language she writes in. */
 export type ChatLanguageSetting = 'auto' | 'en' | 'hinglish' | 'hi';
@@ -17,7 +44,7 @@ export type JournalSpeechLang = 'en-IN' | 'hi-IN';
 export type FocusSound = 'off' | 'rain' | 'cafe' | 'lofi';
 
 interface SettingsState {
-  /** off = always light, on = always night, auto = night from 9 pm to 6 am. */
+  /** off = always light (default), on = always night, auto = night from 9 pm to 6 am, system = follow the phone. */
   nightMode: NightMode;
   setNightMode: (mode: NightMode) => void;
   chatLanguage: ChatLanguageSetting;
@@ -50,7 +77,7 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      nightMode: 'system',
+      nightMode: DEFAULT_NIGHT_MODE,
       setNightMode: (nightMode) => set({ nightMode }),
       chatLanguage: 'auto',
       setChatLanguage: (chatLanguage) => set({ chatLanguage }),
@@ -73,7 +100,12 @@ export const useSettingsStore = create<SettingsState>()(
       periodReminder: false,
       setPeriodReminder: (periodReminder) => set({ periodReminder }),
     }),
-    { name: 'shesync.settings', version: 1, storage: deviceStorage() }
+    {
+      name: 'shesync.settings',
+      version: 2,
+      storage: deviceStorage(),
+      migrate: (persisted, version) => migrateSettings(persisted, version) as unknown as SettingsState,
+    }
   )
 );
 
