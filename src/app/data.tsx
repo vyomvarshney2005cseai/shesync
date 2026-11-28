@@ -23,7 +23,7 @@ import {
 type Pending = { name: string; result: ImportResult; summary: ReturnType<typeof describeImport> };
 
 const SOURCE_NAME: Record<ImportResult['source'], string> = {
-  shesync: 'SheSync backup',
+  unnmegh: 'Unnmegh backup',
   flo: 'Flo export',
   clue: 'Clue export',
   other: 'Tracker export',
@@ -53,15 +53,15 @@ export default function DataScreen() {
   };
 
   const exportJson = () =>
-    run('json', () => saveTextFile(`shesync-backup-${stamp}.json`, JSON.stringify(buildBackup(getLocal()), null, 2), 'application/json'),
+    run('json', () => saveTextFile(`unnmegh-backup-${stamp}.json`, JSON.stringify(buildBackup(getLocal()), null, 2), 'application/json'),
       Platform.OS === 'web' ? 'Backup downloaded. Keep it somewhere private.' : undefined);
 
   const exportLogs = () =>
-    run('logs', () => saveTextFile(`shesync-logs-${stamp}.csv`, logsToCsv(getLocal().logs), 'text/csv'),
+    run('logs', () => saveTextFile(`unnmegh-logs-${stamp}.csv`, logsToCsv(getLocal().logs), 'text/csv'),
       Platform.OS === 'web' ? 'Daily logs downloaded.' : undefined);
 
   const exportPeriods = () =>
-    run('periods', () => saveTextFile(`shesync-periods-${stamp}.csv`, periodsToCsv(getLocal().cycles), 'text/csv'),
+    run('periods', () => saveTextFile(`unnmegh-periods-${stamp}.csv`, periodsToCsv(getLocal().cycles), 'text/csv'),
       Platform.OS === 'web' ? 'Periods downloaded.' : undefined);
 
   const choose = () =>
@@ -87,7 +87,7 @@ export default function DataScreen() {
       text:
         newPeriods || newLogs
           ? `Imported ${newPeriods} period${newPeriods === 1 ? '' : 's'}${newLogs ? ` and ${newLogs} log${newLogs === 1 ? '' : 's'}` : ''}. Your predictions are updated.`
-          : 'Everything in this file was already in SheSync. Nothing changed.',
+          : 'Everything in this file was already in Unnmegh. Nothing changed.',
       ok: true,
     });
   };
@@ -97,7 +97,7 @@ export default function DataScreen() {
       <Screen>
         <ScreenHeader title="Your data" subtitle="Download a copy or bring data from another app" fallbackHref="/(tabs)/profile" />
 
-        <SectionHeader title="Export" subtitle="Your files stay with you — SheSync doesn’t keep a copy." />
+        <SectionHeader title="Export" subtitle="Your files stay with you — Unnmegh doesn’t keep a copy." />
         <Card style={styles.gap}>
           <ExportRow
             icon={<FileJson size={18} color={Theme.colors.primaryDark} />}
@@ -136,9 +136,9 @@ export default function DataScreen() {
           />
         </Card>
 
-        <SectionHeader title="Import" subtitle="Adds to what you have. Nothing already in SheSync is replaced." />
+        <SectionHeader title="Import" subtitle="Adds to what you have. Nothing already in Unnmegh is replaced." />
         <Card style={styles.gap}>
-          <Text style={styles.body}>Choose a SheSync backup, or the file you got from another tracker:</Text>
+          <Text style={styles.body}>Choose an Unnmegh backup, or the file you got from another tracker:</Text>
           <View style={styles.steps}>
             <Text style={styles.step}>
               <Text style={styles.stepBold}>Flo: </Text>Menu → Help → Contact us → ask for a data export. Choose the JSON file they send.
@@ -172,7 +172,7 @@ export default function DataScreen() {
             <Text style={[styles.body, { marginTop: 8 }]}>
               {pending.summary.newPeriods || pending.summary.newLogs
                 ? `${pending.summary.newPeriods} new period${pending.summary.newPeriods === 1 ? '' : 's'}${pending.summary.newLogs ? ` and ${pending.summary.newLogs} new log${pending.summary.newLogs === 1 ? '' : 's'}` : ''} will be added.`
-                : 'You already have all of these in SheSync.'}
+                : 'You already have all of these in Unnmegh.'}
             </Text>
             {pending.result.notes.map((n) => (
               <Text key={n} style={[styles.help, { marginTop: 8 }]}>

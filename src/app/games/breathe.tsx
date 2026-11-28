@@ -21,7 +21,7 @@ const DURATIONS = [
 type DurationId = (typeof DURATIONS)[number]['id'];
 
 function KeepAwake() {
-  useKeepAwake('shesync-breathe');
+  useKeepAwake('unnmegh-breathe');
   return null;
 }
 

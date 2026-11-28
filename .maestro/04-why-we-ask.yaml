@@ -3,7 +3,7 @@ appId: com.vyomvarshney1234.shesync
 name: Why we ask
 ---
 - runFlow: subflows/start-guest.yaml
-- openLink: "shesync://health-check"
+- openLink: "unnmegh://health-check"
 - tapOn:
     id: "why-hc_soak"
 - assertVisible: "WHY WE ASK"

@@ -1,5 +1,5 @@
 // ============================================================
-// SheSync: Bio-Adaptive Health & Mental Therapy — Type System
+// Unnmegh: Bio-Adaptive Health & Mental Therapy — Type System
 // ============================================================
 
 // ─── Biometric Data ─────────────────────────────────────────
@@ -36,7 +36,7 @@ export interface CortisolData {
 
 /**
  * Daily body snapshot. Everything here is DERIVED from what the user logs
- * (pain, flow, mood, energy, sleep, assessment). SheSync has no wearable or
+ * (pain, flow, mood, energy, sleep, assessment). Unnmegh has no wearable or
  * lab connection, so `hrv` and `cortisol` are internal model estimates and
  * must never be shown as measurements.
  */
@@ -378,11 +378,11 @@ export interface AppState {
   /** "Try without an account": everything stays on this phone until she creates one. */
   isGuest: boolean;
   focusAreas: string[];        // chosen after she has seen the app (Home card or Profile)
-  /** Home's "what should SheSync help with?" card is hidden until this date (YYYY-MM-DD). */
+  /** Home's "what should Unnmegh help with?" card is hidden until this date (YYYY-MM-DD). */
   focusPromptSnoozedUntil: string;
   /** Setup steps she skipped for now ("questions", "period", …); sensible defaults are used. */
   skippedSyncSteps: string[];
-  /** Home's "Personalise SheSync" card is hidden until this date (YYYY-MM-DD). */
+  /** Home's "Personalise Unnmegh" card is hidden until this date (YYYY-MM-DD). */
   personalisePromptSnoozedUntil: string;
   /**
    * Backup bookkeeping: entries she deleted on this phone that the server may
@@ -439,7 +439,7 @@ export interface AppState {
   // Actions
   login: (email?: string, name?: string, options?: { offline?: boolean }) => void;
   signup: (name: string, email: string, focusAreas?: string[], options?: { offline?: boolean }) => void;
-  /** Starts SheSync on this phone with no account. */
+  /** Starts Unnmegh on this phone with no account. */
   startGuest: () => void;
   /** Turns the guest session into an account, keeping everything she logged. */
   upgradeGuest: (name: string, email: string, options?: { offline?: boolean }) => void;

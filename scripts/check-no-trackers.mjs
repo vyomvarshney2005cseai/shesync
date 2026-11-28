@@ -1,6 +1,6 @@
 // Fails if an ad, analytics, attribution or third-party tracking SDK gets into
-// SheSync — directly, through another package, or as a tracker address in code.
-// Crash reports and 👍/👎 go only to SheSync's own Supabase (see
+// Unnmegh — directly, through another package, or as a tracker address in code.
+// Crash reports and 👍/👎 go only to Unnmegh's own Supabase (see
 // src/lib/anonymousReports.ts). Run: npm run check:privacy
 import fs from 'node:fs';
 import path from 'node:path';
@@ -22,7 +22,7 @@ const BANNED_PACKAGES = [
   'react-native-onesignal', 'onesignal-expo-plugin', '@braze/', 'react-native-moengage', '@heap/', 'react-native-appmetrica',
   'react-native-smartlook-analytics', '@hotjar/', 'react-native-uxcam', '@contentsquare/', '@fullstory/', 'logrocket',
   '@logrocket/', 'react-native-clarity', '@microsoft/react-native-clarity',
-  // third-party crash / monitoring services (SheSync reports crashes to its own server)
+  // third-party crash / monitoring services (Unnmegh reports crashes to its own server)
   '@sentry/', 'sentry-expo', '@bugsnag/', '@datadog/', 'instabug-reactnative', '@instabug/', '@newrelic/',
   '@react-native-firebase/crashlytics', '@react-native-firebase/perf',
   // advertising IDs and cross-app tracking
@@ -90,7 +90,7 @@ for (const plugin of app.plugins ?? []) {
 
 for (const n of notes) console.log(`note: ${n}`);
 if (problems.length) {
-  console.error('✗ Privacy check failed — SheSync must not include ad, analytics or tracking SDKs:');
+  console.error('✗ Privacy check failed — Unnmegh must not include ad, analytics or tracking SDKs:');
   for (const p of problems) console.error(`  • ${p}`);
   process.exit(1);
 }

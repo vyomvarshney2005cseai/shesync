@@ -1,4 +1,4 @@
-# SheSync — Faster repeat visits, smaller web build, deleted entries stay deleted (25 Nov 2026)
+# Unnmegh — Faster repeat visits, smaller web build, deleted entries stay deleted (25 Nov 2026)
 
 **Web (Vercel)**
 - Files whose names contain a content hash (`/_expo/static/*`, `/assets/*`) are cached by browsers for a year (`immutable`); pages still check for a new version every time. A return visit now makes **1 request instead of 13** (measured), which is what Vercel's free plan counts.
@@ -12,7 +12,7 @@
 - Updating needs no migration: the first launch reads what the server has, so nothing is re-uploaded.
 - **Fixed: two entries saved in the same millisecond shared an id**, so the second replaced the first (on the phone and in the backup). New log ids are now always unique. This was also why the round-4 check-in test failed now and then.
 
-# SheSync — Crash audit, live multi-user test, capacity check (25 Nov 2026)
+# Unnmegh — Crash audit, live multi-user test, capacity check (25 Nov 2026)
 
 **Live site** (https://shesync-rust.vercel.app — on-device mode, no server)
 - **Fixed: every page except `/` returned Vercel's 404** (refresh, bookmarks, shared links). With `cleanUrls: true`, the rewrite must go to `/`, not `/index.html` — `vercel.json` now follows Expo's Vercel setup (`"framework": null`, `/:path*` → `/`). Takes effect on the next Vercel deploy.
@@ -24,15 +24,15 @@
 - Saved records of the wrong type (from old versions or edited files) are repaired on launch — good records kept, broken ones left out — and the launch step can no longer throw. `parseDateKey` accepts only text; `focusAreas` that are not a list no longer crash the dashboard.
 - Supabase requests now give up after 20 s (`src/lib/fetchWithTimeout.ts`): one stalled request used to hold up every later backup until the app was restarted.
 
-# SheSync — Security audit fixes, light theme by default, folder clean-up (25 Nov 2026)
+# Unnmegh — Security audit fixes, light theme by default, folder clean-up (25 Nov 2026)
 
 **Security** (full report in the chat of 25 Nov; tests in `tests/unit/security.test.ts` and `tests/db/migrations.test.mjs`)
 - Sign-in tokens are kept in the phone's Keychain / Keystore (`expo-secure-store`, split into chunks), not in plain AsyncStorage. Old sessions move over on first launch — nobody is signed out. (`src/lib/secureSessionStorage.ts`, `src/lib/supabase.ts`)
 - Web: Content-Security-Policy, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy and HSTS in `vercel.json` (checked on the web build: no violations).
 - Doctor report: every value in the HTML is escaped (`buildClinicalReportHtml`).
-- Backup import: a SheSync backup file is checked before merging — known fields only, server text limits, capped lists, no recording file names. (`src/lib/importValidation.ts`)
+- Backup import: an Unnmegh backup file is checked before merging — known fields only, server text limits, capped lists, no recording file names. (`src/lib/importValidation.ts`)
 - Exports (backup JSON / CSV / chat) go to their own cache folder, which is emptied at the next export, at launch and at sign-out.
-- App lock: leaving SheSync while the share sheet or a picker is open now locks it if she stays away longer than the picker allowance.
+- App lock: leaving Unnmegh while the share sheet or a picker is open now locks it if she stays away longer than the picker allowance.
 - Pad-change reminders: Android hides their text on the lock screen (new channel `pad-care-private`).
 - Links open only for https/http/tel/sms/mailto; `noopener` on new tabs. `?email=` in links is used only if it is a plain email address.
 - Settings, Privacy dashboard and Voice journal need a signed-in (or guest) session.
@@ -44,9 +44,9 @@
 - The phone's own alerts, keyboard and pickers follow the app's choice (`Appearance.setColorScheme`); only "Match phone" follows the phone.
 
 **Folder clean-up**
-- `docs/papers`: kept the final versions only — the 12-page ICNQC and ICOFE papers, and the 5 Nov hackathon deck (renamed `SheSync_Hackathon_Deck.pptx`). Removed the 6-page drafts and the 2 Nov deck. Removed Expo build caches in `.expo/`.
+- `docs/papers`: kept the final versions only — the 12-page ICNQC and ICOFE papers, and the 5 Nov hackathon deck (renamed `Unnmegh_Hackathon_Deck.pptx`). Removed the 6-page drafts and the 2 Nov deck. Removed Expo build caches in `.expo/`.
 
-# SheSync — One design system, light & dark themes, bespoke icons, Settings, privacy dashboard, skeletons, 44pt targets, reduce motion (24 Nov 2026)
+# Unnmegh — One design system, light & dark themes, bespoke icons, Settings, privacy dashboard, skeletons, 44pt targets, reduce motion (24 Nov 2026)
 
 Direction: a women's health / period & wellbeing companion, **warm, rounded and gently empowering**.
 
@@ -62,10 +62,10 @@ Direction: a women's health / period & wellbeing companion, **warm, rounded and 
 **Visibility & accessibility (WCAG AA)**
 - Text and interactive icons are at least 4.5:1 in both modes; focus ring and switch outlines at least 3:1. Fixed along the way: grey “None / Dry” (2.3 → 7.6), each flow level's label, teal badges (4.4 → 5.5), YouTube play marks (4.0 → 5.9), the streak flame (2.2 → 5.6), white icons on pink buttons in dark mode, workout badges in dark mode.
 - Visible keyboard focus ring (2px violet) on everything you can press, plus hover, pressed and disabled states.
-- Every button, chip, row and switch is at least 44 × 44 pt (back/close buttons were 34–40 wide, chips like “7d” 42); text fields are 48pt tall with 16pt text; grounding circles 48; star ratings 44. Switches are drawn by SheSync and the whole row is the target (no 40 × 20 control on the web).
+- Every button, chip, row and switch is at least 44 × 44 pt (back/close buttons were 34–40 wide, chips like “7d” 42); text fields are 48pt tall with 16pt text; grounding circles 48; star ratings 44. Switches are drawn by Unnmegh and the whole row is the target (no 40 × 20 control on the web).
 
 **Bespoke icons** (`src/components/icons/`)
-- 44 duotone icons: 24 × 24, 1.75px rounded strokes, an 18% accent fill for depth, with metaphors made for SheSync (hot-water bottle for pain, droplet with a clock for the pad timer, lotus for Mind, sneaker for Move, heart-check for the daily check-in …).
+- 44 duotone icons: 24 × 24, 1.75px rounded strokes, an 18% accent fill for depth, with metaphors made for Unnmegh (hot-water bottle for pain, droplet with a clock for the pad timer, lotus for Mind, sneaker for Move, heart-check for the daily check-in …).
 - Feature icons sit in soft squircle badges that adapt to light and dark; pressing or hovering plays a tiny animation (bell rings, sparkle spins, heart pulses, tilt, bounce). Tab bar: pill highlight with a small hop. Utility icons share the 1.75 stroke.
 - Also exported as SVG files in `assets/icons/` (`currentColor` + `--accent-color`, `role="img"` + `aria-label`, `icons.css` hover animations, `preview.html`); `npx tsx scripts/export-icons.ts` rebuilds them.
 
@@ -83,12 +83,12 @@ Direction: a women's health / period & wellbeing companion, **warm, rounded and 
 
 ---
 
-# SheSync — Skip setup, one-calendar period dates, approximate dates, one check-in sheet, answer ratings, crash reports, CI, over-the-air fixes, friendly errors (24 Nov 2026)
+# Unnmegh — Skip setup, one-calendar period dates, approximate dates, one check-in sheet, answer ratings, crash reports, CI, over-the-air fixes, friendly errors (24 Nov 2026)
 
 **Skip the questionnaire**
 - “Skip for now — use sensible defaults” on the Details for Sync card, and Skip / “Not now?” on each setup step (10 questions, period dates, pain, flow, mood, safety check). Setup moves on to the next step.
 - Defaults never invent data: no made-up period — the prediction card asks for the first day of her last period (“even roughly”) instead, and the referral card says the safety check is “not done yet”, not “all clear”.
-- A **Personalise SheSync** card on Home lists the skipped steps with what each one unlocks; “Not now” hides it for 14 days. Skipped rows on the setup card say “Skipped for now · tap to answer”.
+- A **Personalise Unnmegh** card on Home lists the skipped steps with what each one unlocks; “Not now” hides it for 14 days. Skipped rows on the setup card say “Skipped for now · tap to answer”.
 
 **Range date picker** (Log period dates)
 - One calendar: tap the first day, then the last day; the days between fill in, marked FIRST / LAST. “Lasted 3d–7d” chips, Clear and one **Save this period**. Tapping before the start moves it; over 14 days starts again; future days can’t be picked.
@@ -105,7 +105,7 @@ Direction: a women's health / period & wellbeing companion, **warm, rounded and 
 **Helpful / not helpful** (YourGoGirl) — 👍 / 👎 under each answer. 👎 asks “What was missing?” (didn’t answer, not for my situation, too long, language, something wrong) with an opt-in “Include my question (no name)”; English, Hinglish, हिन्दी. Sent anonymously (answer id, rating, reason, language, app version; her question only if ticked, emails/numbers removed). `answer_feedback_summary` lists the answers with the most 👎 first.
 
 **Crash reports without trackers**
-- Screen crashes, unhandled errors and promise rejections go to SheSync’s own Supabase (`crash_reports`): error, stack, screen, app version, update id, platform. No user id, device id, name or email; emails, phone numbers and URL queries scrubbed; same crash once a session, at most 15; nothing from development builds; queued while offline.
+- Screen crashes, unhandled errors and promise rejections go to Unnmegh’s own Supabase (`crash_reports`): error, stack, screen, app version, update id, platform. No user id, device id, name or email; emails, phone numbers and URL queries scrubbed; same crash once a session, at most 15; nothing from development builds; queued while offline.
 - Profile → **Send anonymous crash reports** (on by default). Privacy screen: no ad or tracking SDKs; crash reports and 👍/👎 are anonymous.
 - The app can only add rows to the two report tables — never read, change or delete them. You read them in the Supabase dashboard (`crash_summary`, `answer_feedback_summary`).
 - `npm run check:privacy` fails on any ad, analytics, attribution or third-party crash SDK (direct or pulled in by another package), tracker addresses in code, or an unblocked Android advertising-ID permission (now blocked in app.json).
@@ -126,7 +126,7 @@ Direction: a women's health / period & wellbeing companion, **warm, rounded and 
 
 ---
 
-# SheSync — Journal prompts, SOS 2.0, exam planner, leave note, focus sounds, easier start (24 Nov 2026)
+# Unnmegh — Journal prompts, SOS 2.0, exam planner, leave note, focus sounds, easier start (24 Nov 2026)
 
 **Phase-based journal prompts** (Voice Journal)
 - A “Today’s prompt” card with a gentle question for her cycle phase (period days, fresh-start, bright days, slow-down days; a general set until she logs a period). 7 per phase in English and हिन्दी (follows the journal language), one featured a day, “Another” for a different one, “Write about this” drops it into the entry.
@@ -145,12 +145,12 @@ Direction: a women's health / period & wellbeing companion, **warm, rounded and 
 - Polite application in the usual Indian format for school (class teacher / principal, parent’s-signature line) or college (HOD / class coordinator / principal), in English or हिन्दी. Reason “Unwell” (private, default), “Period pain” or “Doctor’s advice”; past/today/future wording follows the dates. Her class, roll no. and college are remembered on the phone. Copy or Share.
 
 **Focus sounds** (Study Focus timer)
-- Rain, Café and Lo-fi loops, made for SheSync and bundled (works offline, ~1.4 MB total). Plays during focus blocks, pauses for breaks, volume slider, short preview when picked.
+- Rain, Café and Lo-fi loops, made for Unnmegh and bundled (works offline, ~1.4 MB total). Plays during focus blocks, pauses for breaks, volume slider, short preview when picked.
 
 **Easier start**
 - **Welcome**: 3 slides (real app screens: Home, YourGoGirl in Hinglish, app lock) with one promise each, Skip and Next; then a start panel. Seen once per phone.
-- **Try without an account** is the first button: SheSync starts on the phone with nothing backed up. Home and Profile offer “Create an account” later — signing up keeps everything she logged. Logging in to another account warns that it opens that account instead.
-- **Shorter sign-up**: name, email, password (+ confirm). Focus areas moved to a Home card that appears after setup (“What should SheSync help you with most?”, Save / Not now) and to Profile.
+- **Try without an account** is the first button: Unnmegh starts on the phone with nothing backed up. Home and Profile offer “Create an account” later — signing up keeps everything she logged. Logging in to another account warns that it opens that account instead.
+- **Shorter sign-up**: name, email, password (+ confirm). Focus areas moved to a Home card that appears after setup (“What should Unnmegh help you with most?”, Save / Not now) and to Profile.
 - **One privacy screen** (welcome, sign-up, Profile): what stays on the phone, what is backed up (only with an account), what we never do — three lines.
 - **Password helpers**: strength meter (length, variety, common passwords, her own name), show/hide on both password fields, “Passwords match”, and “Remember my email on this phone” on login (replaces the old “Keep me logged in” box, which did nothing).
 
@@ -160,7 +160,7 @@ Direction: a women's health / period & wellbeing companion, **warm, rounded and 
 
 ---
 
-# SheSync — Pad Care added + folder clean-up (18 Nov 2026)
+# Unnmegh — Pad Care added + folder clean-up (18 Nov 2026)
 
 **Pad Care** (`/pad-care`, Home → Pad Care box; it moves next to YourGoGirl during her period or while the timer runs)
 - Change timer: tap “I just changed” and a ring shows how long it has been on (All good → Change soon → Time to change → Over 8 hours). It saves the start time, so it stays right when the app is closed.
@@ -179,7 +179,7 @@ Direction: a women's health / period & wellbeing companion, **warm, rounded and 
 
 ---
 
-# SheSync — Voice journal, app lock, 10-second check-in, tummy symptoms, myth-buster, YourGoGirl in Hindi (18 Nov 2026)
+# Unnmegh — Voice journal, app lock, 10-second check-in, tummy symptoms, myth-buster, YourGoGirl in Hindi (18 Nov 2026)
 
 **Real voice journal** (`/voice-journal`)
 - Records her voice and turns it into text **on the phone** (expo-speech-recognition with on-device recognition: Apple Speech on iOS 17+, Android 13+ with the offline voice pack). Words appear live while she speaks; English (India) or हिन्दी.
@@ -216,7 +216,7 @@ Direction: a women's health / period & wellbeing companion, **warm, rounded and 
 
 ---
 
-# SheSync — PCOS Care, Confidence Booster, export/import, night mode (10 Nov 2026)
+# Unnmegh — PCOS Care, Confidence Booster, export/import, night mode (10 Nov 2026)
 
 **PCOS Care** (`/pcos`, new Home box)
 - Signs tab: the 3 things doctors check (2023 International PCOS Guideline / Rotterdam criteria) explained simply, each marked from her own data — irregular cycles from saved periods, androgen signs from a monthly check-in, ovaries from her scan/AMH answer. Clear "worth talking to a gynaecologist" card with a link to Care Connect. Never diagnoses; notes that teenagers are assessed differently.
@@ -228,7 +228,7 @@ Direction: a women's health / period & wellbeing companion, **warm, rounded and 
 
 **Export & import** (Profile → Export or import data)
 - Export: full backup (JSON), daily logs (CSV), periods (CSV), doctor PDF. CSV cells are protected against spreadsheet formulas.
-- Import: a SheSync backup, Flo or Clue exports, or any JSON/CSV with period dates. Shows what was found before saving; only adds — never replaces or duplicates (tested by importing the same file twice). Predictions ignored; future dates ignored; ZIP files get a clear "unzip first" message.
+- Import: an Unnmegh backup, Flo or Clue exports, or any JSON/CSV with period dates. Shows what was found before saving; only adds — never replaces or duplicates (tested by importing the same file twice). Predictions ignored; future dates ignored; ZIP files get a clear "unzip first" message.
 
 **Night mode** (Profile → Settings: Off / On / Auto 9 pm–6 am)
 - Calm deep-plum palette on every screen, including charts, chips and the background. Setting stays on the phone after sign-out.
@@ -239,12 +239,12 @@ Direction: a women's health / period & wellbeing companion, **warm, rounded and 
 
 ---
 
-# SheSync — Clean UI, cloud backend, optimisation (9 Nov 2026)
+# Unnmegh — Clean UI, cloud backend, optimisation (9 Nov 2026)
 
 **Cleaner UI** — removed filler text, decorative icons and jargon only; every feature stays.
 - Headers, auth screens, Home cards, Report, Mind, Move, Profile, log screens and the chat header now say one thing each, in plain words (e.g. “Next period”, “Points for your doctor”).
 - Questionnaire result types renamed in plain language: Cycle Balance, Pre-period Care, Rest & Recover, Cycle in Sync (saved answers are kept; names update automatically).
-- iOS app icon is now the SheSync logo (it was the Expo template icon); app name shows as “SheSync”; system dialogs stay light to match the app.
+- iOS app icon is now the Unnmegh logo (it was the Expo template icon); app name shows as “Unnmegh”; system dialogs stay light to match the app.
 
 **Backend (Supabase)** — `supabase/migrations/20261109000000_shesync_backend.sql`
 - Tables: `profiles`, `cycles`, `symptom_logs`, `sleep_logs`, `care_contacts`, `app_documents` (Fitness/Study/Games). Row Level Security on every table: each user sees only her own rows; signed-out requests get nothing.
@@ -268,7 +268,7 @@ Direction: a women's health / period & wellbeing companion, **warm, rounded and 
 
 ---
 
-# SheSync — Details for Sync update (9 Nov 2026)
+# Unnmegh — Details for Sync update (9 Nov 2026)
 
 **What changed**
 - **Login / sign-up go straight to Home.** Until setup is finished, Home shows *Good afternoon, <name>*, one big **Details for Sync** card (all six forms/logs with live ticks and a Start/Continue button) and **six feature squares**: YourGoGirl, Fitness & Weight, Care Connect, Study Focus, Mind Games, Breathe.
@@ -283,7 +283,7 @@ Direction: a women's health / period & wellbeing companion, **warm, rounded and 
 
 ---
 
-# SheSync — November 2026 update
+# Unnmegh — November 2026 update
 
 Run `npm install` once after pulling these changes (adds `expo-keep-awake`, plus `eslint` and `eslint-config-expo` for `npx expo lint`).
 

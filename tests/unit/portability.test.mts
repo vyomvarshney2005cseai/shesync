@@ -109,7 +109,7 @@ test('import adds to her data and never replaces or duplicates it', () => {
   assert.equal(again.newPeriods, 0);
 });
 
-test('SheSync backup: export then import restores everything on an empty phone', () => {
+test('Unnmegh backup: export then import restores everything on an empty phone', () => {
   const full = emptyLocal();
   full.profile.isAssessmentCompleted = true; full.profile.assessmentAnswers = { q1: 'a' }; full.profile.syncCompletedAt = '2026-11-01T00:00:00Z';
   full.cycles = periodsToCycles([{ start: '2026-10-01', end: '2026-10-05' }, { start: '2026-09-02', end: '2026-09-06' }]);
@@ -119,8 +119,8 @@ test('SheSync backup: export then import restores everything on an empty phone',
   full.docs.pcos = { checkins: [{ id: 'p1', date: '2026-10-01', acne: 1, bodyHair: 0, hairThinning: 0, darkPatches: 0 }], checklist: { tsh: true }, diagnosed: 'unknown', scan: 'unknown' };
   full.docs.confidence = { proud: [{ id: 'x', date: '2026-10-01', text: 'spoke up' }], saved: [], levels: { '2026-10-01': 4 }, glow: {}, challenges: {} };
   const text = JSON.stringify(buildBackup(full, NOW));
-  const r = parseImport(text, 'shesync-backup.json', NOW);
-  assert.equal(r.source, 'shesync');
+  const r = parseImport(text, 'unnmegh-backup.json', NOW);
+  assert.equal(r.source, 'unnmegh');
   const d = describeImport(emptyLocal(), r);
   assert.equal(d.merged.cycles.length, 2);
   assert.equal(d.merged.logs[0].notes, 'rough');

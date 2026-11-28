@@ -71,7 +71,7 @@ export default function HealthCheckScreen() {
         </View>
         {isOnboarding && !wasCompleted ? (
           <View style={styles.skipRow}>
-            <Text style={styles.skipNote}>Not now? SheSync works without it and reminds you later.</Text>
+            <Text style={styles.skipNote}>Not now? Unnmegh works without it and reminds you later.</Text>
             <SkipStepLink step="safety" />
           </View>
         ) : null}
@@ -170,7 +170,7 @@ export default function HealthCheckScreen() {
           style={{ marginTop: 20 }}
         />
         <Text style={styles.footnote}>
-          SheSync gives a screening guide based on common “see a doctor if…” signs. It is not a diagnosis.
+          Unnmegh gives a screening guide based on common “see a doctor if…” signs. It is not a diagnosis.
         </Text>
       </Screen>
     </AuthGate>

@@ -94,7 +94,7 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      {/* Every utility icon draws with the same 1.75px stroke as SheSync's own icons. */}
+      {/* Every utility icon draws with the same 1.75px stroke as Unnmegh's own icons. */}
       <LucideProvider absoluteStrokeWidth>
       <View key={themeMode} style={styles.page}>
         <View style={styles.container}>

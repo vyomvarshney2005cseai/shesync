@@ -208,7 +208,7 @@ export default function FitnessDashboard() {
         <Card tone="rose">
           <Text style={uiStyles.strong}>Set up your body profile</Text>
           <Text style={[uiStyles.body, { marginTop: 4 }]}>
-            Height, weight, age and goal let SheSync work out your BMI, daily calories, protein and water — with
+            Height, weight, age and goal let Unnmegh work out your BMI, daily calories, protein and water — with
             safety limits built in.
           </Text>
           <Button

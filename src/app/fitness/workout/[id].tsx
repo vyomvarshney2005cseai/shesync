@@ -34,7 +34,7 @@ export default function WorkoutPlayerScreen() {
 }
 
 function KeepAwake() {
-  useKeepAwake('shesync-workout');
+  useKeepAwake('unnmegh-workout');
   return null;
 }
 

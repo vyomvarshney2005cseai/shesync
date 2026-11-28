@@ -77,7 +77,7 @@ export default function WelcomeScreen() {
           <View style={styles.topBar}>
             <View style={styles.brandRow}>
               <Image source={require('@/../assets/images/logo.png')} style={styles.logo} resizeMode="contain" />
-              <Text style={styles.brand}>SheSync</Text>
+              <Text style={styles.brand}>Unnmegh</Text>
             </View>
             <Button variant="tertiary" size="sm" title="Skip" onPress={finishTour} accessibilityLabel="Skip the tour" testID="tour-skip" />
           </View>
@@ -128,7 +128,7 @@ export default function WelcomeScreen() {
       <ScrollView contentContainerStyle={[styles.startContent, { width: pageWidth }]} bounces={false}>
         <View style={styles.startHead}>
           <Image source={require('@/../assets/images/logo.png')} style={styles.startLogo} resizeMode="contain" />
-          <Text style={styles.startTitle}>Welcome to SheSync</Text>
+          <Text style={styles.startTitle}>Welcome to Unnmegh</Text>
           <Text style={styles.startSub}>Your period & wellbeing companion</Text>
         </View>
 

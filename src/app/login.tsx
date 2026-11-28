@@ -110,7 +110,7 @@ export default function LoginScreen() {
                 style={styles.logoImage}
                 resizeMode="contain"
               />
-              <Text style={styles.brandTitle}>SheSync</Text>
+              <Text style={styles.brandTitle}>Unnmegh</Text>
             </View>
 
             <View style={{ width: 36 }} />
@@ -126,7 +126,7 @@ export default function LoginScreen() {
             <View style={styles.guestNote}>
               <Info size={16} color={Theme.colors.secondaryDark} />
               <Text style={styles.guestNoteText}>
-                You’re using SheSync without an account. Logging in opens that account instead of what you logged here — to keep it,{' '}
+                You’re using Unnmegh without an account. Logging in opens that account instead of what you logged here — to keep it,{' '}
                 <Text style={styles.guestLink} onPress={() => router.replace('/signup')}>
                   create an account
                 </Text>

@@ -1,5 +1,5 @@
 -- ============================================================
--- SheSync backend (Supabase / Postgres)
+-- Unnmegh backend (Supabase / Postgres)
 --
 -- Every table is owned by one user and protected by Row Level Security:
 -- a signed-in user can read and write only her own rows. Deleting the

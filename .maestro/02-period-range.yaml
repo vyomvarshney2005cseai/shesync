@@ -3,7 +3,7 @@ appId: com.vyomvarshney1234.shesync
 name: Pick a period range and an approximate period
 ---
 - runFlow: subflows/start-guest.yaml
-- openLink: "shesync://log-cycle"
+- openLink: "unnmegh://log-cycle"
 - extendedWaitUntil:
     visible: "Tap the first day of your period"
     timeout: 10000

@@ -102,7 +102,7 @@ export default function ForgotPasswordScreen() {
                   style={styles.logoImage}
                   resizeMode="contain"
                 />
-                <Text style={styles.brandTitle}>SheSync</Text>
+                <Text style={styles.brandTitle}>Unnmegh</Text>
               </View>
 
               <View style={{ width: 38 }} />
@@ -192,7 +192,7 @@ export default function ForgotPasswordScreen() {
                   </View>
 
                   <Text style={styles.instructionStep}>
-                    1. Open your inbox and look for an email from SheSync.
+                    1. Open your inbox and look for an email from Unnmegh.
                   </Text>
                   <Text style={styles.instructionStep}>
                     2. Click the password reset link inside to enter a new password.

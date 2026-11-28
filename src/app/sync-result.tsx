@@ -120,7 +120,7 @@ export default function SyncResultScreen() {
               <Text style={styles.verdictWhen}>
                 {referable
                   ? text.when
-                  : `${firstName ? `${firstName}, n` : 'N'}othing you told SheSync matches the usual “see a doctor” signs. ${text.when}`}
+                  : `${firstName ? `${firstName}, n` : 'N'}othing you told Unnmegh matches the usual “see a doctor” signs. ${text.when}`}
               </Text>
             </View>
 
@@ -174,7 +174,7 @@ export default function SyncResultScreen() {
 
             {archetypeName ? (
               <Text style={styles.profileLine}>
-                Your SheSync profile: <Text style={{ fontWeight: '800' }}>{archetypeName}</Text>
+                Your Unnmegh profile: <Text style={{ fontWeight: '800' }}>{archetypeName}</Text>
               </Text>
             ) : null}
 

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "SheSync",
+    "name": "Unnmegh",
     "slug": "shesync",
     "version": "1.0.0",
     "runtimeVersion": {
@@ -13,7 +13,7 @@
     },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "shesync",
+    "scheme": ["unnmegh", "shesync"],
     "userInterfaceStyle": "automatic",
     "android": {
       "adaptiveIcon": {
@@ -49,7 +49,7 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "SheSync uses the microphone only while you record a voice journal entry.",
+          "microphonePermission": "Unnmegh uses the microphone only while you record a voice journal entry.",
           "enableBackgroundPlayback": false,
           "enableBackgroundRecording": false
         }
@@ -57,8 +57,8 @@
       [
         "expo-speech-recognition",
         {
-          "microphonePermission": "SheSync uses the microphone only while you record a voice journal entry.",
-          "speechRecognitionPermission": "SheSync turns your voice journal into text on this phone. Your voice is not uploaded.",
+          "microphonePermission": "Unnmegh uses the microphone only while you record a voice journal entry.",
+          "speechRecognitionPermission": "Unnmegh turns your voice journal into text on this phone. Your voice is not uploaded.",
           "androidSpeechServicePackages": [
             "com.google.android.as",
             "com.google.android.tts",
@@ -69,7 +69,7 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "SheSync uses Face ID to unlock the app and keep your health data private."
+          "faceIDPermission": "Unnmegh uses Face ID to unlock the app and keep your health data private."
         }
       ],
       "expo-secure-store",

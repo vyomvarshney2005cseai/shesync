@@ -142,9 +142,9 @@ test('backup import: keeps good records, drops malformed ones and device-only fi
 });
 
 test('backup import: prototype keys in a file never reach objects', () => {
-  const text = '{"app":"SheSync","formatVersion":1,"data":{"cycles":[],"logs":[],"profile":{"assessmentAnswers":{"__proto__":{"polluted":"yes"},"q1":"a"}},"docs":{"fitness":{"__proto__":{"polluted":"yes"}}}}}';
-  const r = parseImport(text, 'shesync-backup.json');
-  assert.equal(r.source, 'shesync');
+  const text = '{"app":"Unnmegh","formatVersion":1,"data":{"cycles":[],"logs":[],"profile":{"assessmentAnswers":{"__proto__":{"polluted":"yes"},"q1":"a"}},"docs":{"fitness":{"__proto__":{"polluted":"yes"}}}}}';
+  const r = parseImport(text, 'unnmegh-backup.json');
+  assert.equal(r.source, 'unnmegh');
   assert.equal(({} as any).polluted, undefined);
   assert.deepEqual(Object.keys(r.backup!.profile.assessmentAnswers), ['q1']);
   assert.equal(Object.prototype.hasOwnProperty.call(r.backup!.docs.fitness, '__proto__'), false);

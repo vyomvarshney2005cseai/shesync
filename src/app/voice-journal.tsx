@@ -171,7 +171,7 @@ function VoiceJournalScreenContent() {
             setChecked((c) => (c ? { lang: c.lang, support: { mode: 'speech', needsModel: true } } : c));
             setNotice('This phone needs the offline voice pack for this language first.');
           } else if (e.error === 'not-allowed') {
-            setNotice('SheSync needs microphone and speech permission. You can turn them on in your phone’s settings.');
+            setNotice('Unnmegh needs microphone and speech permission. You can turn them on in your phone’s settings.');
           } else if (e.error === 'network') {
             setNotice('Speech-to-text could not run on this phone. Record audio only, or type below.');
           } else {
@@ -277,7 +277,7 @@ function VoiceJournalScreenContent() {
     }
     setPhase('starting');
     setSeconds(0);
-    pauseAppLock(); // permission prompts are not "leaving" SheSync
+    pauseAppLock(); // permission prompts are not "leaving" Unnmegh
     try {
       if (speechMode && !needsModel) {
         const mod = await loadSpeechModule();
@@ -285,7 +285,7 @@ function VoiceJournalScreenContent() {
         const perm = await mod.requestPermissionsAsync();
         if (!perm.granted) {
           setPhase('idle');
-          setNotice('SheSync needs microphone and speech permission to listen. You can turn them on in your phone’s settings.');
+          setNotice('Unnmegh needs microphone and speech permission to listen. You can turn them on in your phone’s settings.');
           return;
         }
         engineRef.current = 'speech';
@@ -307,7 +307,7 @@ function VoiceJournalScreenContent() {
       const perm = await requestRecordingPermissionsAsync();
       if (!perm.granted) {
         setPhase('idle');
-        setNotice('SheSync needs microphone permission to record. You can turn it on in your phone’s settings.');
+        setNotice('Unnmegh needs microphone permission to record. You can turn it on in your phone’s settings.');
         return;
       }
       engineRef.current = 'audio';
@@ -383,7 +383,7 @@ function VoiceJournalScreenContent() {
         support.reason === 'web'
           ? 'In the browser your voice is recorded for this visit only — only the text is saved. Speech-to-text works in the phone app.'
           : support.reason === 'not-in-build'
-          ? 'This version of the app records audio only. Speech-to-text needs the full SheSync build (it isn’t in Expo Go).'
+          ? 'This version of the app records audio only. Speech-to-text needs the full Unnmegh build (it isn’t in Expo Go).'
           : support.reason === 'old-phone'
           ? 'Speech-to-text on the phone needs Android 13 or newer. Your voice is still recorded and saved here.'
           : 'This phone can’t turn speech into text offline. Your voice is still recorded and saved here.';

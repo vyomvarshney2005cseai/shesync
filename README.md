@@ -1,4 +1,4 @@
-# SheSync
+# Unnmegh
 
 Cycle-aware wellbeing app for women: period and symptom logging, a doctor-referral check, YourGoGirl (an on-device counsellor), fitness, study focus and calming games. Built with Expo (React Native) and an optional Supabase backend.
 

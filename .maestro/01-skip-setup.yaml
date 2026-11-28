@@ -12,11 +12,11 @@ tags:
 - tapOn:
     id: "skip-setup"
 - scrollUntilVisible:
-    element: "Personalise SheSync"
+    element: "Personalise Unnmegh"
     direction: UP
 - tapOn:
     id: "personalise-not-now"
-- assertNotVisible: "Personalise SheSync"
+- assertNotVisible: "Personalise Unnmegh"
 # No made-up period: the prediction asks for a date instead.
 - scrollUntilVisible:
     element: "Add the first day of your last period.*"

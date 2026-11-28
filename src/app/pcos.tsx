@@ -346,7 +346,7 @@ export default function PcosScreen() {
               fullWidth
             />
             <Text style={styles.note}>
-              Based on the 2023 International Evidence-based Guideline for PCOS. SheSync does not diagnose or prescribe; your doctor decides
+              Based on the 2023 International Evidence-based Guideline for PCOS. Unnmegh does not diagnose or prescribe; your doctor decides
               which tests and treatment you need.
             </Text>
           </>

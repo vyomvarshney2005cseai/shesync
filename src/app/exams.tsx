@@ -83,7 +83,7 @@ function ExamPlanner() {
         <Card tone="amber" style={{ marginBottom: 12 }}>
           <Text style={[uiStyles.strong, { color: themed('#92400E'), fontSize: 14 }]}>Add your period dates first</Text>
           <Text style={[uiStyles.body, { color: themed('#92400E'), marginTop: 4 }]}>
-            SheSync predicts heavy and PMS days from your saved periods. You can still add exams now — they get checked as soon as you save
+            Unnmegh predicts heavy and PMS days from your saved periods. You can still add exams now — they get checked as soon as you save
             your last period.
           </Text>
           <Button title="Log my last period" variant="secondary" onPress={() => router.push('/log-cycle')} style={{ marginTop: 12 }} />

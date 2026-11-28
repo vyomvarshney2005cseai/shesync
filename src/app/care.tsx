@@ -116,7 +116,7 @@ export default function CareConnectScreen() {
             </View>
           ))}
           <Button
-            title="Download my SheSync doctor report"
+            title="Download my Unnmegh doctor report"
             icon={<FileText size={16} color={themed('#FFFFFF')} />}
             onPress={() => generateClinicalPDF()}
             loading={isGenerating}

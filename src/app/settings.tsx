@@ -69,7 +69,7 @@ function SettingsScreenContent() {
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScrollView ref={scroller} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.column}>
-            <ScreenHeader title="Settings" subtitle="Account, privacy, reminders, your data and about SheSync." fallbackHref="/profile" />
+            <ScreenHeader title="Settings" subtitle="Account, privacy, reminders, your data and about Unnmegh." fallbackHref="/profile" />
             <View onLayout={(e) => jump('account', e)}>
               <AccountSection />
             </View>
@@ -109,9 +109,9 @@ function AccountSection() {
 
   const signOut = () =>
     confirm(
-      isGuest ? 'Leave and delete everything?' : 'Sign out of SheSync?',
+      isGuest ? 'Leave and delete everything?' : 'Sign out of Unnmegh?',
       isGuest
-        ? 'You are using SheSync without an account, so this deletes everything you logged on this phone. Create an account first to keep it.'
+        ? 'You are using Unnmegh without an account, so this deletes everything you logged on this phone. Create an account first to keep it.'
         : backedUp || sync.state === 'syncing'
         ? 'Your data is backed up and comes back when you sign in again. It is removed from this device.'
         : 'For your privacy, signing out removes your logs, cycles and dashboard data from this device.',
@@ -127,7 +127,7 @@ function AccountSection() {
   const deleteAccount = () =>
     confirm(
       'Delete your account?',
-      'This permanently deletes your account and all your SheSync data' +
+      'This permanently deletes your account and all your Unnmegh data' +
         (isOfflineAccount || !isSupabaseConfigured ? ' on this device.' : ', on this device and in the cloud.') +
         ' This cannot be undone.',
       'Delete',
@@ -145,7 +145,7 @@ function AccountSection() {
         Account
       </GroupLabel>
       <ListGroup>
-        <ListRow icon="profile" tone="rose" title={userName || (isGuest ? 'Trying SheSync' : 'You')} subtitle={status} />
+        <ListRow icon="profile" tone="rose" title={userName || (isGuest ? 'Trying Unnmegh' : 'You')} subtitle={status} />
         {isGuest ? (
           <ListRow icon="cloud" tone="lilac" title="Create an account" subtitle="Back up what you have logged — nothing is lost" onPress={() => router.push('/signup')} />
         ) : null}
@@ -187,7 +187,7 @@ function PrivacySection() {
           icon="update"
           tone="sky"
           title="Send anonymous crash reports"
-          subtitle="Only the error and app version, to SheSync’s own server. No ad or tracking SDKs."
+          subtitle="Only the error and app version, to Unnmegh’s own server. No ad or tracking SDKs."
           value={crashReports}
           onValueChange={setCrashReports}
           testID="settings-crash-reports"
@@ -284,10 +284,10 @@ function RemindersSection() {
         />
       </ListGroup>
       {!remindersSupported ? (
-        <Text style={styles.note}>Reminders work in the SheSync phone app. On the web, the timers still run while the page is open.</Text>
+        <Text style={styles.note}>Reminders work in the Unnmegh phone app. On the web, the timers still run while the page is open.</Text>
       ) : blocked ? (
         <View style={styles.blocked}>
-          <Text style={styles.note}>Notifications are turned off for SheSync on this phone.</Text>
+          <Text style={styles.note}>Notifications are turned off for Unnmegh on this phone.</Text>
           <Button variant="link" title="Open phone settings" onPress={openNotificationSettings} />
         </View>
       ) : null}
@@ -306,7 +306,7 @@ function DataSection() {
     setBusy(true);
     const ok = await flushCloudSync(15000).catch(() => false);
     setBusy(false);
-    if (!ok) notify('Not backed up yet', 'Check your internet connection. SheSync keeps trying in the background.');
+    if (!ok) notify('Not backed up yet', 'Check your internet connection. Unnmegh keeps trying in the background.');
   };
 
   return (
@@ -331,7 +331,7 @@ function DataSection() {
           </View>
         ) : null}
         <ListRow icon="exportData" tone="sky" title="Export or import" subtitle="Backup file, CSV, or bring data from Flo / Clue" onPress={() => router.push(ROUTES.data)} />
-        <ListRow icon="eye" tone="mint" title="See everything SheSync keeps" subtitle="Privacy dashboard" onPress={() => router.push('/privacy-dashboard' as Href)} />
+        <ListRow icon="eye" tone="mint" title="See everything Unnmegh keeps" subtitle="Privacy dashboard" onPress={() => router.push('/privacy-dashboard' as Href)} />
       </ListGroup>
     </>
   );
@@ -371,7 +371,7 @@ function AboutSection() {
         <ListRow
           icon="about"
           tone="lilac"
-          title={`SheSync ${version}`}
+          title={`Unnmegh ${version}`}
           subtitle={updateId ? `Update ${updateId.slice(0, 8)}${channel ? ` · ${channel}` : ''}` : 'Your period & wellbeing companion'}
         />
         <ListRow icon="update" tone="sky" title={checking ? 'Checking…' : 'Check for updates'} subtitle="Small fixes arrive without an app-store update" onPress={checking ? undefined : () => void checkForUpdate()} />
@@ -379,9 +379,9 @@ function AboutSection() {
           icon="healthCheck"
           tone="mint"
           title="Not a medical device"
-          subtitle="SheSync helps you notice patterns and prepare for a doctor. In an emergency, call 112."
+          subtitle="Unnmegh helps you notice patterns and prepare for a doctor. In an emergency, call 112."
         />
-        <ListRow icon="sparkle" tone="peach" title="Made for SheSync" subtitle="Icons, sounds and the YourGoGirl knowledge base are our own work." />
+        <ListRow icon="sparkle" tone="peach" title="Made for Unnmegh" subtitle="Icons, sounds and the YourGoGirl knowledge base are our own work." />
         <ListRow icon="mail" tone="rose" title="Tele-MANAS (free, 24×7)" subtitle="Mental health support · 14416" onPress={() => void Linking.openURL('tel:14416')} />
       </ListGroup>
       <View style={{ height: Theme.space.xxxl }} />

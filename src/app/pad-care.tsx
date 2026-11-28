@@ -182,7 +182,7 @@ function PadCareDashboard() {
         <Button variant="link" title={s.label} key={s.url} onPress={() => openUrl(s.url)} icon={<ExternalLink size={20} color={Theme.colors.primaryDark} />} />
       ))}
       <Text style={styles.disclaimer}>
-        General information, not medical advice. SheSync does not rank or endorse brands. Your ratings stay on this phone.
+        General information, not medical advice. Unnmegh does not rank or endorse brands. Your ratings stay on this phone.
       </Text>
     </Screen>
   );

@@ -99,7 +99,7 @@ function PrivacyDashboardScreenContent() {
 
   return (
     <Screen>
-      <ScreenHeader title="Privacy dashboard" subtitle="What SheSync keeps, where it lives, and when it was last backed up." fallbackHref="/settings" />
+      <ScreenHeader title="Privacy dashboard" subtitle="What Unnmegh keeps, where it lives, and when it was last backed up." fallbackHref="/settings" />
 
       <Card tone={backup.ok ? 'mint' : 'default'} testID="privacy-backup-card">
         <View style={styles.backupRow}>

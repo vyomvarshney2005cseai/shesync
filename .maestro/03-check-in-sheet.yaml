@@ -3,7 +3,7 @@ appId: com.vyomvarshney1234.shesync
 name: Check-in sheet tabs and deep links
 ---
 - runFlow: subflows/start-guest.yaml
-- openLink: "shesync://log-pain"
+- openLink: "unnmegh://log-pain"
 - extendedWaitUntil:
     visible:
       id: "logsheet-tab-pain"
@@ -19,5 +19,5 @@ name: Check-in sheet tabs and deep links
 - assertVisible: "How heavy\\?"
 - tapOn:
     id: "logsheet-close"
-- openLink: "shesync://log-flow"
+- openLink: "unnmegh://log-flow"
 - assertVisible: "How heavy\\?"

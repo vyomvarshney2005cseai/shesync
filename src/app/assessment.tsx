@@ -90,7 +90,7 @@ export default function AssessmentScreen() {
             contentContainerStyle={styles.completionScroll}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.completionTitle}>Your SheSync profile</Text>
+            <Text style={styles.completionTitle}>Your Unnmegh profile</Text>
             <Text style={styles.archetypeName}>{calculatedResult.name}</Text>
             <Text style={styles.archetypeTagline}>{calculatedResult.tagline}</Text>
             <View style={styles.archetypeCard}>

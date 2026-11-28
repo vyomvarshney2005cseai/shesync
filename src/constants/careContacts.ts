@@ -108,7 +108,7 @@ export const WOMEN_SAFETY_SERVICES: CareService[] = [
 
 /** What to take to a gynaecologist appointment. */
 export const VISIT_CHECKLIST = [
-  'Dates of your last 3 periods (SheSync’s report has them)',
+  'Dates of your last 3 periods (Unnmegh’s report has them)',
   'How many pads/tampons you use on your heaviest day',
   'Your worst pain score and what you tried for it',
   'Any medicines, pills or supplements you take',

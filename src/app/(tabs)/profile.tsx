@@ -32,7 +32,7 @@ const SETTINGS_ROWS: { id: SettingsSection; title: string; subtitle: string; ico
   { id: 'privacy', title: 'Privacy', subtitle: 'Privacy dashboard, app lock, crash reports', icon: 'privacy', tone: 'mint' },
   { id: 'reminders', title: 'Reminders', subtitle: 'Check-in, period heads-up, pad changes', icon: 'bell', tone: 'amber' },
   { id: 'data', title: 'Data', subtitle: 'Backup, export and import', icon: 'data', tone: 'sky' },
-  { id: 'about', title: 'About', subtitle: 'Version, updates, how SheSync helps', icon: 'about', tone: 'lilac' },
+  { id: 'about', title: 'About', subtitle: 'Version, updates, how Unnmegh helps', icon: 'about', tone: 'lilac' },
 ];
 
 export default function ProfileScreen() {
@@ -56,7 +56,7 @@ export default function ProfileScreen() {
   const backup = backupSummary({ guest: isGuest, onDevice: isOfflineAccount || !isSupabaseConfigured, state: sync.state, lastSyncedAt: sync.lastSyncedAt });
 
   const handlePickImage = async () => {
-    pauseAppLock(); // the photo picker is not "leaving" SheSync
+    pauseAppLock(); // the photo picker is not "leaving" Unnmegh
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 1 });
     if (!result.canceled) updateUserPhoto(result.assets[0].uri);
   };
@@ -97,7 +97,7 @@ export default function ProfileScreen() {
                   {userPhoto ? <Image source={{ uri: userPhoto }} style={styles.avatarImage} /> : <Text style={styles.avatarText}>{initial}</Text>}
                 </Pressable>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.name}>{userName || (isGuest ? 'Trying SheSync' : 'You')}</Text>
+                  <Text style={styles.name}>{userName || (isGuest ? 'Trying Unnmegh' : 'You')}</Text>
                   <Text style={styles.email}>{isGuest ? 'No account · everything stays on this phone' : userEmail || 'On this phone'}</Text>
                 </View>
               </View>
@@ -116,7 +116,7 @@ export default function ProfileScreen() {
             </Card>
 
             <GroupLabel icon="sparkle" tone="lilac">
-              Your SheSync
+              Your Unnmegh
             </GroupLabel>
             <Card tone="lilac">
               <Text style={styles.eyebrow}>YOUR RESULT</Text>

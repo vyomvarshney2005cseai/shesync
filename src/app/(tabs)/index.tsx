@@ -49,7 +49,7 @@ export default function HomeScreen() {
           <View style={styles.centeredWrapper}>
             <Header
               title={firstName ? `${timeOfDayGreeting()}, ${firstName}` : timeOfDayGreeting()}
-              subtitle={isSynced ? cycle.label : 'Let’s set up SheSync for you'}
+              subtitle={isSynced ? cycle.label : 'Let’s set up Unnmegh for you'}
             />
 
             {isSynced ? (
@@ -66,7 +66,7 @@ export default function HomeScreen() {
                 <CardBoundary><FocusAreasCard /></CardBoundary>
                 <CardBoundary><MythBusterCard /></CardBoundary>
                 <View style={styles.sectionHead}>
-                  <Text style={styles.sectionTitle}>Explore SheSync</Text>
+                  <Text style={styles.sectionTitle}>Explore Unnmegh</Text>
                 </View>
                 <CardBoundary><FeatureSquares /></CardBoundary>
                 <CardBoundary><GuestBackupCard /></CardBoundary>
@@ -77,7 +77,7 @@ export default function HomeScreen() {
                 <CardBoundary><SyncDetailsCard /></CardBoundary>
                 <CardBoundary><MythBusterCard /></CardBoundary>
                 <View style={styles.sectionHead}>
-                  <Text style={styles.sectionTitle}>Explore SheSync</Text>
+                  <Text style={styles.sectionTitle}>Explore Unnmegh</Text>
                 </View>
                 <CardBoundary><FeatureSquares /></CardBoundary>
                 <CardBoundary><GuestBackupCard /></CardBoundary>

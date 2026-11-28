@@ -12,7 +12,7 @@ import { Button } from '@/components/ds';
 
 /**
  * Sign-up asks for name, email and password only. Focus areas are asked
- * later on Home, once she has seen what SheSync does. A guest who signs up
+ * later on Home, once she has seen what Unnmegh does. A guest who signs up
  * keeps everything she logged.
  */
 export default function SignUpScreen() {
@@ -111,7 +111,7 @@ export default function SignUpScreen() {
                 style={styles.logoImage}
                 resizeMode="contain"
               />
-              <Text style={styles.brandTitle}>SheSync</Text>
+              <Text style={styles.brandTitle}>Unnmegh</Text>
             </View>
 
             <View style={{ width: 36 }} />
@@ -119,7 +119,7 @@ export default function SignUpScreen() {
 
           {/* Heading */}
           <View style={styles.headerBlock}>
-            <Text style={styles.title}>{isGuest ? 'Save your progress' : 'Join SheSync'}</Text>
+            <Text style={styles.title}>{isGuest ? 'Save your progress' : 'Join Unnmegh'}</Text>
             <Text style={styles.subtitle}>
               {isGuest ? 'Create an account to back up what you have logged. Nothing is lost.' : 'Three quick things and you’re in.'}
             </Text>

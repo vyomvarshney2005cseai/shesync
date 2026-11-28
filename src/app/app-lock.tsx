@@ -76,7 +76,7 @@ export default function AppLockScreen() {
         go({ kind: 'overview' });
         notify(
           enabled ? 'PIN changed' : 'App lock is on',
-          enabled ? 'Use your new PIN next time.' : 'SheSync will lock every time you leave the app.'
+          enabled ? 'Use your new PIN next time.' : 'Unnmegh will lock every time you leave the app.'
         );
       } catch {
         wrong('Could not save the PIN. Please try again.');
@@ -139,8 +139,8 @@ export default function AppLockScreen() {
                   <Text style={styles.statusTitle}>{enabled ? 'App lock is on' : 'App lock is off'}</Text>
                   <Text style={styles.statusSub}>
                     {enabled
-                      ? `Locks the moment you leave SheSync. ${pinLength}-digit PIN${biometrics && bio?.ready ? ` or ${bio.label}` : ''}.`
-                      : 'Ask for a PIN — or your fingerprint / Face ID — every time SheSync opens.'}
+                      ? `Locks the moment you leave Unnmegh. ${pinLength}-digit PIN${biometrics && bio?.ready ? ` or ${bio.label}` : ''}.`
+                      : 'Ask for a PIN — or your fingerprint / Face ID — every time Unnmegh opens.'}
                   </Text>
                 </View>
               </View>

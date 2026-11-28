@@ -23,7 +23,7 @@ export interface BackupFile {
   data: LocalSnapshot;
 }
 
-export type ImportSource = 'shesync' | 'flo' | 'clue' | 'other';
+export type ImportSource = 'unnmegh' | 'flo' | 'clue' | 'other';
 
 export interface ImportedPeriod {
   start: string; // YYYY-MM-DD
@@ -305,7 +305,7 @@ export function parseImport(text: string, fileName = '', now = new Date()): Impo
   if (isJson && looksLikeBackup(json)) {
     if (json.formatVersion > BACKUP_FORMAT) notes.push('This backup was made by a newer SheSync. Update the app if something is missing.');
     // The file may have been edited: keep only well-formed records.
-    return { source: 'shesync', backup: sanitizeBackupData(json.data), periods: [], days: [], notes };
+    return { source: 'unnmegh', backup: sanitizeBackupData(json.data), periods: [], days: [], notes };
   }
 
   if (isJson) walk(json, found, nowYear);

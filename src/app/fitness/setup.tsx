@@ -44,7 +44,7 @@ export default function FitnessSetup() {
     let finalGoal = goal;
     let targetKg: number | undefined;
     if (goal === 'lose') {
-      if (isMinor) return setError('SheSync does not set weight-loss targets for under-18s. Choose “Just get fitter” instead.');
+      if (isMinor) return setError('Unnmegh does not set weight-loss targets for under-18s. Choose “Just get fitter” instead.');
       const t = num(target);
       if (!Number.isFinite(t)) return setError('Enter a goal weight, or choose another goal.');
       if (t >= w) return setError('Your goal weight should be below your current weight.');
@@ -77,7 +77,7 @@ export default function FitnessSetup() {
         </View>
         {isMinor ? (
           <Text style={[uiStyles.muted, { marginTop: 12 }]}>
-            BMI bands in SheSync are for adults. Under 18, focus on fitness and strength — not weight targets.
+            BMI bands in Unnmegh are for adults. Under 18, focus on fitness and strength — not weight targets.
           </Text>
         ) : null}
       </Card>

@@ -1,5 +1,5 @@
 -- ============================================================
--- SheSync — 25 Nov 2026: security hardening
+-- Unnmegh — 25 Nov 2026: security hardening
 --   1. daily_logs (the table older app versions wrote to) gets the same
 --      owner-only Row Level Security as every other table, and nothing for
 --      anonymous visitors. Skipped if the table does not exist.
@@ -64,7 +64,7 @@ begin
     join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity
   loop
-    raise notice 'SheSync: table public.% has Row Level Security switched OFF', t.relname;
+    raise notice 'Unnmegh: table public.% has Row Level Security switched OFF', t.relname;
   end loop;
 end;
 $$;

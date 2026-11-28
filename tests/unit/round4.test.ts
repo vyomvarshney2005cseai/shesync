@@ -222,7 +222,7 @@ test('chat export is readable text without markdown', () => {
   ] as any, 'Priya Sharma', new Date('2026-11-18T05:00:00Z'));
   assert.match(txt, /Priya:\npet dard/); assert.match(txt, /YourGoGirl:\nTry heat/); assert.ok(!txt.includes('**'));
   assert.match(txt, /• Heat: a bag/); assert.match(txt, /When to see a doctor: If it stops your day/);
-  assert.equal(chatFileName(new Date(2026, 10, 8)), 'shesync-chat-2026-11-08.txt');
+  assert.equal(chatFileName(new Date(2026, 10, 8)), 'unnmegh-chat-2026-11-08.txt');
 });
 
 // ─── Myths ─────────────────────────────────────────────────

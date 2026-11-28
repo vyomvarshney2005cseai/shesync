@@ -1,4 +1,4 @@
-// Writes SheSync's bespoke icon set as plain SVG files (for the website,
+// Writes Unnmegh's bespoke icon set as plain SVG files (for the website,
 // docs and design tools):  npx tsx scripts/export-icons.ts
 //
 //   assets/icons/<name>.svg     24 × 24, currentColor strokes, --accent-color duotone fill, role="img" + aria-label
@@ -16,7 +16,7 @@ for (const name of BRAND_ICON_NAMES) {
   fs.writeFileSync(path.join(out, `${name}.svg`), `${svg}\n`);
 }
 
-const css = `/* SheSync icons — micro-interactions for the SVGs in this folder.
+const css = `/* Unnmegh icons — micro-interactions for the SVGs in this folder.
    Colour: set \`color\` for the outline and --accent-color for the soft duotone fill. */
 .ss-icon { color: inherit; --accent-color: currentColor; transform-origin: 50% 50%; }
 .ss-badge { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 16px;
@@ -50,7 +50,7 @@ const grid = (dark: boolean) =>
     const bg = dark ? db : lb;
     return `<figure><span class="ss-badge" tabindex="0" style="color:${fg};background:${bg}">${fs.readFileSync(path.join(out, `${n}.svg`), 'utf8').trim()}</span><figcaption>${BRAND_ICON_LABELS[n]}</figcaption></figure>`;
   }).join('');
-const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>SheSync icons</title><link rel="stylesheet" href="icons.css">
+const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Unnmegh icons</title><link rel="stylesheet" href="icons.css">
 <style>body{margin:0;font:14px/20px system-ui,sans-serif}section{padding:24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:16px}
 .light{background:#FBF8FA;color:#221A29}.dark{background:#0F172A;color:#F1F5F9}figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
 .ss-badge .ss-icon{width:28px;height:28px}figcaption{font-size:12px;line-height:16px}h2{margin:0;padding:24px 24px 0;font-size:18px}</style></head>

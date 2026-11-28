@@ -1,5 +1,5 @@
 -- ============================================================
--- SheSync — 24 Nov 2026
+-- Unnmegh — 24 Nov 2026
 --   1. cycles.approximate  ("I don't remember exactly")
 --   2. answer_feedback     (👍/👎 on YourGoGirl answers, anonymous)
 --   3. crash_reports       (self-hosted crash reports, anonymous)
